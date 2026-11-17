@@ -1,0 +1,28 @@
+{
+  "name": "vnsavingpro",
+  "private": true,
+  "version": "1.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cf:deploy": "vite build && npx wrangler deploy",
+    "cf:pages": "vite build && npx wrangler pages deploy dist --project-name=vnsavingpro"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "tailwindcss": "^4.3.3",
+    "vite": "^5.1.6"
+  }
+}
