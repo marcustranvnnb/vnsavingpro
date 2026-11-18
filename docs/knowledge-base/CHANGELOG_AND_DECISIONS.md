@@ -4,6 +4,12 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Version 1.5.2: Dedicated CakeBank Standard & Accumulate Scraper (Completing All 4 Banks Daily Sync)
+- **Added**:
+  - Created `scripts/scrape-cake.js` fetching both `https://cake.vn/tien-gui/tien-gui-tieu-chuan` (17 terms, effective `21/10/2026`, bonus `+2.2%`) and `https://cake.vn/tien-gui/tien-gui-co-ky-han-tich-luy` (`6.70%` accumulative tier & promo highlights).
+  - Updated `src/data/bankPackagesData.js` (`cake-standard`, `cake-accumulate`), `src/data/banksData.js`, and generated `src/data/scraped/cake-latest.json`.
+  - Wired CakeBank into `scripts/scrape-all.js`, `package.json` (`scrape:cake`), `.github/workflows/daily-rates-sync.yml`, and `api/cron/sync-rates.js` so all 4 digital banks sync daily at 09:00 AM (UTC+7).
+
 ## [2026-11-18] — Version 1.5.1: Dedicated LioBank Default Tariff & Dynamic CTKM Promo PDF Scraper
 - **Added**:
   - Created `scripts/scrape-liobank.js` to scrape LioBank's default tariffs (`https://liobank.vn/vn/deposit-tariffs`, 15 terms effective `11/11/2026`) AND dynamically discover & parse the latest CTKM promo PDF (`Liobank_The_Le_CTKM_Cong_Lai_suat_Tiet_kiem_11.11.2026.pdf`, 10 terms: `6–9M: 8.00%`, `10–12M: 8.20%`, `15–24M: 7.70%`) using built-in `node:zlib`.

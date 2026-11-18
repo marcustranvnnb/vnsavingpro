@@ -1,8 +1,8 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 15:59 (v1.5.1 Added LioBank Tariff + Dynamic Promo PDF Scraper)
-> **Current Architecture Version**: v1.5.1 (Hash-Routed SPA + Vercel Serverless API + Daily 9AM TNEX/TIMO/LIOBANK Scrapers)
-> **Deployment Status**: Ready to push v1.5.1 to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`) & auto-deploy on Vercel.
+> **Last Synced**: 2026-11-18 16:15 (v1.5.2 Added CakeBank Standard & Accumulate Scraper — All 4 Banks Daily Automated)
+> **Current Architecture Version**: v1.5.2 (Hash-Routed SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
+> **Deployment Status**: Ready to push v1.5.2 to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`) & auto-deploy on Vercel.
 
 ---
 
@@ -40,9 +40,9 @@
 ## File Registry (v1.5 Tier 1 Serverless + Daily Scrapers)
 
 - **Serverless API (`api/`)**: `api/rates.js` (`GET /api/rates`), `api/calculate.js` (`POST /api/calculate`), `api/feedback.js` (`GET`/`POST /api/feedback`), `api/cron/sync-rates.js` (daily 09:00 AM VN Vercel cron), `api/_lib/{calculator,feasibilityEvaluator,http,liveRatesCache}.js`
-- **Automated Scrapers & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-all.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
+- **Automated Scrapers & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
 - **Root & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/index.css`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Referral}.jsx`
 - **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget}.jsx`
-- **Data**: `src/data/{banksData,bankPackagesData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest}.json`
+- **Data**: `src/data/{banksData,bankPackagesData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
 - **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage}.js`

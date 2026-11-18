@@ -7,7 +7,7 @@ export const INITIAL_BANKS_DATA = [
     name: "CakeBank",
     fullName: "Ngân hàng số CakeBank (by VPBank)",
     type: "Digital Bank",
-    badge: "🎂 Top 1 Niêm yết 6.9% · Ưu đãi đến 9.1%",
+    badge: "🎂 Niêm yết 6.9% · Ưu đãi đến 9.1%",
     color: "#ff007f",
     logoText: "CAKE",
     featured: true,
@@ -30,8 +30,8 @@ export const INITIAL_BANKS_DATA = [
     },
     payoutMethods: ["MATURITY", "MONTHLY", "UPFRONT", "QUARTERLY", "ACCUMULATIVE"],
     partialWithdrawal: true,
-    rateTierNote: "Niêm yết 6.90% (6–24T) · Cộng thêm đến +2.2% (tối đa 9.1%/năm) cho KH mới/ưu đãi",
-    notes: "Lãi suất niêm yết 6–24M đạt 6.90%/năm. Rút gốc từng phần không mất lãi phần còn lại."
+    rateTierNote: "Tiêu chuẩn 6.90% (21/10/2026) · Cộng đến +2.2% (tối đa 9.1%/năm)",
+    notes: "Tiền gửi tiêu chuẩn 6–24M đạt 6.90%/năm; Tích lũy đến 6.70%. Rút gốc từng phần không mất lãi phần còn lại."
   },
   {
     id: "timo",

@@ -1,0 +1,87 @@
+{
+  "bankId": "cake",
+  "sourceUrl": "https://cake.vn/tien-gui/tien-gui-tieu-chuan",
+  "accumulateUrl": "https://cake.vn/tien-gui/tien-gui-co-ky-han-tich-luy",
+  "effectiveDate": "21/10/2026",
+  "scrapedAt": "2026-11-18T16:13:02+07:00",
+  "updatedDate": "18/11/2026",
+  "liveFetchSucceeded": true,
+  "parsedTenuresCount": 17,
+  "parsedAccumTenuresCount": 0,
+  "maxBonusPercent": 2.2,
+  "maxPromoRate": 9.1,
+  "rates": {
+    "1W": 0.5,
+    "2W": 0.5,
+    "3W": 0.5,
+    "1M": 4.75,
+    "3M": 4.75,
+    "6M": 6.9,
+    "9M": 6.9,
+    "12M": 6.9,
+    "18M": 6.9,
+    "24M": 6.9,
+    "36M": 6.3
+  },
+  "standardMonthly": {
+    "1": 4.75,
+    "2": 4.75,
+    "3": 4.75,
+    "4": 4.75,
+    "5": 4.75,
+    "6": 6.9,
+    "7": 6.9,
+    "8": 6.9,
+    "9": 6.9,
+    "10": 6.9,
+    "11": 6.9,
+    "12": 6.9,
+    "13": 6.9,
+    "15": 6.9,
+    "18": 6.9,
+    "24": 6.9,
+    "36": 6.3
+  },
+  "accumulateRates": {
+    "6": {
+      "endRate": 4.5,
+      "listedRate": 4.5,
+      "note": "Lãi suất cơ bản"
+    },
+    "9": {
+      "endRate": 6.7,
+      "listedRate": 6.7,
+      "note": "Đã gồm ưu đãi tích lũy (cơ bản 4.50%)"
+    },
+    "12": {
+      "endRate": 6.7,
+      "listedRate": 6.7,
+      "note": "Đã gồm ưu đãi tích lũy (cơ bản 4.50%)"
+    },
+    "15": {
+      "endRate": 6.7,
+      "listedRate": 6.7,
+      "note": "Đã gồm ưu đãi tích lũy (cơ bản 4.50%)"
+    },
+    "18": {
+      "endRate": 6.7,
+      "listedRate": 6.7,
+      "note": "Đã gồm ưu đãi tích lũy (cơ bản 4.50%)"
+    },
+    "24": {
+      "endRate": 6.7,
+      "listedRate": 6.7,
+      "note": "Đã gồm ưu đãi tích lũy (cơ bản 4.50%)"
+    },
+    "36": {
+      "endRate": 6.7,
+      "listedRate": 6.7,
+      "note": "Đã gồm ưu đãi tích lũy (cơ bản 4.50%)"
+    }
+  },
+  "promoTitles": [
+    "Tháng 11/2026 - Bạn mới tiết kiệm, cộng thêm lãi suất",
+    "Tháng 11/2026 - Bạn thân tiết kiệm, cộng thêm lãi suất"
+  ],
+  "note": "Synced Cake Standard (17 terms, effective 21/10/2026, bonus +2.2%) + Accumulate page (21/10/2026)."
+}
