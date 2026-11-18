@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Version 1.5.2 (UI): Visible Web Tool Version Badge & Release Notes Modal
+
+- **Request**: Display and describe the current web tool version directly on the VnSavingPro website.
+- **Changes Implemented**:
+  - Updated [package.json](../../package.json) `"version"` to `"1.5.2"`.
+  - Added single source of truth constants `APP_VERSION` (`v1.5.2`), `APP_VERSION_DATE` (`18/11/2026`), `APP_VERSION_LABEL`, and `VERSION_HIGHLIGHTS` in [src/tools.js](../../src/tools.js).
+  - Created `VersionBadge` + `"Thông tin phiên bản VnSavingPro v1.5.2"` `Modal` in [src/components/Layout.jsx](../../src/components/Layout.jsx), rendered cleanly beside the brand logo in `TopNav` and beside `© 2026 VnSavingPro` in `Footer`. Also updated the footer privacy note to reflect Tier 1 serverless calculation.
+  - Updated [src/components/DataModal.jsx](../../src/components/DataModal.jsx) to show `Phiên bản công cụ: v1.5.2 (18/11/2026)` and export dynamic `version` in JSON backups.
+
+---
+
 ## [2026-11-18] — Version 1.5.2: Dedicated CakeBank Standard & Accumulate Scraper (Completing All 4 Banks Daily Sync)
 - **Added**:
   - Created `scripts/scrape-cake.js` fetching both `https://cake.vn/tien-gui/tien-gui-tieu-chuan` (17 terms, effective `21/10/2026`, bonus `+2.2%`) and `https://cake.vn/tien-gui/tien-gui-co-ky-han-tich-luy` (`6.70%` accumulative tier & promo highlights).

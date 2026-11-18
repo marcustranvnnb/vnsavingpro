@@ -4,6 +4,7 @@ import { Button, Callout, Modal } from './ui.jsx';
 import { exportFeedbackCSV } from './FeedbackWidget.jsx';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { useRates, useToast } from '../state.jsx';
+import { APP_VERSION, APP_VERSION_DATE } from '../tools.js';
 
 const today = () => new Date().toLocaleDateString('vi-VN').replace(/\//g, '-');
 
@@ -19,7 +20,7 @@ export function DataModal({ open, onClose }) {
   const exportBackup = () => {
     const data = {
       app: 'VnSavingPro',
-      version: '1.4',
+      version: APP_VERSION.replace(/^v/, ''),
       exportedAt: new Date().toISOString(),
       customRates: cryptoStorage.load('CUSTOM_RATES', {}),
       customReferralCodes: cryptoStorage.load('CUSTOM_REFERRAL_CODES', {}),
@@ -87,6 +88,12 @@ export function DataModal({ open, onClose }) {
         <div className="flex items-center justify-between px-4 py-3 text-sm">
           <dt className="text-zinc-400">Đánh giá &amp; góp ý đã lưu</dt>
           <dd className="font-medium tabular-nums text-white">{feedbackCount}</dd>
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 text-sm">
+          <dt className="text-zinc-400">Phiên bản công cụ</dt>
+          <dd className="font-medium tabular-nums text-indigo-300">
+            {APP_VERSION} ({APP_VERSION_DATE})
+          </dd>
         </div>
       </dl>
       <div className="grid grid-cols-2 gap-2">

@@ -1,8 +1,8 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 16:15 (v1.5.2 Added CakeBank Standard & Accumulate Scraper — All 4 Banks Daily Automated)
+> **Last Synced**: 2026-11-18 16:30 (v1.5.2 UI Version Badge, Release Notes Modal & `DataModal` Version Sync)
 > **Current Architecture Version**: v1.5.2 (Hash-Routed SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
-> **Deployment Status**: Ready to push v1.5.2 to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`) & auto-deploy on Vercel.
+> **Deployment Status**: Pushed v1.5.2 & synced with UI version badge/modal (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---
 

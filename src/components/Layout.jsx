@@ -1,8 +1,83 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, Home, LayoutGrid, ShieldCheck, TrendingUp } from 'lucide-react';
-import { TOOLS } from '../tools.js';
-import { href } from '../state.jsx';
-import { Button, Modal, cx } from './ui.jsx';
+import { CheckCircle2, ChevronDown, Home, Info, LayoutGrid, ShieldCheck, TrendingUp } from 'lucide-react';
+import { APP_VERSION, APP_VERSION_DATE, APP_VERSION_LABEL, TOOLS, VERSION_HIGHLIGHTS } from '../tools.js';
+import { href, useRates } from '../state.jsx';
+import { Badge, Button, Modal, cx } from './ui.jsx';
+
+export function VersionBadge({ compact = false }) {
+  const [open, setOpen] = useState(false);
+  const { updatedAt, source } = useRates();
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title={`Thông tin phiên bản ${APP_VERSION} (${APP_VERSION_LABEL})`}
+        aria-label={`Xem thông tin phiên bản ${APP_VERSION}`}
+        className="inline-flex shrink-0 items-center rounded-full transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      >
+        <Badge tone="brand" className="cursor-pointer gap-1 px-2 py-0.5 text-[11px] font-medium">
+          <Info className="size-3" />
+          <span>{compact ? APP_VERSION : `Phiên bản ${APP_VERSION}`}</span>
+        </Badge>
+      </button>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Thông tin phiên bản VnSavingPro ${APP_VERSION}`}
+        className="max-w-lg"
+      >
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3.5 py-2.5 ring-1 ring-inset ring-white/[0.06]">
+            <div>
+              <p className="text-xs font-medium text-white">{APP_VERSION_LABEL}</p>
+              <p className="text-[11px] text-zinc-400">
+                Phát hành: {APP_VERSION_DATE} · Lãi suất cập nhật: {updatedAt}
+                {source === 'live-api' ? ' (Live API)' : ''}
+              </p>
+            </div>
+            <Badge tone="success">Đang hoạt động</Badge>
+          </div>
+
+          <div className="max-h-[52vh] space-y-3 overflow-y-auto pr-1">
+            {VERSION_HIGHLIGHTS.map((release) => (
+              <div
+                key={release.version}
+                className="rounded-xl bg-white/[0.02] p-3.5 ring-1 ring-inset ring-white/[0.06]"
+              >
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge tone={release.version === APP_VERSION ? 'brand' : 'neutral'}>
+                      {release.version}
+                    </Badge>
+                    <span className="text-xs font-semibold text-white">{release.title}</span>
+                  </div>
+                  <span className="shrink-0 text-[11px] text-zinc-500">{release.date}</span>
+                </div>
+                <ul className="space-y-1 text-xs text-zinc-300">
+                  {release.items.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button size="sm" onClick={() => setOpen(false)}>
+              Đóng
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
+  );
+}
 
 export function Logo({ className }) {
   return (
@@ -66,7 +141,10 @@ export function TopNav({ route, onOpenData }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/75 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
-        <Logo />
+        <div className="flex items-center gap-2">
+          <Logo />
+          <VersionBadge compact />
+        </div>
         <nav className="hidden items-center gap-0.5 md:flex">
           {primary.map((t) => (
             <a
@@ -183,9 +261,12 @@ export function Footer() {
       </div>
       <div className="border-t border-white/[0.04]">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-5 text-xs text-zinc-600 sm:px-6">
-          <span>© 2026 VnSavingPro</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span>© 2026 VnSavingPro</span>
+            <VersionBadge />
+          </div>
           <span className="flex items-center gap-1.5">
-            <ShieldCheck className="size-3.5" /> Mọi tính toán chạy trên thiết bị của bạn — không gửi dữ liệu lên server.
+            <ShieldCheck className="size-3.5" /> Tính toán bảo mật trên API — không lưu dữ liệu cá nhân lên server.
           </span>
         </div>
       </div>
