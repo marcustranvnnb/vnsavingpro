@@ -107,96 +107,204 @@ export function calculateDepositComparison({
   };
 }
 
+function formatDurationVi(monthsNeeded, isAlreadyReached) {
+  if (isAlreadyReached) return 'Đã đạt mục tiêu!';
+  if (monthsNeeded >= 720) return '> 60 năm (Cần tăng tiền gửi)';
+  const fullYears = Math.floor(monthsNeeded / 12);
+  const remainingMonths = monthsNeeded % 12;
+  if (fullYears === 0) return `${remainingMonths} tháng`;
+  if (remainingMonths === 0) return `${fullYears} năm`;
+  return `${fullYears} năm ${remainingMonths} tháng`;
+}
+
 /**
- * Passive Monthly Income Target Solver
+ * Passive Income & Target Savings Roadmap Solver
+ * Supports 2 goal types (`PASSIVE_INCOME` | `TARGET_AMOUNT`),
+ * bidirectional solving (`TIME` | `SAVING`), plus step-up deposits,
+ * annual bonus lump sums, and inflation adjustment.
  */
 export function calculatePassiveIncomeRoadmap({
+  goalType = 'PASSIVE_INCOME',
   targetMonthlyInterest = 10000000,
+  targetAmount = 500000000,
+  solveMode = 'TIME',
+  targetYears = 5,
   currentSalary = 35000000,
   monthlySavingsAmount = 5000000,
   initialCapital = 0,
   annualInterestRate = 6.0,
-  calculationMode = "NOMINAL_MONTHS"
+  calculationMode = 'NOMINAL_MONTHS',
+  annualStepUpPct = 0,
+  annualBonusAmount = 0,
+  inflationRatePct = 0,
 }) {
-  const targetInterest = Math.max(100000, Number(targetMonthlyInterest) || 10000000);
+  const normalizedGoal = goalType === 'TARGET_AMOUNT' ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME';
+  const normalizedSolve = solveMode === 'SAVING' ? 'SAVING' : 'TIME';
   const salary = Math.max(0, Number(currentSalary) || 35000000);
-  const monthlyDeposit = Math.max(0, Number(monthlySavingsAmount) || 0);
+  const inputMonthlyDeposit = Math.max(0, Number(monthlySavingsAmount) || 0);
   const p0 = Math.max(0, Number(initialCapital) || 0);
   const rate = Math.max(0.1, Number(annualInterestRate) || 6.0);
+  const stepUp = Math.min(50, Math.max(0, Number(annualStepUpPct) || 0));
+  const bonus = Math.max(0, Number(annualBonusAmount) || 0);
+  const inflation = Math.min(20, Math.max(0, Number(inflationRatePct) || 0));
 
-  const monthlyFactor = calculationMode === "ACTUAL_DAYS" ? 30 / 365 : 1 / 12;
-  const requiredPrincipal = Math.round(targetInterest / ((rate / 100) * monthlyFactor));
+  const monthlyFactor = calculationMode === 'ACTUAL_DAYS' ? 30 / 365 : 1 / 12;
   const i = (rate / 100) * monthlyFactor;
+
+  let nominalRequiredPrincipal;
+  let baseMonthlyInterest;
+  if (normalizedGoal === 'TARGET_AMOUNT') {
+    nominalRequiredPrincipal = Math.max(1_000_000, Math.round(Number(targetAmount) || 500_000_000));
+    baseMonthlyInterest = Math.round(nominalRequiredPrincipal * i);
+  } else {
+    baseMonthlyInterest = Math.max(100_000, Math.round(Number(targetMonthlyInterest) || 10_000_000));
+    nominalRequiredPrincipal = Math.round(baseMonthlyInterest / i);
+  }
 
   let monthsNeeded = 0;
   let currentBalance = p0;
+  let depositedSoFar = p0;
+  let requiredPrincipal = nominalRequiredPrincipal;
+  let requiredMonthlyDeposit = inputMonthlyDeposit;
+  let isAlreadyReached = p0 >= nominalRequiredPrincipal;
   const monthByMonthLog = [];
-  const isAlreadyReached = p0 >= requiredPrincipal;
 
-  if (isAlreadyReached) {
-    monthsNeeded = 0;
-    monthByMonthLog.push({
-      month: 0,
-      year: 0,
-      principalDeposited: p0,
-      interestEarnedTotal: 0,
-      totalBalance: p0,
-      monthlyPassiveIncomeGenerated: Math.round(p0 * i)
-    });
-  } else if (monthlyDeposit <= 0 && p0 < requiredPrincipal) {
-    monthsNeeded = 999;
-  } else {
-    monthByMonthLog.push({
-      month: 0,
-      year: 0,
-      principalDeposited: p0,
-      interestEarnedTotal: 0,
-      totalBalance: p0,
-      monthlyPassiveIncomeGenerated: Math.round(p0 * i)
-    });
+  if (normalizedSolve === 'SAVING') {
+    const safeYears = Math.min(50, Math.max(1, Number(targetYears) || 5));
+    const targetMonths = Math.min(600, Math.max(12, Math.round(safeYears * 12)));
+    const inflationMultiplier = Math.pow(1 + inflation / 100, targetMonths / 12);
+    requiredPrincipal = Math.round(nominalRequiredPrincipal * inflationMultiplier);
+    isAlreadyReached = p0 >= requiredPrincipal;
 
-    while (currentBalance < requiredPrincipal && monthsNeeded < 720) {
-      monthsNeeded++;
-      const interestThisMonth = currentBalance * i;
-      currentBalance = currentBalance + interestThisMonth + monthlyDeposit;
-
-      const depositedSoFar = p0 + monthlyDeposit * monthsNeeded;
+    if (isAlreadyReached) {
+      requiredMonthlyDeposit = 0;
+      monthsNeeded = 0;
       monthByMonthLog.push({
-        month: monthsNeeded,
-        year: Number((monthsNeeded / 12).toFixed(1)),
-        principalDeposited: Math.round(depositedSoFar),
-        interestEarnedTotal: Math.round(Math.max(0, currentBalance - depositedSoFar)),
-        totalBalance: Math.round(currentBalance),
-        monthlyPassiveIncomeGenerated: Math.round(currentBalance * i)
+        month: 0,
+        year: 0,
+        principalDeposited: p0,
+        interestEarnedTotal: 0,
+        totalBalance: p0,
+        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
       });
+    } else {
+      let baseBalance = p0;
+      let unitFactor = 0;
+      for (let m = 1; m <= targetMonths; m++) {
+        const yearIdx = Math.floor((m - 1) / 12);
+        const bonusThisMonth = m % 12 === 0 ? bonus : 0;
+        baseBalance = baseBalance * (1 + i) + bonusThisMonth;
+        unitFactor = unitFactor * (1 + i) + Math.pow(1 + stepUp / 100, yearIdx);
+      }
+
+      requiredMonthlyDeposit =
+        baseBalance >= requiredPrincipal ? 0 : Math.ceil((requiredPrincipal - baseBalance) / Math.max(1e-9, unitFactor));
+
+      monthByMonthLog.push({
+        month: 0,
+        year: 0,
+        principalDeposited: p0,
+        interestEarnedTotal: 0,
+        totalBalance: p0,
+        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
+      });
+
+      for (let m = 1; m <= targetMonths; m++) {
+        const yearIdx = Math.floor((m - 1) / 12);
+        const depositThisMonth = Math.round(requiredMonthlyDeposit * Math.pow(1 + stepUp / 100, yearIdx));
+        const bonusThisMonth = m % 12 === 0 ? bonus : 0;
+        currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
+        depositedSoFar += depositThisMonth + bonusThisMonth;
+
+        monthByMonthLog.push({
+          month: m,
+          year: Number((m / 12).toFixed(1)),
+          principalDeposited: Math.round(depositedSoFar),
+          interestEarnedTotal: Math.round(Math.max(0, currentBalance - depositedSoFar)),
+          totalBalance: Math.round(currentBalance),
+          monthlyPassiveIncomeGenerated: Math.round(currentBalance * i),
+        });
+      }
+      monthsNeeded = targetMonths;
+    }
+  } else {
+    requiredMonthlyDeposit = inputMonthlyDeposit;
+
+    if (isAlreadyReached) {
+      monthsNeeded = 0;
+      monthByMonthLog.push({
+        month: 0,
+        year: 0,
+        principalDeposited: p0,
+        interestEarnedTotal: 0,
+        totalBalance: p0,
+        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
+      });
+    } else if (inputMonthlyDeposit <= 0 && bonus <= 0 && p0 <= 0) {
+      monthsNeeded = 999;
+    } else {
+      monthByMonthLog.push({
+        month: 0,
+        year: 0,
+        principalDeposited: p0,
+        interestEarnedTotal: 0,
+        totalBalance: p0,
+        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
+      });
+
+      while (monthsNeeded < 720) {
+        monthsNeeded++;
+        const yearIdx = Math.floor((monthsNeeded - 1) / 12);
+        const depositThisMonth = Math.round(inputMonthlyDeposit * Math.pow(1 + stepUp / 100, yearIdx));
+        const bonusThisMonth = monthsNeeded % 12 === 0 ? bonus : 0;
+        const targetAtMonth = Math.round(nominalRequiredPrincipal * Math.pow(1 + inflation / 100, monthsNeeded / 12));
+
+        currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
+        depositedSoFar += depositThisMonth + bonusThisMonth;
+        requiredPrincipal = targetAtMonth;
+
+        monthByMonthLog.push({
+          month: monthsNeeded,
+          year: Number((monthsNeeded / 12).toFixed(1)),
+          principalDeposited: Math.round(depositedSoFar),
+          interestEarnedTotal: Math.round(Math.max(0, currentBalance - depositedSoFar)),
+          totalBalance: Math.round(currentBalance),
+          monthlyPassiveIncomeGenerated: Math.round(currentBalance * i),
+        });
+
+        if (currentBalance >= targetAtMonth) {
+          break;
+        }
+      }
     }
   }
 
   const yearsNeeded = Number((monthsNeeded / 12).toFixed(1));
   const fullYears = Math.floor(monthsNeeded / 12);
   const remainingMonths = monthsNeeded % 12;
-  const timeText = isAlreadyReached
-    ? "Đã đạt mục tiêu!"
-    : monthsNeeded >= 720
-      ? "> 60 năm (Cần tăng tiền gửi)"
-      : fullYears === 0
-        ? `${remainingMonths} tháng`
-        : remainingMonths === 0
-          ? `${fullYears} năm`
-          : `${fullYears} năm ${remainingMonths} tháng`;
+  const timeText = formatDurationVi(monthsNeeded, isAlreadyReached);
 
-  const totalDeposited = Math.round(p0 + (monthsNeeded >= 720 ? 0 : monthlyDeposit * monthsNeeded));
+  const totalDeposited = Math.round(depositedSoFar);
   const finalBalance = Math.round(currentBalance);
   const totalCompoundInterest = Math.round(Math.max(0, finalBalance - totalDeposited));
   const compoundSharePct = finalBalance > 0 ? Number(((totalCompoundInterest / finalBalance) * 100).toFixed(1)) : 0;
-  const savingsRatePercent = salary > 0 ? Number(((monthlyDeposit / salary) * 100).toFixed(1)) : 0;
+  const savingsRatePercent = salary > 0 ? Number(((requiredMonthlyDeposit / salary) * 100).toFixed(1)) : 0;
 
   return {
-    targetMonthlyInterest: targetInterest,
-    annualInterestRate: rate,
+    goalType: normalizedGoal,
+    solveMode: normalizedSolve,
+    targetYears: Number((monthsNeeded / 12).toFixed(1)),
+    targetMonthlyInterest: Math.round(requiredPrincipal * i),
+    baseMonthlyInterest,
+    nominalRequiredPrincipal,
     requiredPrincipal,
+    annualInterestRate: rate,
     initialCapital: p0,
-    monthlyDeposit,
+    monthlyDeposit: requiredMonthlyDeposit,
+    requiredMonthlyDeposit,
+    annualStepUpPct: stepUp,
+    annualBonusAmount: bonus,
+    inflationRatePct: inflation,
     monthsNeeded,
     yearsNeeded,
     fullYears,
@@ -207,9 +315,10 @@ export function calculatePassiveIncomeRoadmap({
     totalCompoundInterest,
     compoundSharePct,
     savingsRatePercent,
+    finalMonthlyPassiveIncome: Math.round(finalBalance * i),
     isAlreadyReached,
     monthByMonthLog,
-    isAchievableShortTerm: yearsNeeded <= 10
+    isAchievableShortTerm: yearsNeeded <= 10,
   };
 }
 

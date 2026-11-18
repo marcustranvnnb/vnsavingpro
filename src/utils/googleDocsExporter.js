@@ -9,7 +9,12 @@ function esc(str) {
 }
 
 export function buildPlanReportHTML({
+  inputMode = 'basic',
+  goalType = 'PASSIVE_INCOME',
   target,
+  targetAmount,
+  solveMode = 'TIME',
+  targetYears,
   capital,
   saving,
   salary,
@@ -17,10 +22,15 @@ export function buildPlanReportHTML({
   tenureLabel,
   rate,
   calcMode,
+  annualStepUpPct = 0,
+  annualBonusAmount = 0,
+  inflationRatePct = 0,
   roadmap,
   feasibility,
   scenarios = [],
 }) {
+  const isTargetAmount = goalType === 'TARGET_AMOUNT';
+  const isSavingSolver = solveMode === 'SAVING';
   const dateStr = new Date().toLocaleDateString('vi-VN');
   const yearlyRows = (roadmap?.monthByMonthLog || []).filter(
     (r) => r.month === 0 || r.month % 12 === 0 || r.totalBalance >= (roadmap?.requiredPrincipal || 0)
@@ -44,50 +54,86 @@ export function buildPlanReportHTML({
   const strengthsHtml = (feasibility?.strengths || []).map((s) => `<li>✅ ${esc(s)}</li>`).join('');
   const warningsHtml = (feasibility?.warnings || []).map((w) => `<li>⚠️ ${esc(w)}</li>`).join('');
   const scenariosHtml = scenarios
-    .map((s) => `<li><strong>${esc(s.title)}:</strong> ${esc(s.r?.timeText || '—')}</li>`)
+    .map((s) =>
+      isSavingSolver
+        ? `<li><strong>${esc(s.title)}:</strong> ${esc(vnd(s.r?.requiredMonthlyDeposit || 0))}/tháng</li>`
+        : `<li><strong>${esc(s.title)}:</strong> ${esc(s.r?.timeText || '—')}</li>`
+    )
     .join('');
+
+  const proExtrasRows =
+    inputMode === 'advanced' && (annualStepUpPct > 0 || annualBonusAmount > 0 || inflationRatePct > 0)
+      ? `
+    <tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Thông số Chuyên sâu</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">Tăng gửi ${esc(pct(annualStepUpPct, 0))}/năm · Thưởng ${esc(vnd(annualBonusAmount))}/năm · Lạm phát ${esc(pct(inflationRatePct, 1))}/năm</td>
+    </tr>`
+      : '';
 
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<title>Kế Hoạch Thu Nhập Thụ Động — VnSavingPro</title>
+<title>Kế Hoạch Tích Luỹ Tiết Kiệm — VnSavingPro</title>
 </head>
 <body style="font-family:Arial,Helvetica,sans-serif;color:#18181b;line-height:1.5;max-width:780px;margin:0 auto;padding:20px;">
-  <h1 style="color:#4338ca;margin-bottom:4px;">KẾ HOẠCH THU NHẬP THỤ ĐỘNG — VNSAVINGPRO</h1>
-  <p style="color:#71717a;font-size:13px;margin-top:0;">Ngày lập báo cáo: ${esc(dateStr)} · Cơ sở tính: ${
-    calcMode === 'ACTUAL_DAYS' ? 'Chuẩn Thông tư 14 (30/365 ngày)' : 'Tháng đều / 12'
-  }</p>
+  <h1 style="color:#4338ca;margin-bottom:4px;">${
+    isTargetAmount ? 'KẾ HOẠCH TÍCH LUỸ SỐ TIỀN MỤC TIÊU' : 'KẾ HOẠCH THU NHẬP THỤ ĐỘNG'
+  } — VNSAVINGPRO</h1>
+  <p style="color:#71717a;font-size:13px;margin-top:0;">Ngày lập báo cáo: ${esc(dateStr)} · Phiên bản: ${
+    inputMode === 'advanced' ? 'Chuyên sâu (Thực tế)' : 'Cơ bản (Nhanh)'
+  } · Cơ sở tính: ${calcMode === 'ACTUAL_DAYS' ? 'Chuẩn Thông tư 14 (30/365 ngày)' : 'Tháng đều / 12'}</p>
 
-  <h2 style="color:#18181b;border-bottom:2px solid #e4e4e7;padding-bottom:4px;">1. Thông số kế hoạch</h2>
+  <h2 style="color:#18181b;border-bottom:2px solid #e4e4e7;padding-bottom:4px;">1. Thông số kế hoạch (${
+    isSavingSolver ? 'Tính tiền gửi / tháng theo thời hạn' : 'Tính thời gian về đích'
+  })</h2>
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:14px;">
     <tr>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Mục tiêu thu nhập thụ động / tháng</strong></td>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(vnd(target))}</td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>${
+        isTargetAmount ? 'Tổng số tiền tiết kiệm mục tiêu' : 'Mục tiêu thu nhập thụ động / tháng'
+      }</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(
+        vnd(isTargetAmount ? targetAmount : target)
+      )}</td>
     </tr>
     <tr>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Vốn tiết kiệm ban đầu</strong></td>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(vnd(capital))}</td>
     </tr>
     <tr>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Gửi thêm mỗi tháng</strong></td>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(vnd(saving))} (${esc(pct(roadmap?.savingsRatePercent || 0, 1))} lương ${esc(compact(salary))})</td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>${
+        isSavingSolver ? 'Thời hạn mục tiêu' : 'Gửi thêm mỗi tháng'
+      }</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${
+        isSavingSolver
+          ? `${esc(targetYears)} năm`
+          : `${esc(vnd(saving))} (${esc(pct(roadmap?.savingsRatePercent || 0, 1))} lương ${esc(compact(salary))})`
+      }</td>
     </tr>
     <tr>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Ngân hàng &amp; lãi suất áp dụng</strong></td>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(bankName)} (${esc(tenureLabel)}) — ${esc(pct(rate))}/năm</td>
     </tr>
+    ${proExtrasRows}
   </table>
 
   <h2 style="color:#18181b;border-bottom:2px solid #e4e4e7;padding-bottom:4px;">2. Kết quả &amp; Đánh giá khả thi</h2>
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:14px;">
     <tr>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>Thời gian về đích</strong></td>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;font-weight:bold;color:#4338ca;">${esc(roadmap?.timeText || '—')}</td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>${
+        isSavingSolver ? 'Số tiền cần gửi mỗi tháng' : 'Thời gian về đích'
+      }</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;font-weight:bold;color:#4338ca;">${esc(
+        isSavingSolver ? `${vnd(roadmap?.requiredMonthlyDeposit || 0)} / tháng` : roadmap?.timeText || '—'
+      )}</td>
     </tr>
     <tr>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>Tổng vốn mục tiêu cần tích luỹ</strong></td>
-      <td style="padding:8px 10px;border:1px solid #d4d4d8;font-weight:bold;">${esc(vnd(roadmap?.requiredPrincipal || 0))}</td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>${
+        isTargetAmount ? 'Mục tiêu cuối kỳ / Lãi thụ động' : 'Tổng vốn mục tiêu cần tích luỹ'
+      }</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;font-weight:bold;">${esc(
+        vnd(roadmap?.requiredPrincipal || 0)
+      )}${isTargetAmount ? ` (${esc(vnd(roadmap?.finalMonthlyPassiveIncome || 0))}/tháng)` : ''}</td>
     </tr>
     <tr>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>Tổng gốc bạn tự gửi / Lãi kép đóng góp</strong></td>
@@ -100,7 +146,7 @@ export function buildPlanReportHTML({
   </table>
 
   ${strengthsHtml || warningsHtml ? `<h3>Nhận xét kế hoạch</h3><ul>${strengthsHtml}${warningsHtml}</ul>` : ''}
-  ${scenariosHtml ? `<h3>Kịch bản rút ngắn thời gian</h3><ul>${scenariosHtml}</ul>` : ''}
+  ${scenariosHtml ? `<h3>${isSavingSolver ? 'Kịch bản giảm số tiền cần gửi/tháng' : 'Kịch bản rút ngắn thời gian'}</h3><ul>${scenariosHtml}</ul>` : ''}
 
   <h2 style="color:#18181b;border-bottom:2px solid #e4e4e7;padding-bottom:4px;">3. Lộ trình tích luỹ theo năm</h2>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -120,23 +166,45 @@ export function buildPlanReportHTML({
 }
 
 export function buildPlanReportText(data) {
-  const { target, capital, saving, bankName, tenureLabel, rate, roadmap, feasibility } = data;
+  const {
+    inputMode = 'basic',
+    goalType = 'PASSIVE_INCOME',
+    target,
+    targetAmount,
+    solveMode = 'TIME',
+    targetYears,
+    capital,
+    saving,
+    bankName,
+    tenureLabel,
+    rate,
+    roadmap,
+    feasibility,
+  } = data;
+  const isTargetAmount = goalType === 'TARGET_AMOUNT';
+  const isSavingSolver = solveMode === 'SAVING';
   const yearlyRows = (roadmap?.monthByMonthLog || []).filter(
     (r) => r.month === 0 || r.month % 12 === 0 || r.totalBalance >= (roadmap?.requiredPrincipal || 0)
   );
   const lines = [
-    'KẾ HOẠCH THU NHẬP THỤ ĐỘNG — VNSAVINGPRO',
-    `Ngày lập: ${new Date().toLocaleDateString('vi-VN')}`,
+    `${isTargetAmount ? 'KẾ HOẠCH TÍCH LUỸ SỐ TIỀN MỤC TIÊU' : 'KẾ HOẠCH THU NHẬP THỤ ĐỘNG'} — VNSAVINGPRO`,
+    `Ngày lập: ${new Date().toLocaleDateString('vi-VN')} · Phiên bản: ${
+      inputMode === 'advanced' ? 'Chuyên sâu' : 'Cơ bản'
+    }`,
     '',
     '1. THÔNG SỐ ĐẦU VÀO',
-    `- Thu nhập thụ động mong muốn: ${vnd(target)}/tháng`,
+    isTargetAmount
+      ? `- Số tiền tiết kiệm mục tiêu: ${vnd(targetAmount)}`
+      : `- Thu nhập thụ động mong muốn: ${vnd(target)}/tháng`,
     `- Vốn ban đầu: ${vnd(capital)}`,
-    `- Gửi thêm mỗi tháng: ${vnd(saving)}`,
+    isSavingSolver ? `- Thời hạn mong muốn: ${targetYears} năm` : `- Gửi thêm mỗi tháng: ${vnd(saving)}`,
     `- Ngân hàng & lãi suất: ${bankName} (${tenureLabel}) — ${pct(rate)}/năm`,
     '',
     '2. KẾT QUẢ & ĐÁNH GIÁ',
-    `- Thời gian về đích: ${roadmap?.timeText || '—'}`,
-    `- Tổng vốn cần tích luỹ: ${vnd(roadmap?.requiredPrincipal || 0)}`,
+    isSavingSolver
+      ? `- Số tiền cần gửi mỗi tháng: ${vnd(roadmap?.requiredMonthlyDeposit || 0)}/tháng`
+      : `- Thời gian về đích: ${roadmap?.timeText || '—'}`,
+    `- Tổng vốn mục tiêu: ${vnd(roadmap?.requiredPrincipal || 0)}`,
     `- Lãi kép đóng góp: +${vnd(roadmap?.totalCompoundInterest || 0)} (${pct(roadmap?.compoundSharePct || 0, 1)})`,
     `- Độ khả thi: ${feasibility?.score || 0}/100 (${feasibility?.ratingLabel || ''})`,
     '',
@@ -175,7 +243,7 @@ export function downloadGoogleDocsFile(data) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `VnSavingPro_GoogleDocs_${data.target}.doc`;
+  a.download = `VnSavingPro_GoogleDocs_${data.goalType === 'TARGET_AMOUNT' ? data.targetAmount : data.target}.doc`;
   a.click();
   URL.revokeObjectURL(url);
 }

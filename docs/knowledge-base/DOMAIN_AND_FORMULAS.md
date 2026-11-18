@@ -14,17 +14,18 @@ Supports two calculation modes and multiple payout methods:
 3. **Monthly Compounding** (computed directly in `src/pages/Calculator.jsx`):
    $$\text{Total} = P \times \left(1 + \frac{r / 100}{12}\right)^{\text{months}}$$
 
-### B. Passive Income Roadmap Solver (`calculatePassiveIncomeRoadmap`)
-Solves for the required nest egg principal ($P_{\text{target}}$) and the exact number of months needed to reach it given initial capital ($P_0$), monthly savings ($M$), annual interest rate ($r\%$), and `calculationMode` (`NOMINAL_MONTHS` vs `ACTUAL_DAYS`):
-1. **Monthly Factor**:
+### B. Bidirectional Savings & Passive Income Roadmap Solver (`calculatePassiveIncomeRoadmap`)
+Supports two independent goal modes (`goalType`), two solving directions (`solveMode`), and optional Chuyên sâu (Pro) financial levers:
+1. **Goal Modes (`goalType`)**:
+   - `PASSIVE_INCOME`: User targets desired monthly passive interest; $P_{\text{nominal}} = \text{round}\left(\frac{\text{targetMonthlyInterest}}{(r / 100) \times \text{monthlyFactor}}\right)$.
+   - `TARGET_AMOUNT`: User targets a direct savings milestone ($P_{\text{nominal}} = \text{targetAmount}$), and monthly interest at maturity is computed as $P_{\text{target}} \times i$.
+2. **Bidirectional Solving (`solveMode`)**:
+   - `TIME`: Given `monthlySavingsAmount` ($M_0$), simulates monthly compounding with optional annual deposit step-up ($M_m = M_0 (1 + \text{stepUp})^{\lfloor (m-1)/12 \rfloor}$), year-end bonus deposits ($B$ every 12 months), and inflation-indexed targets ($P_{\text{nominal}} (1 + \pi)^{m/12}$) until `currentBalance >= targetAtMonth` (capped at `720` months).
+   - `SAVING`: Given `targetYears` ($T = 12 \times \text{targetYears}$), computes inflation-adjusted target $P_{\text{target}} = P_{\text{nominal}}(1 + \pi)^{\text{years}}$ and solves linearly for the required initial monthly deposit:
+     $$M_0 = \left\lceil \frac{P_{\text{target}} - \text{baseBalance}(p_0, B)}{\text{unitFactor}(1, \text{stepUp}, i, T)} \right\rceil$$
+3. **Monthly Factor**:
    - `NOMINAL_MONTHS`: $\text{monthlyFactor} = \frac{1}{12}$
    - `ACTUAL_DAYS` (Circular 14 conservative 30-day month): $\text{monthlyFactor} = \frac{30}{365}$
-2. **Required Principal**:
-   $$P_{\text{target}} = \text{round}\left(\frac{\text{targetMonthlyInterest}}{(r / 100) \times \text{monthlyFactor}}\right)$$
-3. **Monthly Compounding Loop**:
-   - Monthly rate $i = (r / 100) \times \text{monthlyFactor}$.
-   - Each month $m$: $\text{balance}_m = \text{balance}_{m-1} \times (1 + i) + M$.
-   - Logs **every single month** up to `monthsNeeded` (capped at `720` months / 60 years).
 
 ### F. Partial vs. Full Early Withdrawal Breakeven (`calculateEarlyWithdrawalComparison`)
 Compares holding to maturity vs. breaking the entire deposit at `daysHeld` (receiving `nonTermRate = 0.5%/yr` on 100% of principal) vs. partial early withdrawal / split deposits (only `withdrawAmount` gets `nonTermRate` for `daysHeld`, while `remainingPrincipal` keeps `ratePercent` until `totalDays`).

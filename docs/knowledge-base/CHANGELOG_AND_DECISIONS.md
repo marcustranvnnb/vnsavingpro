@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Planner Option 3: Dual Goal Modes, Bidirectional Solver & `Cơ bản` | `Chuyên sâu` Versions
+
+- **Request**: Implement Option 3 on `/plan` with 2 distinct goal targets and 2 input versions (`Cơ bản` vs `Chuyên sâu`) to calculate both timeline and monthly saving plan.
+- **Changes Implemented**:
+  - Updated [api/_lib/calculator.js](../../api/_lib/calculator.js): Extended `calculatePassiveIncomeRoadmap` (while keeping `quick_estimate` backward compatibility) to support `goalType` (`PASSIVE_INCOME` vs `TARGET_AMOUNT`), bidirectional `solveMode` (`TIME` vs `SAVING`), plus Pro levers (`annualStepUpPct`, `annualBonusAmount`, `inflationRatePct`).
+  - Updated [api/calculate.js](../../api/calculate.js): Extended `planner_bundle` to generate mode-aware `scenarios`, sorted `bankRuns` (`monthsNeeded` or `requiredMonthlyDeposit`), and inflation-adjusted `evaluatePlanFeasibility` scoring.
+  - Updated [src/pages/Planner.jsx](../../src/pages/Planner.jsx): Redesigned the input panel into `Cơ bản (Nhanh)` vs `Chuyên sâu (Thực tế)`, added independent goal switcher (`Lãi thụ động / tháng` vs `Số tiền mục tiêu`), bidirectional solver toggle (`Tính thời gian đạt` vs `Tính tiền gửi / tháng`), Pro controls (annual step-up %, annual bonus, inflation compensation, income & TT14), and updated stats/charts/bank ranking/what-if scenarios/mobile summary bar.
+  - Updated [src/utils/googleDocsExporter.js](../../src/utils/googleDocsExporter.js) and [DOMAIN_AND_FORMULAS.md](./DOMAIN_AND_FORMULAS.md).
+
+---
+
 ## [2026-11-18] — Add Google Tag Manager (`GTM-MZVGJMWL`) & SPA `page_view` Tracking
 
 - **Request**: Integrate Google Tag Manager snippet (`GTM-MZVGJMWL`) into VnSavingPro.

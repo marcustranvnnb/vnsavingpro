@@ -65,46 +65,101 @@ export default async function handler(req, res) {
 
     case 'planner_bundle': {
       const baseArgs = {
+        goalType: payload.goalType || 'PASSIVE_INCOME',
         targetMonthlyInterest: payload.targetMonthlyInterest,
+        targetAmount: payload.targetAmount,
+        solveMode: payload.solveMode || 'TIME',
+        targetYears: payload.targetYears,
         currentSalary: payload.currentSalary,
         monthlySavingsAmount: payload.monthlySavingsAmount,
         initialCapital: payload.initialCapital,
         annualInterestRate: payload.annualInterestRate,
         calculationMode: payload.calculationMode || 'NOMINAL_MONTHS',
+        annualStepUpPct: payload.annualStepUpPct ?? 0,
+        annualBonusAmount: payload.annualBonusAmount ?? 0,
+        inflationRatePct: payload.inflationRatePct ?? 0,
       };
 
       const roadmap = calculatePassiveIncomeRoadmap(baseArgs);
 
       const feasibility = evaluatePlanFeasibility({
         monthlySalary: baseArgs.currentSalary,
-        monthlySavings: baseArgs.monthlySavingsAmount,
+        monthlySavings: roadmap.requiredMonthlyDeposit,
         yearsToGoal: roadmap.yearsNeeded,
-        realYieldRate: Math.max(0, Number(baseArgs.annualInterestRate || 0) - 3.5),
+        realYieldRate: Math.max(0, Number(baseArgs.annualInterestRate || 0) - (Number(baseArgs.inflationRatePct) || 3.5)),
       });
 
       const saving = Number(baseArgs.monthlySavingsAmount) || 0;
       const capital = Number(baseArgs.initialCapital) || 0;
       const rate = Number(baseArgs.annualInterestRate) || 6;
+      const years = Math.min(50, Math.max(1, Number(baseArgs.targetYears) || 5));
 
-      const s1 = calculatePassiveIncomeRoadmap({ ...baseArgs, monthlySavingsAmount: saving + 1_000_000 });
-      const s2 = calculatePassiveIncomeRoadmap({ ...baseArgs, monthlySavingsAmount: saving + 3_000_000 });
-      const scenarios = [
-        { title: 'Tiết kiệm thêm 1 triệu/tháng', r: { monthsNeeded: s1.monthsNeeded, timeText: s1.timeText } },
-        { title: 'Tiết kiệm thêm 3 triệu/tháng', r: { monthsNeeded: s2.monthsNeeded, timeText: s2.timeText } },
-      ];
+      let scenarios;
+      if (roadmap.solveMode === 'SAVING') {
+        const s1 = calculatePassiveIncomeRoadmap({ ...baseArgs, targetYears: Math.min(50, years + 2) });
+        const s2 = calculatePassiveIncomeRoadmap({ ...baseArgs, initialCapital: capital + 50_000_000 });
+        const s3 =
+          payload.topForTenure && payload.topForTenure.rate > rate
+            ? calculatePassiveIncomeRoadmap({ ...baseArgs, annualInterestRate: payload.topForTenure.rate })
+            : calculatePassiveIncomeRoadmap({
+                ...baseArgs,
+                annualStepUpPct: Math.max(10, Number(baseArgs.annualStepUpPct || 0) + 5),
+              });
+        const s3Title =
+          payload.topForTenure && payload.topForTenure.rate > rate
+            ? `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`
+            : `Tăng mức gửi +${Math.max(10, Number(baseArgs.annualStepUpPct || 0) + 5)}%/năm`;
 
-      if (payload.topForTenure && payload.topForTenure.rate > rate) {
-        const s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, annualInterestRate: payload.topForTenure.rate });
-        scenarios.push({
-          title: `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`,
-          r: { monthsNeeded: s3.monthsNeeded, timeText: s3.timeText },
-        });
+        scenarios = [
+          {
+            title: `Kéo dài thời hạn lên ${Math.min(50, years + 2)} năm`,
+            r: {
+              monthsNeeded: s1.monthsNeeded,
+              timeText: s1.timeText,
+              requiredMonthlyDeposit: s1.requiredMonthlyDeposit,
+              savedMonthly: Math.max(0, roadmap.requiredMonthlyDeposit - s1.requiredMonthlyDeposit),
+            },
+          },
+          {
+            title: 'Thêm 50 triệu vốn ban đầu',
+            r: {
+              monthsNeeded: s2.monthsNeeded,
+              timeText: s2.timeText,
+              requiredMonthlyDeposit: s2.requiredMonthlyDeposit,
+              savedMonthly: Math.max(0, roadmap.requiredMonthlyDeposit - s2.requiredMonthlyDeposit),
+            },
+          },
+          {
+            title: s3Title,
+            r: {
+              monthsNeeded: s3.monthsNeeded,
+              timeText: s3.timeText,
+              requiredMonthlyDeposit: s3.requiredMonthlyDeposit,
+              savedMonthly: Math.max(0, roadmap.requiredMonthlyDeposit - s3.requiredMonthlyDeposit),
+            },
+          },
+        ];
       } else {
-        const s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, initialCapital: capital + 50_000_000 });
-        scenarios.push({
-          title: 'Thêm 50 triệu vốn ban đầu',
-          r: { monthsNeeded: s3.monthsNeeded, timeText: s3.timeText },
-        });
+        const s1 = calculatePassiveIncomeRoadmap({ ...baseArgs, monthlySavingsAmount: saving + 1_000_000 });
+        const s2 = calculatePassiveIncomeRoadmap({ ...baseArgs, monthlySavingsAmount: saving + 3_000_000 });
+        let s3;
+        let s3Title;
+        if (payload.topForTenure && payload.topForTenure.rate > rate) {
+          s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, annualInterestRate: payload.topForTenure.rate });
+          s3Title = `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`;
+        } else if (Number(baseArgs.annualStepUpPct || 0) === 0) {
+          s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, annualStepUpPct: 10 });
+          s3Title = 'Tăng mức gửi +10% mỗi năm';
+        } else {
+          s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, initialCapital: capital + 50_000_000 });
+          s3Title = 'Thêm 50 triệu vốn ban đầu';
+        }
+
+        scenarios = [
+          { title: 'Tiết kiệm thêm 1 triệu/tháng', r: { monthsNeeded: s1.monthsNeeded, timeText: s1.timeText } },
+          { title: 'Tiết kiệm thêm 3 triệu/tháng', r: { monthsNeeded: s2.monthsNeeded, timeText: s2.timeText } },
+          { title: s3Title, r: { monthsNeeded: s3.monthsNeeded, timeText: s3.timeText } },
+        ];
       }
 
       const bankList = Array.isArray(payload.bankComparisons) ? payload.bankComparisons : [];
@@ -116,9 +171,14 @@ export default async function handler(req, res) {
             tenure: item.bestTenure,
             rate: item.bestRate,
             monthsNeeded: resBank.monthsNeeded,
+            requiredMonthlyDeposit: resBank.requiredMonthlyDeposit,
           };
         })
-        .sort((a, b) => a.monthsNeeded - b.monthsNeeded);
+        .sort((a, b) =>
+          roadmap.solveMode === 'SAVING'
+            ? a.requiredMonthlyDeposit - b.requiredMonthlyDeposit
+            : a.monthsNeeded - b.monthsNeeded
+        );
 
       return res.status(200).json({
         roadmap,

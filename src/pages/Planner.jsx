@@ -32,12 +32,14 @@ import {
   Callout,
   Card,
   CardHeader,
+  Chip,
   DecimalInput,
   Modal,
   MoneyField,
   PageHeader,
   Progress,
   Segmented,
+  SliderField,
   Stat,
   Table,
   cx,
@@ -50,7 +52,13 @@ const presets = (arr) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : 
 
 const INITIAL_PLANNER_DATA = {
   roadmap: {
+    goalType: 'PASSIVE_INCOME',
+    solveMode: 'TIME',
+    targetYears: 5,
+    nominalRequiredPrincipal: 0,
     requiredPrincipal: 0,
+    baseMonthlyInterest: 0,
+    requiredMonthlyDeposit: 0,
     monthsNeeded: 0,
     yearsNeeded: 0,
     timeText: 'Đang tính...',
@@ -58,6 +66,10 @@ const INITIAL_PLANNER_DATA = {
     totalCompoundInterest: 0,
     compoundSharePct: 0,
     savingsRatePercent: 0,
+    finalMonthlyPassiveIncome: 0,
+    annualStepUpPct: 0,
+    annualBonusAmount: 0,
+    inflationRatePct: 0,
     isAlreadyReached: false,
     monthByMonthLog: [],
   },
@@ -76,7 +88,24 @@ export default function Planner({ params = {} }) {
   const notify = useToast();
   const saved = useMemo(() => loadSavedPlannerState(), []);
 
+  const [inputMode, setInputMode] = useState(() =>
+    params.mode === 'advanced' || params.mode === 'basic' ? params.mode : saved.inputMode || 'basic'
+  );
+  const [goalType, setGoalType] = useState(() =>
+    params.goal === 'TARGET_AMOUNT' || params.goal === 'PASSIVE_INCOME'
+      ? params.goal
+      : saved.goalType || 'PASSIVE_INCOME'
+  );
   const [target, setTarget] = useState(() => Number(params.target) || Number(saved.target) || 10_000_000);
+  const [targetAmount, setTargetAmount] = useState(
+    () => Number(params.targetAmount) || Number(saved.targetAmount) || 500_000_000
+  );
+  const [solveMode, setSolveMode] = useState(() =>
+    params.solve === 'SAVING' || params.solve === 'TIME' ? params.solve : saved.solveMode || 'TIME'
+  );
+  const [targetYears, setTargetYears] = useState(
+    () => Math.min(30, Math.max(1, Number(params.years) || Number(saved.targetYears) || 5))
+  );
   const [capital, setCapital] = useState(() =>
     params.capital !== undefined ? Number(params.capital) : saved.capital !== undefined ? Number(saved.capital) : 50_000_000
   );
@@ -87,15 +116,44 @@ export default function Planner({ params = {} }) {
   const [bankId, setBankId] = useState(() => params.bank || saved.bankId || 'cake');
   const [tenure, setTenure] = useState(() => params.tenure || saved.tenure || '12M');
   const [customRate, setCustomRate] = useState(() => params.rate ?? saved.customRate ?? '');
-  const [calcMode, setCalcMode] = useState(() => params.mode || saved.calcMode || 'NOMINAL_MONTHS');
-  const [inputMode, setInputMode] = useState(() => saved.inputMode || 'basic');
+  const [calcMode, setCalcMode] = useState(() =>
+    params.calcMode === 'ACTUAL_DAYS' || params.calcMode === 'NOMINAL_MONTHS'
+      ? params.calcMode
+      : saved.calcMode || 'NOMINAL_MONTHS'
+  );
+  const [annualStepUpPct, setAnnualStepUpPct] = useState(() =>
+    params.stepUp !== undefined
+      ? Number(params.stepUp)
+      : saved.annualStepUpPct !== undefined
+        ? Number(saved.annualStepUpPct)
+        : 0
+  );
+  const [annualBonusAmount, setAnnualBonusAmount] = useState(() =>
+    params.bonus !== undefined
+      ? Number(params.bonus)
+      : saved.annualBonusAmount !== undefined
+        ? Number(saved.annualBonusAmount)
+        : 0
+  );
+  const [inflationRatePct, setInflationRatePct] = useState(() =>
+    params.inflation !== undefined
+      ? Number(params.inflation)
+      : saved.inflationRatePct !== undefined
+        ? Number(saved.inflationRatePct)
+        : 0
+  );
   const [gdocsOpen, setGdocsOpen] = useState(false);
   const [view, setView] = useState('growth');
   const [rows, setRows] = useState('yearly');
 
   useEffect(() => {
     cryptoStorage.save('PLANNER_STATE', {
+      inputMode,
+      goalType,
       target,
+      targetAmount,
+      solveMode,
+      targetYears,
       capital,
       saving,
       salary,
@@ -103,13 +161,36 @@ export default function Planner({ params = {} }) {
       tenure,
       customRate,
       calcMode,
-      inputMode,
+      annualStepUpPct,
+      annualBonusAmount,
+      inflationRatePct,
     });
-  }, [target, capital, saving, salary, bankId, tenure, customRate, calcMode, inputMode]);
+  }, [
+    inputMode,
+    goalType,
+    target,
+    targetAmount,
+    solveMode,
+    targetYears,
+    capital,
+    saving,
+    salary,
+    bankId,
+    tenure,
+    customRate,
+    calcMode,
+    annualStepUpPct,
+    annualBonusAmount,
+    inflationRatePct,
+  ]);
 
   const bank = banks.find((b) => b.id === bankId) || banks[0];
   const usingCustom = customRate !== '' && Number(customRate) > 0;
   const rate = usingCustom ? Number(customRate) : getRate(bank, tenure) || 6;
+
+  const effectiveStepUp = inputMode === 'advanced' ? Number(annualStepUpPct) || 0 : 0;
+  const effectiveBonus = inputMode === 'advanced' ? Number(annualBonusAmount) || 0 : 0;
+  const effectiveInflation = inputMode === 'advanced' ? Number(inflationRatePct) || 0 : 0;
 
   const plannerPayload = useMemo(() => {
     const top = best(tenure);
@@ -118,16 +199,41 @@ export default function Planner({ params = {} }) {
       return { bankId: b.id, bestTenure, bestRate };
     });
     return {
+      goalType,
       targetMonthlyInterest: target,
+      targetAmount,
+      solveMode,
+      targetYears,
       currentSalary: salary,
       monthlySavingsAmount: saving,
       initialCapital: capital,
       annualInterestRate: rate,
       calculationMode: calcMode,
+      annualStepUpPct: effectiveStepUp,
+      annualBonusAmount: effectiveBonus,
+      inflationRatePct: effectiveInflation,
       topForTenure: top ? { bankName: top.bank.name, rate: top.rate, rateLabel: pct(top.rate) } : null,
       bankComparisons,
     };
-  }, [target, salary, saving, capital, rate, calcMode, tenure, banks, getRate, best]);
+  }, [
+    goalType,
+    target,
+    targetAmount,
+    solveMode,
+    targetYears,
+    salary,
+    saving,
+    capital,
+    rate,
+    calcMode,
+    effectiveStepUp,
+    effectiveBonus,
+    effectiveInflation,
+    tenure,
+    banks,
+    getRate,
+    best,
+  ]);
 
   const { data: bundle, loading } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA);
   const { roadmap, feasibility, scenarios } = bundle;
@@ -136,13 +242,16 @@ export default function Planner({ params = {} }) {
       (bundle.bankRuns || []).map((item) => ({
         ...item,
         bank: banks.find((b) => b.id === item.bankId) || banks[0],
-        r: { monthsNeeded: item.monthsNeeded },
+        r: { monthsNeeded: item.monthsNeeded, requiredMonthlyDeposit: item.requiredMonthlyDeposit || 0 },
       })),
     [bundle.bankRuns, banks]
   );
   const maxMonths = Math.max(...bankRuns.map((x) => Math.min(x.r.monthsNeeded, 720)), 1);
+  const maxMonthlyDep = Math.max(...bankRuns.map((x) => x.r.requiredMonthlyDeposit || 0), 1);
 
-  const reachable = roadmap.monthsNeeded < 720;
+  const isTargetAmount = goalType === 'TARGET_AMOUNT';
+  const isSavingSolver = solveMode === 'SAVING';
+  const reachable = isSavingSolver ? !roadmap.isAlreadyReached || roadmap.monthsNeeded < 720 : roadmap.monthsNeeded < 720;
   const progress = roadmap.requiredPrincipal > 0 ? (capital / roadmap.requiredPrincipal) * 100 : 0;
   const scoreTone = feasibility.score >= 80 ? 'emerald' : feasibility.score >= 60 ? 'indigo' : 'amber';
 
@@ -163,22 +272,30 @@ export default function Planner({ params = {} }) {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `VnSavingPro_LoTrinh_${target}.csv`;
+    a.download = `VnSavingPro_LoTrinh_${isTargetAmount ? targetAmount : target}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const sharePlan = () => {
     const query = {
+      mode: inputMode,
+      goal: goalType,
       target,
+      targetAmount,
+      solve: solveMode,
+      years: targetYears,
       capital,
       saving,
       salary,
       bank: bankId,
       tenure,
-      mode: calcMode,
+      calcMode,
     };
     if (usingCustom) query.rate = customRate;
+    if (effectiveStepUp > 0) query.stepUp = effectiveStepUp;
+    if (effectiveBonus > 0) query.bonus = effectiveBonus;
+    if (effectiveInflation > 0) query.inflation = effectiveInflation;
     const url = `${window.location.origin}${href('plan', query)}`;
     navigator.clipboard.writeText(url).then(() => {
       notify('Đã sao chép link chia sẻ kế hoạch');
@@ -186,14 +303,22 @@ export default function Planner({ params = {} }) {
   };
 
   const reportPayload = {
+    inputMode,
+    goalType,
     target,
+    targetAmount,
+    solveMode,
+    targetYears,
     capital,
-    saving,
+    saving: isSavingSolver ? roadmap.requiredMonthlyDeposit : saving,
     salary,
     bankName: usingCustom ? 'Lãi suất tự nhập' : bank.name,
     tenureLabel: TENURE_LABELS[tenure] || tenure,
     rate,
     calcMode,
+    annualStepUpPct: effectiveStepUp,
+    annualBonusAmount: effectiveBonus,
+    inflationRatePct: effectiveInflation,
     roadmap,
     feasibility,
     scenarios,
@@ -238,51 +363,128 @@ export default function Planner({ params = {} }) {
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* ── Inputs ── */}
         <Card className="space-y-5 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
-          <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
-              <SlidersHorizontal className="size-3.5 text-indigo-300" /> Chế độ nhập liệu
-            </span>
-            <Segmented
-              size="sm"
-              value={inputMode}
-              onChange={setInputMode}
-              options={[
-                { value: 'basic', label: 'Cơ bản' },
-                { value: 'advanced', label: 'Nâng cao' },
-              ]}
-            />
+          <div className="space-y-2 border-b border-white/[0.06] pb-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+                <SlidersHorizontal className="size-3.5 text-indigo-300" /> Phiên bản nhập liệu
+              </span>
+              <Segmented
+                size="sm"
+                value={inputMode}
+                onChange={setInputMode}
+                options={[
+                  { value: 'basic', label: 'Cơ bản' },
+                  { value: 'advanced', label: 'Chuyên sâu' },
+                ]}
+              />
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              {inputMode === 'basic'
+                ? 'Phiên bản Cơ bản (Nhanh): chỉ 4 thông số cốt lõi, tính thuần theo lãi suất ngân hàng.'
+                : 'Phiên bản Chuyên sâu (Thực tế): thêm tăng mức gửi/năm, thưởng Tết, bù trượt giá lạm phát & chuẩn TT14.'}
+            </p>
           </div>
 
-          <MoneyField
-            label="Thu nhập thụ động mong muốn / tháng"
-            value={target}
-            onChange={setTarget}
-            min={1_000_000}
-            max={100_000_000}
-            step={500_000}
-            inputMax={1_000_000_000}
-            presets={presets([3_000_000, 5_000_000, 10_000_000, 20_000_000, 30_000_000, 50_000_000])}
-          />
-          <MoneyField
-            label="Vốn tiết kiệm hiện có"
-            value={capital}
-            onChange={setCapital}
-            min={0}
-            max={2_000_000_000}
-            step={5_000_000}
-            inputMax={100_000_000_000}
-            presets={presets([0, 50_000_000, 200_000_000, 500_000_000])}
-          />
-          <MoneyField
-            label="Gửi thêm mỗi tháng"
-            value={saving}
-            onChange={setSaving}
-            min={0}
-            max={50_000_000}
-            step={500_000}
-            inputMax={1_000_000_000}
-            presets={presets([2_000_000, 5_000_000, 10_000_000, 15_000_000])}
-          />
+          {/* Step 1: Dual Goal Selection */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">1. Mục tiêu cần đạt</span>
+              <Segmented
+                size="sm"
+                value={goalType}
+                onChange={setGoalType}
+                options={[
+                  { value: 'PASSIVE_INCOME', label: 'Lãi thụ động / tháng' },
+                  { value: 'TARGET_AMOUNT', label: 'Số tiền mục tiêu' },
+                ]}
+              />
+            </div>
+
+            {isTargetAmount ? (
+              <MoneyField
+                label="Tổng số tiền tiết kiệm mục tiêu"
+                hint={`Khi đạt mốc này, tiền lãi sinh ra khoảng ${vnd(roadmap.baseMonthlyInterest)}/tháng.`}
+                value={targetAmount}
+                onChange={setTargetAmount}
+                min={50_000_000}
+                max={10_000_000_000}
+                step={25_000_000}
+                inputMax={500_000_000_000}
+                presets={presets([100_000_000, 300_000_000, 500_000_000, 1_000_000_000, 2_000_000_000, 5_000_000_000])}
+              />
+            ) : (
+              <MoneyField
+                label="Thu nhập thụ động mong muốn / tháng"
+                hint={`Cần tích luỹ sổ tiết kiệm gốc khoảng ${compact(roadmap.nominalRequiredPrincipal)} (tại ${pct(rate)}/năm).`}
+                value={target}
+                onChange={setTarget}
+                min={1_000_000}
+                max={100_000_000}
+                step={500_000}
+                inputMax={1_000_000_000}
+                presets={presets([3_000_000, 5_000_000, 10_000_000, 20_000_000, 30_000_000, 50_000_000])}
+              />
+            )}
+          </div>
+
+          {/* Step 2: Bidirectional Solver */}
+          <div className="space-y-4 border-t border-white/[0.06] pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">2. Kế hoạch gửi tiết kiệm</span>
+              <Segmented
+                size="sm"
+                value={solveMode}
+                onChange={setSolveMode}
+                options={[
+                  { value: 'TIME', label: 'Tính thời gian đạt' },
+                  { value: 'SAVING', label: 'Tính tiền gửi / tháng' },
+                ]}
+              />
+            </div>
+
+            <MoneyField
+              label="Vốn tiết kiệm hiện có"
+              value={capital}
+              onChange={setCapital}
+              min={0}
+              max={2_000_000_000}
+              step={5_000_000}
+              inputMax={100_000_000_000}
+              presets={presets([0, 50_000_000, 200_000_000, 500_000_000])}
+            />
+
+            {isSavingSolver ? (
+              <div className="space-y-2.5">
+                <SliderField
+                  label="Thời hạn muốn đạt mục tiêu"
+                  display={`${targetYears} năm (${targetYears * 12} tháng)`}
+                  value={targetYears}
+                  onChange={setTargetYears}
+                  min={1}
+                  max={30}
+                  step={1}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {[2, 3, 5, 10, 15, 20].map((y) => (
+                    <Chip key={y} active={targetYears === y} onClick={() => setTargetYears(y)}>
+                      {y} năm
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <MoneyField
+                label="Gửi thêm mỗi tháng"
+                value={saving}
+                onChange={setSaving}
+                min={0}
+                max={50_000_000}
+                step={500_000}
+                inputMax={1_000_000_000}
+                presets={presets([2_000_000, 5_000_000, 10_000_000, 15_000_000])}
+              />
+            )}
+          </div>
 
           <div className="border-t border-white/[0.06] pt-5">
             <BankPicker bankId={bankId} onBank={(id) => { setBankId(id); setCustomRate(''); }} tenure={tenure} onTenure={setTenure} />
@@ -295,16 +497,88 @@ export default function Planner({ params = {} }) {
               className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3.5 py-2.5 text-left text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.06] transition hover:bg-white/[0.05] hover:text-zinc-200"
             >
               <span className="truncate">
-                Nâng cao: Lương {compact(salary)} · {calcMode === 'ACTUAL_DAYS' ? 'Chuẩn TT14' : 'Tháng/12'}
-                {usingCustom ? ` · Tự nhập ${pct(rate)}` : ''}
+                Chuyên sâu: Tăng gửi/năm · Thưởng Tết · Bù lạm phát · Lương &amp; TT14
               </span>
-              <span className="shrink-0 font-medium text-indigo-300">Chỉnh sửa</span>
+              <span className="shrink-0 font-medium text-indigo-300">Mở rộng</span>
             </button>
           ) : (
             <div className="space-y-5 border-t border-white/[0.06] pt-5">
+              <div className="text-xs font-medium uppercase tracking-wider text-indigo-300">
+                Đòn bẩy &amp; Thực tế (Chuyên sâu)
+              </div>
+
+              {/* Annual step-up */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-[13px] text-zinc-300">Tăng mức gửi mỗi năm</label>
+                  <DecimalInput
+                    value={annualStepUpPct}
+                    onChange={(v) => setAnnualStepUpPct(v === '' ? 0 : v)}
+                    suffix="%/năm"
+                    min={0}
+                    max={30}
+                    step={1}
+                    className="w-28"
+                    ariaLabel="Tỷ lệ tăng mức gửi hàng năm"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[0, 5, 10, 15].map((v) => (
+                    <Chip key={v} active={Number(annualStepUpPct) === v} onClick={() => setAnnualStepUpPct(v)}>
+                      {v === 0 ? 'Cố định (0%)' : `+${v}%/năm`}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+
+              {/* Annual bonus lump sum */}
+              <MoneyField
+                label="Thưởng / Gửi gộp thêm cuối mỗi năm"
+                value={annualBonusAmount}
+                onChange={setAnnualBonusAmount}
+                min={0}
+                max={200_000_000}
+                step={5_000_000}
+                inputMax={5_000_000_000}
+                presets={presets([0, 10_000_000, 20_000_000, 50_000_000])}
+              />
+
+              {/* Inflation adjustment */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-[13px] text-zinc-300">Bù trượt giá lạm phát</label>
+                  <DecimalInput
+                    value={inflationRatePct}
+                    onChange={(v) => setInflationRatePct(v === '' ? 0 : v)}
+                    suffix="%/năm"
+                    min={0}
+                    max={15}
+                    step={0.5}
+                    className="w-28"
+                    ariaLabel="Bù trượt giá lạm phát hàng năm"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[0, 3.5, 4.5, 6].map((v) => (
+                    <Chip key={v} active={Number(inflationRatePct) === v} onClick={() => setInflationRatePct(v)}>
+                      {v === 0 ? 'Tắt (0%)' : `${v}%/năm`}
+                    </Chip>
+                  ))}
+                </div>
+                {effectiveInflation > 0 && roadmap.requiredPrincipal > roadmap.nominalRequiredPrincipal && (
+                  <p className="rounded-lg bg-amber-500/10 px-3 py-2 text-[11px] leading-relaxed text-amber-200/90 ring-1 ring-inset ring-amber-400/20">
+                    Mục tiêu gốc <strong className="tabular-nums">{compact(roadmap.nominalRequiredPrincipal)}</strong> cần
+                    nâng lên <strong className="tabular-nums">{compact(roadmap.requiredPrincipal)}</strong> để giữ nguyên
+                    sức mua sau lạm phát {pct(effectiveInflation, 1)}/năm.
+                  </p>
+                )}
+              </div>
+
               <MoneyField
                 label="Thu nhập hàng tháng"
-                hint={`Đánh giá độ khả thi: đang tiết kiệm ${pct(roadmap.savingsRatePercent, 1)} thu nhập, chi tiêu còn ${compact(Math.max(0, salary - saving))}.`}
+                hint={`Độ khả thi: đang tiết kiệm ${pct(roadmap.savingsRatePercent, 1)} thu nhập, chi tiêu còn ${compact(
+                  Math.max(0, salary - (roadmap.requiredMonthlyDeposit || saving))
+                )}.`}
                 value={salary}
                 onChange={setSalary}
                 min={5_000_000}
@@ -363,21 +637,72 @@ export default function Planner({ params = {} }) {
             <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-indigo-500/15 blur-3xl" />
             <div className="relative">
               <div className="flex flex-wrap items-center gap-2 text-[13px] text-zinc-400">
-                Để nhận <span className="font-medium text-white">{vnd(target)}</span> mỗi tháng, bạn cần
+                {isTargetAmount ? (
+                  <>
+                    Để tích luỹ <span className="font-medium text-white">{vnd(roadmap.requiredPrincipal)}</span>
+                    {isSavingSolver && (
+                      <>
+                        {' '}sau <span className="font-medium text-white">{targetYears} năm</span>
+                      </>
+                    )}
+                    , bạn cần
+                  </>
+                ) : (
+                  <>
+                    Để nhận{' '}
+                    <span className="font-medium text-white">{vnd(roadmap.targetMonthlyInterest || target)}</span> mỗi
+                    tháng
+                    {isSavingSolver && (
+                      <>
+                        {' '}sau <span className="font-medium text-white">{targetYears} năm</span>
+                      </>
+                    )}
+                    , bạn cần
+                  </>
+                )}
                 <Badge tone="brand">
                   {usingCustom ? 'Lãi suất tự nhập' : `${bank.name} · ${TENURE_LABELS[tenure]}`} · {pct(rate)}
                 </Badge>
+                {effectiveStepUp > 0 && <Badge tone="success">Tăng gửi +{pct(effectiveStepUp, 0)}/năm</Badge>}
+                {effectiveBonus > 0 && <Badge tone="success">+{compact(effectiveBonus)} thưởng/năm</Badge>}
+                {effectiveInflation > 0 && <Badge tone="warning">Đã bù lạm phát {pct(effectiveInflation, 1)}/năm</Badge>}
               </div>
+
               <div className="mt-3 text-4xl font-semibold tracking-tight text-white tabular-nums sm:text-5xl">
-                {roadmap.isAlreadyReached ? 'Đã đạt mục tiêu 🎉' : reachable ? roadmap.timeText : 'Hơn 60 năm'}
+                {roadmap.isAlreadyReached ? (
+                  'Đã đạt mục tiêu 🎉'
+                ) : isSavingSolver ? (
+                  <>
+                    {vnd(roadmap.requiredMonthlyDeposit)}
+                    <span className="text-lg font-normal text-zinc-400 sm:text-2xl"> / tháng</span>
+                  </>
+                ) : reachable ? (
+                  roadmap.timeText
+                ) : (
+                  'Hơn 60 năm'
+                )}
               </div>
+
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
                 {roadmap.isAlreadyReached
-                  ? `Vốn hiện tại đã đủ tạo ra ${vnd(roadmap.monthByMonthLog[0]?.monthlyPassiveIncomeGenerated || 0)} lãi mỗi tháng.`
-                  : reachable
-                    ? `Tích luỹ đủ ${vnd(roadmap.requiredPrincipal)} bằng cách gửi ${compact(saving)} mỗi tháng và để lãi tự tái đầu tư.`
-                    : 'Với mức tiết kiệm hiện tại, mục tiêu quá xa. Hãy tăng số tiền gửi hàng tháng hoặc giảm mục tiêu.'}
+                  ? isTargetAmount
+                    ? `Vốn hiện tại (${compact(capital)}) đã vượt mục tiêu và tạo ra ${vnd(
+                        roadmap.monthByMonthLog[0]?.monthlyPassiveIncomeGenerated || 0
+                      )} lãi mỗi tháng.`
+                    : `Vốn hiện tại đã đủ tạo ra ${vnd(
+                        roadmap.monthByMonthLog[0]?.monthlyPassiveIncomeGenerated || 0
+                      )} lãi mỗi tháng.`
+                  : isSavingSolver
+                    ? `Gửi ${compact(roadmap.requiredMonthlyDeposit)} mỗi tháng${
+                        effectiveStepUp > 0 ? ` (năm đầu, tăng ${pct(effectiveStepUp, 0)} mỗi năm)` : ''
+                      } trong ${targetYears} năm để tích luỹ đủ ${vnd(roadmap.requiredPrincipal)}.`
+                    : reachable
+                      ? `Tích luỹ đủ ${vnd(roadmap.requiredPrincipal)} bằng cách gửi ${compact(saving)} mỗi tháng${
+                          effectiveStepUp > 0 ? ` (tăng +${pct(effectiveStepUp, 0)}/năm)` : ''
+                        } và để lãi tự tái đầu tư.`
+                      : 'Với mức tiết kiệm hiện tại, mục tiêu quá xa. Hãy tăng số tiền gửi hàng tháng, bật tăng mức gửi hằng năm hoặc giảm mục tiêu.'}
               </p>
+
               <div className="mt-6">
                 <div className="mb-2 flex justify-between text-xs text-zinc-500">
                   <span>Tiến độ hiện tại</span>
@@ -392,13 +717,38 @@ export default function Planner({ params = {} }) {
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <Stat icon={Coins} label="Số vốn cần có" value={compact(roadmap.requiredPrincipal)} hint={`tại ${pct(rate)}/năm`} />
-            <Stat
-              icon={Wallet}
-              label="Tổng tiền bạn gửi"
-              value={reachable ? compact(roadmap.totalDeposited) : '—'}
-              hint="vốn + tiền gửi hàng tháng"
-            />
+            {isTargetAmount ? (
+              <Stat
+                icon={Coins}
+                label="Lãi thụ động khi đạt"
+                value={`${compact(roadmap.finalMonthlyPassiveIncome)}/th`}
+                hint={`từ vốn ${compact(roadmap.requiredPrincipal)}`}
+              />
+            ) : (
+              <Stat
+                icon={Coins}
+                label="Số vốn cần có"
+                value={compact(roadmap.requiredPrincipal)}
+                hint={`tại ${pct(rate)}/năm`}
+              />
+            )}
+
+            {isSavingSolver ? (
+              <Stat
+                icon={Wallet}
+                label="Cần gửi / tháng"
+                value={compact(roadmap.requiredMonthlyDeposit)}
+                hint={`tổng vốn tự gửi ${compact(roadmap.totalDeposited)}`}
+              />
+            ) : (
+              <Stat
+                icon={Wallet}
+                label="Tổng tiền bạn gửi"
+                value={reachable ? compact(roadmap.totalDeposited) : '—'}
+                hint="vốn + tiền gửi + thưởng"
+              />
+            )}
+
             <Stat
               icon={PiggyBank}
               label="Lãi kép đóng góp"
@@ -437,7 +787,13 @@ export default function Planner({ params = {} }) {
           {/* Chart / bank comparison */}
           <Card className="p-5 sm:p-6">
             <CardHeader
-              title={view === 'growth' ? 'Tài sản tăng trưởng theo thời gian' : 'Về đích nhanh nhất với ngân hàng nào?'}
+              title={
+                view === 'growth'
+                  ? 'Tài sản tăng trưởng theo thời gian'
+                  : isSavingSolver
+                    ? 'Ngân hàng nào cần gửi hàng tháng ít nhất?'
+                    : 'Về đích nhanh nhất với ngân hàng nào?'
+              }
               description={
                 view === 'growth'
                   ? 'Khoảng cách giữa hai đường là phần lãi kép ngân hàng trả cho bạn.'
@@ -474,48 +830,69 @@ export default function Planner({ params = {} }) {
               </>
             ) : (
               <div className="mt-6 space-y-4">
-                {bankRuns.map(({ bank: b, tenure: t, rate: r, r: res }, i) => (
-                  <div key={b.id} className="flex items-center gap-3">
-                    <BankMark bank={b} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2 text-sm">
-                        <span className="truncate font-medium text-zinc-200">
-                          {b.name} <span className="font-normal text-zinc-500">· {TENURE_LABELS[t]} · {pct(r)}</span>
-                        </span>
-                        <span className={cx('shrink-0 font-semibold tabular-nums', i === 0 ? 'text-emerald-300' : 'text-white')}>
-                          {res.monthsNeeded >= 720 ? '> 60 năm' : duration(res.monthsNeeded)}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
-                        <div
-                          className={cx('h-full rounded-full', i === 0 ? 'bg-emerald-400' : 'bg-zinc-500/60')}
-                          style={{ width: `${(Math.min(res.monthsNeeded, 720) / maxMonths) * 100}%` }}
-                        />
+                {bankRuns.map(({ bank: b, tenure: t, rate: r, r: res }, i) => {
+                  const pctBar = isSavingSolver
+                    ? ((res.requiredMonthlyDeposit || 0) / maxMonthlyDep) * 100
+                    : (Math.min(res.monthsNeeded, 720) / maxMonths) * 100;
+                  return (
+                    <div key={b.id} className="flex items-center gap-3">
+                      <BankMark bank={b} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2 text-sm">
+                          <span className="truncate font-medium text-zinc-200">
+                            {b.name} <span className="font-normal text-zinc-500">· {TENURE_LABELS[t]} · {pct(r)}</span>
+                          </span>
+                          <span className={cx('shrink-0 font-semibold tabular-nums', i === 0 ? 'text-emerald-300' : 'text-white')}>
+                            {isSavingSolver
+                              ? `${compact(res.requiredMonthlyDeposit)}/th`
+                              : res.monthsNeeded >= 720
+                                ? '> 60 năm'
+                                : duration(res.monthsNeeded)}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/[0.05]">
+                          <div
+                            className={cx('h-full rounded-full', i === 0 ? 'bg-emerald-400' : 'bg-zinc-500/60')}
+                            style={{ width: `${pctBar}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>
 
           {/* What-if */}
           <Card className="p-5 sm:p-6">
-            <CardHeader title="Cách để về đích sớm hơn" description="So với kế hoạch hiện tại của bạn." />
+            <CardHeader
+              title={isSavingSolver ? 'Cách giảm số tiền cần gửi mỗi tháng' : 'Cách để về đích sớm hơn'}
+              description="So với kế hoạch hiện tại của bạn."
+            />
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {scenarios.map((s) => {
-                const saved = reachable ? roadmap.monthsNeeded - s.r.monthsNeeded : 0;
+                const saved = reachable ? roadmap.monthsNeeded - (s.r.monthsNeeded || 0) : 0;
+                const savedMonthly = s.r.savedMonthly || 0;
                 return (
                   <div key={s.title} className="rounded-xl bg-white/[0.02] p-4 ring-1 ring-inset ring-white/[0.06]">
                     <div className="flex items-center gap-1.5 text-xs text-zinc-500">
                       <Sparkles className="size-3.5 text-indigo-300" /> {s.title}
                     </div>
                     <div className="mt-2 text-lg font-semibold tabular-nums text-white">
-                      {s.r.monthsNeeded >= 720 ? '> 60 năm' : s.r.timeText}
+                      {isSavingSolver
+                        ? `${compact(s.r.requiredMonthlyDeposit || 0)}/tháng`
+                        : s.r.monthsNeeded >= 720
+                          ? '> 60 năm'
+                          : s.r.timeText}
                     </div>
-                    {saved > 0 && (
-                      <div className="mt-1 text-xs font-medium text-emerald-300">Nhanh hơn {duration(saved)}</div>
-                    )}
+                    {isSavingSolver
+                      ? savedMonthly > 0 && (
+                          <div className="mt-1 text-xs font-medium text-emerald-300">Giảm {compact(savedMonthly)}/tháng</div>
+                        )
+                      : saved > 0 && (
+                          <div className="mt-1 text-xs font-medium text-emerald-300">Nhanh hơn {duration(saved)}</div>
+                        )}
                   </div>
                 );
               })}
@@ -564,8 +941,21 @@ export default function Planner({ params = {} }) {
 
           <FeedbackWidget
             toolId="plan"
-            toolLabel="Kế hoạch thu nhập thụ động"
-            snapshot={{ target, capital, saving, bankId, tenure, rate, timeText: roadmap.timeText }}
+            toolLabel={isTargetAmount ? 'Kế hoạch tích luỹ số tiền mục tiêu' : 'Kế hoạch thu nhập thụ động'}
+            snapshot={{
+              inputMode,
+              goalType,
+              solveMode,
+              target,
+              targetAmount,
+              targetYears,
+              capital,
+              saving: isSavingSolver ? roadmap.requiredMonthlyDeposit : saving,
+              bankId,
+              tenure,
+              rate,
+              timeText: roadmap.timeText,
+            }}
           />
         </div>
       </div>
@@ -610,10 +1000,18 @@ export default function Planner({ params = {} }) {
           className="flex w-full items-center justify-between gap-3 rounded-2xl border border-indigo-400/25 bg-elevated/95 px-4 py-2.5 text-left shadow-2xl backdrop-blur"
         >
           <div className="min-w-0">
-            <div className="text-[11px] text-zinc-400">Đích đến ({pct(rate)}/năm)</div>
+            <div className="text-[11px] text-zinc-400">
+              {isSavingSolver ? `Cần gửi / tháng (${targetYears} năm)` : `Đích đến (${pct(rate)}/năm)`}
+            </div>
             <div className="truncate text-sm font-semibold tabular-nums text-white">
-              {roadmap.isAlreadyReached ? 'Đã đạt mục tiêu' : reachable ? roadmap.timeText : '> 60 năm'} ·{' '}
-              <span className="text-emerald-300">{compact(roadmap.requiredPrincipal)}</span>
+              {roadmap.isAlreadyReached
+                ? 'Đã đạt mục tiêu'
+                : isSavingSolver
+                  ? `${compact(roadmap.requiredMonthlyDeposit)}/th`
+                  : reachable
+                    ? roadmap.timeText
+                    : '> 60 năm'}{' '}
+              · <span className="text-emerald-300">{compact(roadmap.requiredPrincipal)}</span>
             </div>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-medium text-indigo-200">
