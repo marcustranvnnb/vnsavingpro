@@ -4,6 +4,19 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Fix CSS Diagnostics & Vendor Prefix Compatibility in `src/index.css`
+
+- **Request**: Fix CSS issues reported in `src/index.css`.
+- **Changes Implemented**:
+  - Updated [src/index.css](../../src/index.css):
+    - Moved `@keyframes fade`, `@keyframes pop`, and `@keyframes rise` out of `@theme` into top-level CSS so standard CSS parsers never flag nested `@keyframes` inside `@theme`.
+    - Replaced `@apply bg-canvas text-zinc-300 antialiased;` inside `@layer base > body` with standard CSS properties (`background-color: var(--color-canvas)`, `color: #d4d4d8`, `font-family: var(--font-sans)`, font smoothing).
+    - Added standard `appearance: none;` alongside `-webkit-appearance: none;` in `.range::-webkit-slider-thumb` and `input[type="number"]::-webkit-*-spin-button` (`css(vendorPrefix)` fix).
+    - Added `-webkit-mask-image` before `mask-image` in `.bg-grid` for Safari/WebKit compatibility.
+  - Added [.vscode/css-custom-data.json](../../.vscode/css-custom-data.json) and [.vscode/settings.json](../../.vscode/settings.json) so VS Code recognizes Tailwind CSS v4 directives (`@theme`, `@utility`, `@variant`, `@custom-variant`, `@source`, `@plugin`, `@apply`).
+
+---
+
 ## [2026-11-18] — Clean History API URLs (`/`, `/plan`, ...) & Per-Page Naming Config
 
 - **Request**: Explain why the home URL previously contained `#` and switch to customizable clean page names/paths without `#`.

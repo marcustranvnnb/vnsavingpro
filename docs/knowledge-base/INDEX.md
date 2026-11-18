@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 17:15 (Clean History API URLs without `#` + Per-Page Naming Config in `src/tools.js`)
+> **Last Synced**: 2026-11-18 20:10 (Fixed `src/index.css` CSS linter & Tailwind v4 at-rule diagnostics + added `.vscode/` CSS custom data)
 > **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
