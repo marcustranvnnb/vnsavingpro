@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { CheckCircle2 } from 'lucide-react';
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from './data/banksData.js';
 import { getPageTitle, getRoutePath, resolveRouteId } from './tools.js';
+import { isAnalyticsAllowed, syncUserPrefCookie } from './utils/cookieManager.js';
 import { clampNum, cryptoStorage, isPlainObject } from './utils/cryptoStorage.js';
 
 /* ── Clean History API Router ───────────────────────────────
@@ -41,7 +42,8 @@ export function useRoute() {
   useEffect(() => {
     const title = getPageTitle(state.route);
     document.title = title;
-    if (typeof window !== 'undefined' && Array.isArray(window.dataLayer)) {
+    syncUserPrefCookie({ lastRoute: state.route });
+    if (isAnalyticsAllowed() && typeof window !== 'undefined' && Array.isArray(window.dataLayer)) {
       window.dataLayer.push({
         event: 'page_view',
         page_path: `${window.location.pathname}${window.location.search}`,

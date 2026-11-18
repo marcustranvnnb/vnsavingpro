@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 import { fmt } from '../utils/format.js';
 
 export const cx = (...c) => c.filter(Boolean).join(' ');
@@ -398,5 +398,74 @@ export function Modal({ open, onClose, title, children, className }) {
         {children}
       </div>
     </div>
+  );
+}
+
+/* ── Skeletons & Disclaimer ─────────────────────────────── */
+
+export function Skeleton({ className }) {
+  return <div aria-hidden="true" className={cx('skeleton-shimmer rounded-xl', className)} />;
+}
+
+export function ResultsSkeleton() {
+  return (
+    <div className="space-y-5 animate-fade" aria-busy="true" aria-label="Đang tải kết quả">
+      <Card className="p-5 sm:p-7">
+        <Skeleton className="h-4 w-56 rounded-full" />
+        <Skeleton className="mt-4 h-11 w-64 rounded-xl" />
+        <Skeleton className="mt-3 h-4 w-96 max-w-full" />
+        <Skeleton className="mt-6 h-2 w-full rounded-full" />
+      </Card>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Card key={i} className="p-4">
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="mt-2.5 h-6 w-28" />
+            <Skeleton className="mt-2 h-3 w-20" />
+          </Card>
+        ))}
+      </div>
+      <Card className="p-5 sm:p-6">
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="mt-4 h-56 w-full" />
+      </Card>
+    </div>
+  );
+}
+
+export function PageSkeleton() {
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6 animate-fade" aria-busy="true">
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-36 rounded-full" />
+        <Skeleton className="h-9 w-80 max-w-full" />
+        <Skeleton className="h-4 w-[480px] max-w-full" />
+      </div>
+      <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
+        <Card className="space-y-4 p-5 sm:p-6">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </Card>
+        <ResultsSkeleton />
+      </div>
+    </div>
+  );
+}
+
+export function RateDisclaimer({ className }) {
+  return (
+    <Callout icon={Info} tone="neutral" className={cx('print-hidden text-xs', className)}>
+      <div className="space-y-1">
+        <div className="font-medium text-zinc-200">Lưu ý về dữ liệu lãi suất &amp; Kết quả tính toán</div>
+        <p className="leading-relaxed text-zinc-400">
+          Thông tin lãi suất được tổng hợp tự động từ trang thông tin chính thức (public) của từng ngân hàng. Để nắm rõ
+          chi tiết hạn mức, điều kiện áp dụng và các gói chương trình ưu đãi mới nhất, bạn nên tải ứng dụng chính thức của
+          từng ngân hàng để tham khảo trực tiếp. Mọi số liệu và kết quả tính toán trên VnSavingPro chỉ mang tính chất
+          tham khảo.
+        </p>
+      </div>
+    </Callout>
   );
 }

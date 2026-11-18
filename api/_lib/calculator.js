@@ -655,6 +655,7 @@ export function simulateLadderingMatrix({
           rate: pkg.rate,
           startMonth: m,
           maturityMonth: m + rolloverMonths,
+          rolloverCount: (pkg.rolloverCount || 0) + 1,
           status: "ACTIVE"
         });
       }
@@ -673,6 +674,7 @@ export function simulateLadderingMatrix({
           rate: cfg.rate || bankRates[cfg.term] || cfg.defaultRate || 5.0,
           startMonth: m,
           maturityMonth: m + monthsSpan,
+          rolloverCount: 0,
           status: "ACTIVE"
         });
       }
@@ -680,7 +682,91 @@ export function simulateLadderingMatrix({
 
     const currentActiveList = activePackages.filter(p => p.status === "ACTIVE");
     const totalPortfolioValue = currentActiveList.reduce((sum, p) => sum + p.currentAmount, 0);
-    const estimatedMonthlyYield = Math.round(currentActiveList.reduce((sum, p) => sum + (p.currentAmount * (p.rate / 100)) / 12, 0));
+    const exactMonthlySum = currentActiveList.reduce((sum, p) => sum + (p.currentAmount * (p.rate / 100)) / 12, 0);
+    const estimatedMonthlyYield = Math.round(exactMonthlySum);
+
+    const termMap = new Map();
+    const mappedPackages = currentActiveList.map((p) => {
+      const exactMonthly = (p.currentAmount * (p.rate / 100)) / 12;
+      const monthlyInt = Math.round(exactMonthly);
+      const accInt = Math.max(0, p.currentAmount - p.initialAmount);
+
+      if (!termMap.has(p.term)) {
+        termMap.set(p.term, {
+          key: p.term,
+          term: p.term,
+          label: `Lô kỳ hạn ${p.term.replace('M', ' tháng').replace('W', ' tuần')}`,
+          rate: p.rate,
+          packageCount: 0,
+          rolledPackages: 0,
+          totalInitial: 0,
+          totalCurrentBalance: 0,
+          exactMonthlySum: 0,
+          maxRolloverCount: 0,
+        });
+      }
+      const g = termMap.get(p.term);
+      g.packageCount += 1;
+      if (p.rolloverCount > 0) g.rolledPackages += 1;
+      g.totalInitial += p.initialAmount;
+      g.totalCurrentBalance += p.currentAmount;
+      g.exactMonthlySum += exactMonthly;
+      g.maxRolloverCount = Math.max(g.maxRolloverCount, p.rolloverCount || 0);
+
+      return {
+        id: p.id,
+        name: p.name,
+        term: p.term,
+        rate: p.rate,
+        initialAmount: p.initialAmount,
+        currentAmount: p.currentAmount,
+        accumulatedInterest: accInt,
+        monthlyInterest: monthlyInt,
+        sharePct: estimatedMonthlyYield > 0 ? Number(((monthlyInt / estimatedMonthlyYield) * 100).toFixed(1)) : 0,
+        startMonth: p.startMonth,
+        maturityMonth: p.maturityMonth,
+        rolloverCount: p.rolloverCount || 0,
+      };
+    });
+
+    const cohorts = Array.from(termMap.values()).map((g, idx) => {
+      const totalMonthlyInterest = Math.round(g.exactMonthlySum);
+      const tones = ['emerald', 'indigo', 'sky', 'amber'];
+      return {
+        key: g.key,
+        term: g.term,
+        label: g.label,
+        tone: tones[idx % tones.length],
+        rate: g.rate,
+        packageCount: g.packageCount,
+        rolledPackages: g.rolledPackages,
+        totalInitial: g.totalInitial,
+        totalCurrentBalance: g.totalCurrentBalance,
+        totalAccumulatedInterest: Math.max(0, g.totalCurrentBalance - g.totalInitial),
+        perPackageMonthlyInterest: Math.round(totalMonthlyInterest / Math.max(1, g.packageCount)),
+        totalMonthlyInterest,
+        maxRolloverCount: g.maxRolloverCount,
+        sharePct: 0,
+      };
+    });
+
+    if (cohorts.length > 0) {
+      let largestIdx = 0;
+      for (let idx = 1; idx < cohorts.length; idx++) {
+        if (cohorts[idx].totalMonthlyInterest > cohorts[largestIdx].totalMonthlyInterest) largestIdx = idx;
+      }
+      const intSum = cohorts.reduce((s, c) => s + c.totalMonthlyInterest, 0);
+      const diff = estimatedMonthlyYield - intSum;
+      if (Math.abs(diff) <= cohorts.length * 2) {
+        cohorts[largestIdx].totalMonthlyInterest = Math.max(0, cohorts[largestIdx].totalMonthlyInterest + diff);
+        cohorts[largestIdx].perPackageMonthlyInterest = Math.round(
+          cohorts[largestIdx].totalMonthlyInterest / Math.max(1, cohorts[largestIdx].packageCount)
+        );
+      }
+      cohorts.forEach((c) => {
+        c.sharePct = estimatedMonthlyYield > 0 ? Number(((c.totalMonthlyInterest / estimatedMonthlyYield) * 100).toFixed(1)) : 0;
+      });
+    }
 
     timelineRows.push({
       month: `Tháng ${m}`,
@@ -690,7 +776,10 @@ export function simulateLadderingMatrix({
       totalMaturedThisMonth,
       totalInterestMaturedThisMonth,
       totalPortfolioValue,
-      estimatedMonthlyYield
+      estimatedMonthlyYield,
+      cohorts,
+      packages: mappedPackages.slice(0, 120),
+      packagesTotalCount: mappedPackages.length,
     });
   }
 

@@ -26,6 +26,7 @@ import {
 import { href, useRates, useToast } from '../state.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { copyReportForGoogleDocs, downloadGoogleDocsFile } from '../utils/googleDocsExporter.js';
+import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { compact, chip, duration, fmt, pct, vnd } from '../utils/format.js';
 import { TENURE_LABELS } from '../data/banksData.js';
@@ -43,6 +44,8 @@ import {
   NumberInput,
   PageHeader,
   Progress,
+  RateDisclaimer,
+  ResultsSkeleton,
   Segmented,
   SliderField,
   Stat,
@@ -693,6 +696,10 @@ export default function Planner({ params = {} }) {
     inflationRatePct,
   ]);
 
+  useEffect(() => {
+    syncUserPrefCookie({ bankId, tenure, inputMode });
+  }, [bankId, tenure, inputMode]);
+
   const bank = banks.find((b) => b.id === bankId) || banks[0];
   const usingCustom = customRate !== '' && Number(customRate) > 0;
   const rate = usingCustom ? Number(customRate) : getRate(bank, tenure) || 6;
@@ -751,7 +758,7 @@ export default function Planner({ params = {} }) {
     best,
   ]);
 
-  const { data: bundle, loading } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA);
+  const { data: bundle, loading, initialized } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA);
   const { roadmap, feasibility, scenarios } = bundle;
   const bankRuns = useMemo(
     () =>
@@ -1210,9 +1217,14 @@ export default function Planner({ params = {} }) {
         </Card>
 
         {/* ── Results ── */}
-        <div id="planner-results" className={cx('min-w-0 space-y-5 transition-opacity', loading && 'opacity-75')}>
-          {/* Headline */}
-          <Card className="relative overflow-hidden p-5 sm:p-7">
+        <div id="planner-results" className="min-w-0 space-y-5">
+          {!initialized && loading ? (
+            <ResultsSkeleton />
+          ) : (
+            <div className={cx('space-y-5 animate-fade transition-opacity', loading && 'opacity-80')}>
+              {loading && <div className="loading-bar rounded-full" />}
+              {/* Headline */}
+              <Card className="relative overflow-hidden p-5 sm:p-7">
             <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-indigo-500/15 blur-3xl" />
             <div className="relative">
               <div className="flex flex-wrap items-center gap-2 text-[13px] text-zinc-400">
@@ -1302,6 +1314,7 @@ export default function Planner({ params = {} }) {
                 label="Lãi thụ động khi đạt"
                 value={`${compact(roadmap.finalMonthlyPassiveIncome)}/th`}
                 hint={`từ vốn ${compact(roadmap.requiredPrincipal)}`}
+                className="card-interactive"
               />
             ) : (
               <Stat
@@ -1309,6 +1322,7 @@ export default function Planner({ params = {} }) {
                 label="Số vốn cần có"
                 value={compact(roadmap.requiredPrincipal)}
                 hint={`tại ${pct(rate)}/năm`}
+                className="card-interactive"
               />
             )}
 
@@ -1318,6 +1332,7 @@ export default function Planner({ params = {} }) {
                 label="Cần gửi / tháng"
                 value={compact(roadmap.requiredMonthlyDeposit)}
                 hint={`tổng vốn tự gửi ${compact(roadmap.totalDeposited)}`}
+                className="card-interactive"
               />
             ) : (
               <Stat
@@ -1325,6 +1340,7 @@ export default function Planner({ params = {} }) {
                 label="Tổng tiền bạn gửi"
                 value={reachable ? compact(roadmap.totalDeposited) : '—'}
                 hint="vốn + tiền gửi + thưởng"
+                className="card-interactive"
               />
             )}
 
@@ -1334,6 +1350,7 @@ export default function Planner({ params = {} }) {
               tone="emerald"
               value={reachable ? compact(roadmap.totalCompoundInterest) : '—'}
               hint={reachable ? `${pct(roadmap.compoundSharePct, 1)} tổng tài sản` : undefined}
+              className="card-interactive"
             />
             <Stat
               icon={Gauge}
@@ -1341,6 +1358,7 @@ export default function Planner({ params = {} }) {
               tone={scoreTone}
               value={`${feasibility.score}/100`}
               hint={feasibility.ratingLabel.replace('High', 'cao')}
+              className="card-interactive"
             />
           </div>
 
@@ -1481,6 +1499,8 @@ export default function Planner({ params = {} }) {
           {/* Stage Passbook Shelf & Expandable Matrix (Option 4) */}
           <RoadmapPackageExplorer roadmap={roadmap} rows={rows} onRowsChange={setRows} />
 
+          <RateDisclaimer />
+
           <FeedbackWidget
             toolId="plan"
             toolLabel={isTargetAmount ? 'Kế hoạch tích luỹ số tiền mục tiêu' : 'Kế hoạch thu nhập thụ động'}
@@ -1499,6 +1519,8 @@ export default function Planner({ params = {} }) {
               timeText: roadmap.timeText,
             }}
           />
+            </div>
+          )}
         </div>
       </div>
 

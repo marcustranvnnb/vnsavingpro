@@ -25,6 +25,7 @@ import {
   DecimalInput,
   Modal,
   PageHeader,
+  RateDisclaimer,
   Segmented,
   Table,
   cx,
@@ -453,6 +454,8 @@ export default function Rates() {
           })}
         </div>
       )}
+
+      <RateDisclaimer className="mt-6" />
 
       {/* Edit Rate Modal */}
       <Modal

@@ -213,12 +213,12 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className={cx('mt-3 grid gap-3', secondary.length <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
           {secondary.map((t) => (
             <a
               key={t.id}
               href={href(t.id)}
-              className="group flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-surface p-4 transition-colors hover:border-white/[0.14] hover:bg-elevated"
+              className="card-interactive group flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-surface p-4 hover:bg-elevated"
             >
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] ring-1 ring-inset ring-white/[0.07]">
                 <t.icon className="size-[18px] text-zinc-300" />
@@ -249,7 +249,8 @@ export default function Home() {
           </div>
           <div className="flex items-start gap-2 rounded-xl bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-500 ring-1 ring-inset ring-white/[0.05]">
             <RefreshCw className="mt-0.5 size-3.5 shrink-0" />
-            Lãi suất thu thập từ website chính thức của từng ngân hàng. Bạn có thể tự cập nhật nếu ngân hàng thay đổi.
+            Thông tin lãi suất được tổng hợp từ trang chính thức public của từng ngân hàng; chi tiết gói ưu đãi bạn vui
+            lòng tải ứng dụng ngân hàng để tham khảo trực tiếp (kết quả chỉ mang tính tham khảo).
           </div>
         </Card>
       </section>

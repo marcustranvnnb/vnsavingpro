@@ -42,7 +42,7 @@ export const HOME_PAGE = {
   pageTitle: 'VnSavingPro — Lập Kế Hoạch Thu Nhập Thụ Động & So Sánh Lãi Suất Ngân Hàng Số 2026',
 };
 
-export const TOOLS = [
+export const ALL_TOOLS = [
   {
     id: 'plan',
     path: '/plan',
@@ -116,8 +116,11 @@ export const TOOLS = [
     short: 'Ưu đãi',
     desc: 'Mã giới thiệu và quà tặng khi mở tài khoản ngân hàng số.',
     icon: Gift,
+    hidden: true,
   },
 ];
+
+export const TOOLS = ALL_TOOLS.filter((t) => !t.hidden);
 
 export const toolById = (id) => TOOLS.find((t) => t.id === id);
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, Home, Info, LayoutGrid, ShieldCheck, TrendingUp } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Cookie, Home, Info, LayoutGrid, ShieldCheck, TrendingUp } from 'lucide-react';
 import { APP_VERSION, APP_VERSION_DATE, APP_VERSION_LABEL, TOOLS, VERSION_HIGHLIGHTS } from '../tools.js';
 import { href, useRates } from '../state.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
@@ -240,15 +240,16 @@ export function MobileTabBar({ route }) {
   );
 }
 
-export function Footer() {
+export function Footer({ onOpenCookies }) {
   return (
     <footer className="border-t border-white/[0.06] pb-24 md:pb-0">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-start md:justify-between">
-        <div className="max-w-sm">
+        <div className="max-w-md">
           <Logo />
           <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-            Công cụ lập kế hoạch tiết kiệm cá nhân. Dữ liệu lãi suất chỉ mang tính tham khảo — vui lòng kiểm tra tại
-            ngân hàng trước khi gửi tiền.
+            Công cụ lập kế hoạch tiết kiệm cá nhân. Thông tin lãi suất được lấy từ trang chính thức public của từng ngân
+            hàng; chi tiết gói gửi và ưu đãi vui lòng tải ứng dụng ngân hàng để tham khảo trực tiếp. Mọi kết quả tính
+            toán chỉ mang tính chất tham khảo.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm">
@@ -264,6 +265,15 @@ export function Footer() {
           <div className="flex flex-wrap items-center gap-2">
             <span>© 2026 VnSavingPro</span>
             <VersionBadge />
+            {onOpenCookies && (
+              <button
+                type="button"
+                onClick={onOpenCookies}
+                className="inline-flex items-center gap-1 rounded-full bg-white/[0.03] px-2.5 py-0.5 text-[11px] text-zinc-400 ring-1 ring-inset ring-white/[0.08] transition hover:bg-white/[0.07] hover:text-white"
+              >
+                <Cookie className="size-3" /> Cài đặt Cookie
+              </button>
+            )}
           </div>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="size-3.5" /> Tính toán bảo mật trên API — không lưu dữ liệu cá nhân lên server.

@@ -25,6 +25,7 @@ export function useServerCalc(action, payload, initialData = null) {
     return {
       data: hit ?? initialData,
       loading: !hit,
+      initialized: Boolean(hit),
       error: null,
     };
   });
@@ -32,7 +33,7 @@ export function useServerCalc(action, payload, initialData = null) {
   useEffect(() => {
     const hit = calcCache.get(cacheKey);
     if (hit) {
-      setState({ data: hit, loading: false, error: null });
+      setState({ data: hit, loading: false, initialized: true, error: null });
       return undefined;
     }
 
@@ -54,11 +55,11 @@ export function useServerCalc(action, payload, initialData = null) {
         const json = await res.json();
         setCached(cacheKey, json);
         if (!cancelled) {
-          setState({ data: json, loading: false, error: null });
+          setState({ data: json, loading: false, initialized: true, error: null });
         }
       } catch (err) {
         if (!cancelled && err.name !== 'AbortError') {
-          setState((prev) => ({ ...prev, loading: false, error: err.message || 'Calculation error' }));
+          setState((prev) => ({ ...prev, loading: false, initialized: true, error: err.message || 'Calculation error' }));
         }
       }
     }, 50);

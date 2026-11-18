@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 22:35 (Added Option 4 Stage Passbook Shelf, Expandable 2-Level Matrix, & Cohort vs Individual Passbook Views)
+> **Last Synced**: 2026-11-18 23:05 (Unified Planner UI to Calculator & Ladder, Hidden Referral, Shimmer Skeletons, Cookies, & Official Rate Disclaimer)
 > **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
@@ -33,7 +33,7 @@
 | `/ladder` | `ladder` | [src/pages/Ladder.jsx](../../src/pages/Ladder.jsx) | Multi-tranche Savings Ladder simulator (`ROLLING_1M`, `SPLIT_50_50`, `TNEX_PROMO_30_70`) across 6–60 months |
 | `/career` | `career` | [src/pages/Career.jsx](../../src/pages/Career.jsx) | Models how annual raises (+2M/yr, +10%/yr) vs. job hopping (+30% every 2 yrs) accelerate time to financial freedom |
 | `/inflation` | `inflation` | [src/pages/Inflation.jsx](../../src/pages/Inflation.jsx) | Real interest rate & future purchasing power erosion calculator |
-| `/referral` | `referral` | [src/pages/Referral.jsx](../../src/pages/Referral.jsx) | Digital bank account opening promotions, referral codes, and QR codes |
+| `/referral` *(hidden)* | `referral` | [src/pages/Referral.jsx](../../src/pages/Referral.jsx) | Temporarily hidden (`hidden: true` in `src/tools.js`) — redirects cleanly to `/` |
 
 ---
 
@@ -42,7 +42,7 @@
 - **Serverless API (`api/`)**: `api/rates.js` (`GET /api/rates`), `api/calculate.js` (`POST /api/calculate`), `api/feedback.js` (`GET`/`POST /api/feedback`), `api/cron/sync-rates.js` (daily 09:00 AM VN Vercel cron), `api/_lib/{calculator,feasibilityEvaluator,http,liveRatesCache}.js`
 - **Automated Scrapers & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
 - **Root & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/index.css`
-- **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Referral}.jsx`
-- **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget}.jsx`
+- **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation}.jsx` (`Referral.jsx` hidden)
+- **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner}.jsx`
 - **Data**: `src/data/{banksData,bankPackagesData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
-- **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage}.js`
+- **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`

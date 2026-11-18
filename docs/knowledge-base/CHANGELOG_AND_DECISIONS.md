@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Unified UI (`Calculator`, `Ladder`), Hidden Referral, Animations & Skeletons, Cookie Manager & Rate Disclaimer
+
+- **Request**: Temporarily hide `Ưu đãi mở tài khoản`, apply `Planner` UI style & Option 4 breakdown to `Calculator` and `Ladder`, add animations & skeleton loading states, implement Cookie setting banner/modal, and add an official public-rate disclaimer advising users to check bank apps for exact promo details.
+- **Changes Implemented**:
+  - Updated [src/tools.js](../../src/tools.js) & [src/App.jsx](../../src/App.jsx): Marked `referral` as `hidden: true` so it is omitted from navigation and routes redirect cleanly to `/`; wired `PageSkeleton` and `CookieBanner`.
+  - Updated [src/index.css](../../src/index.css) & [src/components/ui.jsx](../../src/components/ui.jsx): Added `shimmer`, `pulseGlow`, `.skeleton-shimmer`, `.loading-bar`, `.card-interactive`, `Skeleton`, `ResultsSkeleton`, `PageSkeleton`, and `RateDisclaimer`.
+  - Created [src/utils/cookieManager.js](../../src/utils/cookieManager.js) & [src/components/CookieBanner.jsx](../../src/components/CookieBanner.jsx), integrated with [src/state.jsx](../../src/state.jsx) & `Footer` in [src/components/Layout.jsx](../../src/components/Layout.jsx) (`vnsaving_cookie_consent`, `vnsaving_prefs`, `vnsaving_analytics`).
+  - Updated [api/_lib/calculator.js](../../api/_lib/calculator.js) (`simulateLadderingMatrix` now emits per-month `cohorts` & individual `packages`), [src/pages/Ladder.jsx](../../src/pages/Ladder.jsx) (sticky left controls, Headline hero, 4 KPI Stats, Option 4 `LadderPackageExplorer` + mobile bar + disclaimer), [src/pages/Calculator.jsx](../../src/pages/Calculator.jsx) (sticky left controls, Headline hero, 4 KPI Stats, animations/skeletons + mobile bar + disclaimer), [src/pages/Planner.jsx](../../src/pages/Planner.jsx), [src/pages/Rates.jsx](../../src/pages/Rates.jsx), and [src/pages/Home.jsx](../../src/pages/Home.jsx).
+
+---
+
 ## [2026-11-18] — Option 4: Interactive Stage Passbook Shelf & Expandable 2-Level Roadmap Explorer
 
 - **Request**: Upgrade roadmap details to visually show how many savings passbooks/packages a user holds at each stage, how much interest each package generates, and provide Option 4 combining an interactive Passbook Shelf + Expandable Matrix with switching between Cohort Grouping (`Gộp theo lô / đợt`) and Individual Passbooks (`Sổ #1, #2...`).

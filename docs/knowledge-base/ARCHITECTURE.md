@@ -9,6 +9,7 @@ flowchart TD
     State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached 1h)"]
     App --> Layout["src/components/Layout.jsx (TopNav, MobileTabBar, Footer)"]
     App --> Modal["src/components/DataModal.jsx (JSON/CSV Backup, Feedback Log)"]
+    App --> Cookie["src/components/CookieBanner.jsx + cookieManager.js"]
     App --> Pages["React.lazy() Tool Pages + Home.jsx"]
     Pages -->|useServerCalc()| ApiClient["src/utils/apiClient.js (50ms debounce + Map cache)"]
     ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Rate-Limited Serverless Handler)"]
