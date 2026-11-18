@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 22:00 (Security Hardening: Signed Schema Storage, Anti-NaN/Infinity, AppErrorBoundary, CSP Headers, and Build-Time SRI)
+> **Last Synced**: 2026-11-18 22:07 (Fixed `index.html` & `src/index.css` Webhint/linter diagnostics + added `.hintrc`)
 > **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 

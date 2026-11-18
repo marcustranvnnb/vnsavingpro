@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Fix HTML, CSS & Webhint Problems (`index.html`, `src/index.css`, `.hintrc`)
+
+- **Request**: Resolve all IDE Problems reported in `index.html` and `src/index.css`.
+- **Changes Implemented**:
+  - Updated [index.html](../../index.html): Removed `<meta name="theme-color" content="#08090b" />` (`compat-api/html`), added `title="Google Tag Manager"` (`axe/text-alternatives`), and replaced inline `style="display:none;visibility:hidden"` on the GTM `<noscript><iframe>` with `class="gtm-noscript" hidden` (`no-inline-styles`).
+  - Updated [src/index.css](../../src/index.css): Added `.gtm-noscript` utility rule and reordered `-webkit-appearance: none;` before `appearance: none;` in `.range` and `.select` (`css-prefix-order`).
+  - Added [.hintrc](../../.hintrc) configuring Webhint hints for the Vite + React + Tailwind CSS v4 workspace.
+
+---
+
 ## [2026-11-18] — Comprehensive Security Hardening (Storage Integrity, Anti-NaN/Infinity, ErrorBoundary, CSP & Build SRI)
 
 - **Request**: Remediate findings from the security / resilience audit (localStorage JSON poisoning, NaN/Infinity injection, XSS polyglot persistence, missing CSP/security headers, and missing Subresource Integrity hashes).
