@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Layers, Coins, PiggyBank, Wallet } from 'lucide-react';
 import { useRates } from '../state.jsx';
-import { simulateLadderingMatrix } from '../utils/calculator.js';
+import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
   Badge,
@@ -47,12 +47,19 @@ const CUSTOM_TERMS = ['1M', '3M', '6M', '9M', '12M'];
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v) }));
 
+const INITIAL_LADDER_DATA = {
+  timelineRows: [],
+  finalPortfolioValue: 0,
+  finalMonthlyYield: 0,
+};
+
 export default function Ladder() {
   const { banks, getRate } = useRates();
+  const saved = useMemo(() => loadSavedPlannerState(), []);
 
-  const [monthlySavings, setMonthlySavings] = useState(5_000_000);
+  const [monthlySavings, setMonthlySavings] = useState(() => Number(saved.saving) || 5_000_000);
   const [totalMonths, setTotalMonths] = useState(12);
-  const [bankId, setBankId] = useState('tnex');
+  const [bankId, setBankId] = useState(() => saved.bankId || 'cake');
   const [strategy, setStrategy] = useState('SPLIT_50_50');
   const [shortTerm, setShortTerm] = useState('1M');
   const [longTerm, setLongTerm] = useState('12M');
@@ -71,22 +78,23 @@ export default function Ladder() {
   const customAllocations = useMemo(
     () => [
       { term: shortTerm, percent: shortPct, rate: bankRates[shortTerm] || 4.75 },
-      { term: longTerm, percent: 100 - shortPct, rate: bankRates[longTerm] || 6.5 },
+      { term: longTerm, percent: 100 - shortPct, rate: bankRates[longTerm] || 6.9 },
     ],
     [shortTerm, longTerm, shortPct, bankRates]
   );
 
-  const result = useMemo(
-    () =>
-      simulateLadderingMatrix({
-        monthlySavings,
-        strategy,
-        customAllocations,
-        totalMonths,
-        bankRates,
-      }),
+  const ladderPayload = useMemo(
+    () => ({
+      monthlySavings,
+      strategy,
+      customAllocations,
+      totalMonths,
+      bankRates,
+    }),
     [monthlySavings, strategy, customAllocations, totalMonths, bankRates]
   );
+
+  const { data: result, loading } = useServerCalc('ladder', ladderPayload, INITIAL_LADDER_DATA);
 
   const totalDeposited = monthlySavings * totalMonths;
   const totalInterest = Math.max(0, result.finalPortfolioValue - totalDeposited);
@@ -213,7 +221,7 @@ export default function Ladder() {
         </Card>
 
         {/* Results */}
-        <div className="min-w-0 space-y-5">
+        <div className={cx('min-w-0 space-y-5 transition-opacity', loading && 'opacity-75')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Stat
               icon={Coins}

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { INITIAL_BANKS_DATA } from './data/banksData.js';
+import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from './data/banksData.js';
 import { cryptoStorage } from './utils/cryptoStorage.js';
 
 /* ── Hash router ────────────────────────────────────────────
@@ -65,6 +65,25 @@ export function AppProvider({ children }) {
   }, []);
 
   const [customRates, setCustomRates] = useState(() => cryptoStorage.load('CUSTOM_RATES', {}));
+  const [serverBanks, setServerBanks] = useState(INITIAL_BANKS_DATA);
+  const [updatedAt, setUpdatedAt] = useState(RATES_UPDATED_AT);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/rates')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (Array.isArray(data.banks) && data.banks.length > 0) setServerBanks(data.banks);
+        if (data.updatedAt) setUpdatedAt(data.updatedAt);
+      })
+      .catch(() => {
+        // Fallback silently to bundled INITIAL_BANKS_DATA
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const rates = useMemo(() => {
     const persist = (next) => {
@@ -76,7 +95,8 @@ export function AppProvider({ children }) {
       return customRates[key] !== undefined ? customRates[key] : bank.rates[tenure] || 0;
     };
     return {
-      banks: INITIAL_BANKS_DATA,
+      banks: serverBanks,
+      updatedAt,
       customRates,
       getRate,
       isCustom: (bank, tenure) => customRates[`${bank.id}_${tenure}`] !== undefined,
@@ -89,9 +109,9 @@ export function AppProvider({ children }) {
       replaceAll: (next) => persist(next || {}),
       /** Highest rate across banks for a tenure. */
       best: (tenure) =>
-        INITIAL_BANKS_DATA.map((b) => ({ bank: b, rate: getRate(b, tenure) })).sort((a, b) => b.rate - a.rate)[0],
+        serverBanks.map((b) => ({ bank: b, rate: getRate(b, tenure) })).sort((a, b) => b.rate - a.rate)[0],
     };
-  }, [customRates]);
+  }, [customRates, serverBanks, updatedAt]);
 
   return (
     <ToastCtx.Provider value={notify}>

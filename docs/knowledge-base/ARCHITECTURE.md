@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v2)
+# VnSavingPro — Architecture & Technical Reference (v1.3 Tier 1 Serverless)
 
 ## 1. High-Level Architecture
 
@@ -6,49 +6,42 @@
 flowchart TD
     Entry["src/main.jsx"] --> App["src/App.jsx (AppProvider + Shell)"]
     App --> State["src/state.jsx (Hash Router + RatesCtx + ToastCtx)"]
+    State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached 1h)"]
     App --> Layout["src/components/Layout.jsx (TopNav, MobileTabBar, Footer)"]
     App --> Modal["src/components/DataModal.jsx (JSON Export/Import/Reset)"]
-    App --> Home["src/pages/Home.jsx (Eager Loaded)"]
-    App --> LazyPages["React.lazy() Code-Split Tool Pages"]
-    LazyPages --> Planner["src/pages/Planner.jsx (+ GrowthChart.jsx / Chart.js)"]
-    LazyPages --> Rates["src/pages/Rates.jsx (+ bankPackagesData.js)"]
-    LazyPages --> Calc["src/pages/Calculator.jsx"]
-    LazyPages --> Ladder["src/pages/Ladder.jsx"]
-    LazyPages --> Career["src/pages/Career.jsx"]
-    LazyPages --> Inflation["src/pages/Inflation.jsx"]
-    LazyPages --> Referral["src/pages/Referral.jsx"]
+    App --> Pages["React.lazy() Tool Pages + Home.jsx"]
+    Pages -->|useServerCalc()| ApiClient["src/utils/apiClient.js (50ms debounce + Map cache)"]
+    ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Rate-Limited Serverless Handler)"]
+    ApiCalc --> ServerLib["api/_lib/{calculator,feasibilityEvaluator}.js (Secret Server-Only)"]
 ```
 
-## 2. Routing & State Management (`src/state.jsx`)
+## 2. Proprietary Algorithm Protection (`api/_lib/` & `api/calculate.js`)
+
+- **Zero Client Exposure**: `calculator.js` and `feasibilityEvaluator.js` live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
+- **Endpoints**:
+  - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` with `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+  - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with per-IP in-memory rate limiting (`120 req/min`).
+- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates` and `/api/calculate` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
+
+## 3. Routing & State Management (`src/state.jsx`)
 
 - **Hash Router (`useRoute`, `href`)**:
-  - Parses `window.location.hash` into `{ route, params }` (e.g., `#/plan?target=10000000&saving=5000000` -> `route: 'plan'`, `params: { target: '10000000', saving: '5000000' }`).
+  - Parses `window.location.hash` into `{ route, params }` (e.g., `#/plan?target=10000000&saving=5000000`).
   - Scrolls to top automatically on `hashchange`.
-  - Works on any static host (Vercel, GitHub Pages, Cloudflare Pages) without requiring server-side route rewrites.
 - **Rates Context (`useRates`)**:
-  - Merges static baseline bank rates (`INITIAL_BANKS_DATA` from `src/data/banksData.js`) with user-customized overrides stored in `localStorage` under `VNSAVING_SECURE_CUSTOM_RATES` via `cryptoStorage`.
-  - Exposes: `banks`, `customRates`, `getRate(bank, tenure)`, `isCustom(bank, tenure)`, `setRate(bank, tenure, value)`, `resetRate(bank, tenure)`, `replaceAll(next)`, and `best(tenure)`.
-- **Toast Context (`useToast`)**:
-  - Lightweight 2.4-second notification banner at bottom of viewport.
+  - Fetches `/api/rates` on mount (falling back to `INITIAL_BANKS_DATA` + `RATES_UPDATED_AT`), merges with user-customized overrides stored in `localStorage` under `VNSAVING_SECURE_CUSTOM_RATES` via `cryptoStorage`.
+  - Exposes: `banks`, `updatedAt`, `customRates`, `getRate`, `isCustom`, `setRate`, `resetRate`, `replaceAll`, and `best(tenure)`.
+- **Cross-Tool Plan Continuity (`src/utils/apiClient.js`)**:
+  - `loadSavedPlannerState()` reads `PLANNER_STATE` so `Calculator`, `Ladder`, `Career`, and `Inflation` pre-fill from the user's active financial plan.
 
-## 3. Design System (`src/index.css` & `src/components/ui.jsx`)
+## 4. Design System (`src/index.css` & `src/components/ui.jsx`)
 
-- **Theme**: Dark-first financial dashboard (`bg-canvas` `#08090b`, `bg-surface` `#101216`, `bg-elevated` `#161920`, indigo/emerald accents, `Inter` font with `tabular-nums` for numbers).
+- **Theme**: Dark-first financial dashboard (`bg-canvas` `#08090b`, `bg-surface` `#0e0f13`, `bg-elevated` `#16181d`, indigo/emerald accents, `Inter` font with `tabular-nums`).
 - **Reusable Primitives (`src/components/ui.jsx`)**:
-  - `Card` & `CardHeader`: Bordered translucent dark surfaces (`border-white/[0.07] bg-surface/90`).
-  - `Button`: Variants `primary` (indigo), `secondary`, `ghost`, `danger`; polymorphic via `as="a"`.
-  - `Badge`: Tones `neutral`, `brand`, `success`, `warning`, `danger`.
-  - `Chip` & `Segmented`: Preset selectors and view toggles.
-  - `MoneyField`: Combined formatted VND text input + range slider + preset chips.
-  - `DecimalInput`, `NumberInput`, `SliderField`: Controlled numeric inputs with suffix labels.
-  - `Stat`, `Progress`, `Callout`, `Table`, `Modal`, `PageHeader`, `BankMark`.
+  - `NumberInput` manages `focused` + `draft` state so typing or clearing digits never jumps the cursor or locks on `0`.
+  - `@media print` in `src/index.css` expands scrollable tables and hides navigation/action controls for clean PDF printing.
 
-## 4. Build & Bundling (`vite.config.js`)
+## 5. Build & Deployment (`vite.config.js` & `vercel.json`)
 
-- **Vite 5** with `@vitejs/plugin-react` and `@tailwindcss/vite` (Tailwind v4).
-- **Manual Chunks**:
-  - `react`: `['react', 'react-dom']`
-  - `charts`: `['chart.js', 'react-chartjs-2']` (only loaded when visiting `#/plan` since `Planner.jsx` is lazy-loaded).
-- **Deployment Configs**:
-  - `vercel.json`: Currently uses legacy `"builds": ["@vercel/static-build"]` — scheduled to be modernized to `"framework": "vite"` in the GitHub/Vercel deployment plan.
-  - `wrangler.jsonc`: Cloudflare Pages static assets config (`./dist`).
+- **Vite 5** with `@vitejs/plugin-react`, `@tailwindcss/vite`, `build.sourcemap: false`, and manual chunks (`react`, `charts`).
+- **`vercel.json`**: Uses `"framework": "vite"`, excludes `/api/(.*)` from SPA rewrites (`"source": "/((?!api/).*)"`), and deploys serverless functions under `api/`.

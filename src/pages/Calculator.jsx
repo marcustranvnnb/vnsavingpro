@@ -2,8 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Calculator as CalcIcon, CheckCircle2, Info, Scissors } from 'lucide-react';
 import { useRates } from '../state.jsx';
 import { TENURE_DAYS_MAP, TENURE_LABELS } from '../data/banksData.js';
-import { calculateEarlyWithdrawalComparison } from '../utils/calculator.js';
-import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
+import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { chip, compact, pct, vnd } from '../utils/format.js';
 import {
   Badge,
   Callout,
@@ -18,16 +18,35 @@ import {
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
 
-const TENURES = ['1M', '3M', '6M', '9M', '12M', '18M', '24M', '36M'];
-
 const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v) }));
+
+const INITIAL_CALC_DATA = {
+  days: 365,
+  months: 12,
+  m1: { interest: 0, monthly: 0, total: 0 },
+  m2: { interest: 0, monthly: 0, total: 0 },
+  m3: { interest: 0, monthly: 0, total: 0 },
+  diffDaysVsMonths: 0,
+  diffCompoundVsDays: 0,
+  earlySim: {
+    withdrawAmount: 30_000_000,
+    remainingPrincipal: 70_000_000,
+    daysHeld: 180,
+    totalDays: 365,
+    nonTermRate: 0.5,
+    fullEarlyInterest: 0,
+    partialTotalInterest: 0,
+    interestSavedByPartial: 0,
+  },
+};
 
 export default function Calculator() {
   const { banks, getRate } = useRates();
+  const saved = useMemo(() => loadSavedPlannerState(), []);
 
   const [principal, setPrincipal] = useState(100_000_000);
-  const [bankId, setBankId] = useState('tnex');
-  const [tenure, setTenure] = useState('12M');
+  const [bankId, setBankId] = useState(() => saved.bankId || 'cake');
+  const [tenure, setTenure] = useState(() => saved.tenure || '12M');
   const [customRate, setCustomRate] = useState('');
   const [customDays, setCustomDays] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState(30_000_000);
@@ -36,37 +55,23 @@ export default function Calculator() {
   const bank = banks.find((b) => b.id === bankId) || banks[0];
   const rate = customRate !== '' && Number(customRate) > 0 ? Number(customRate) : getRate(bank, tenure) || 6;
 
-  const months = parseInt(tenure, 10) || 12;
   const defaultDays = TENURE_DAYS_MAP[tenure] || 365;
   const days = customDays !== '' && Number(customDays) > 0 ? Number(customDays) : defaultDays;
 
-  const earlySim = useMemo(
-    () =>
-      calculateEarlyWithdrawalComparison({
-        principal,
-        ratePercent: rate,
-        totalDays: days,
-        withdrawAmount: Math.min(principal, withdrawAmount),
-        daysHeld: Math.min(days, daysHeld),
-        nonTermRate: 0.5,
-      }),
-    [principal, rate, days, withdrawAmount, daysHeld]
+  const calcPayload = useMemo(
+    () => ({
+      principal,
+      rate,
+      tenure,
+      customDays: customDays !== '' && Number(customDays) > 0 ? Number(customDays) : null,
+      withdrawAmount: Math.min(principal, withdrawAmount),
+      daysHeld: Math.min(days, daysHeld),
+    }),
+    [principal, rate, tenure, customDays, withdrawAmount, days, daysHeld]
   );
 
-  // 1. Actual days / 365 (Circular 14/2017/TT-NHNN)
-  const m1Interest = Math.round((principal * (rate / 100) * days) / 365);
-  const m1Monthly = Math.round(m1Interest / months);
-  const m1Total = principal + m1Interest;
-
-  // 2. Nominal months / 12
-  const m2Interest = Math.round((principal * (rate / 100) * months) / 12);
-  const m2Monthly = Math.round(m2Interest / months);
-  const m2Total = principal + m2Interest;
-
-  // 3. Monthly compounding
-  const m3Total = Math.round(principal * Math.pow(1 + rate / 100 / 12, months));
-  const m3Interest = m3Total - principal;
-  const m3Monthly = Math.round(m3Interest / months);
+  const { data: res, loading } = useServerCalc('calculator_bundle', calcPayload, INITIAL_CALC_DATA);
+  const { m1, m2, m3, diffDaysVsMonths, diffCompoundVsDays, earlySim } = res;
 
   const methods = [
     {
@@ -74,10 +79,10 @@ export default function Calculator() {
       badge: 'Chuẩn NHNN (TT 14)',
       tone: 'success',
       title: 'Ngày thực tế / 365',
-      formula: `${fmt(principal)} × ${pct(rate)} × ${days} ngày ÷ 365`,
-      interest: m1Interest,
-      monthly: m1Monthly,
-      total: m1Total,
+      subtitle: `${days} ngày thực gửi · Cơ sở 365 ngày`,
+      interest: m1.interest,
+      monthly: m1.monthly,
+      total: m1.total,
       desc: 'Áp dụng tại hầu hết ngân hàng Việt Nam theo Thông tư 14/2017/TT-NHNN (tính trên cơ sở 1 năm = 365 ngày).',
       highlight: true,
     },
@@ -86,10 +91,10 @@ export default function Calculator() {
       badge: 'Tháng tròn',
       tone: 'neutral',
       title: 'Tháng tròn / 12',
-      formula: `${fmt(principal)} × ${pct(rate)} × ${months} tháng ÷ 12`,
-      interest: m2Interest,
-      monthly: m2Monthly,
-      total: m2Total,
+      subtitle: `${res.months} tháng tròn · Chia đều 12 tháng`,
+      interest: m2.interest,
+      monthly: m2.monthly,
+      total: m2.total,
       desc: 'Cách ước tính nhẩm nhanh bằng cách chia đều 12 tháng. Thường lệch nhẹ ở các kỳ hạn 1–6 tháng (30 ngày/tháng).',
     },
     {
@@ -97,16 +102,13 @@ export default function Calculator() {
       badge: 'Tái tục hàng tháng',
       tone: 'brand',
       title: 'Lãi kép hàng tháng',
-      formula: `${fmt(principal)} × (1 + ${pct(rate)} ÷ 12)^${months}`,
-      interest: m3Interest,
-      monthly: m3Monthly,
-      total: m3Total,
+      subtitle: `Tái tục gốc + lãi qua ${res.months} chu kỳ`,
+      interest: m3.interest,
+      monthly: m3.monthly,
+      total: m3.total,
       desc: 'Áp dụng khi tiền lãi mỗi tháng được tự động cộng dồn vào gốc để tính lãi cho tháng kế tiếp.',
     },
   ];
-
-  const diffDaysVsMonths = m1Interest - m2Interest;
-  const diffCompoundVsDays = m3Interest - m1Interest;
 
   return (
     <>
@@ -173,7 +175,7 @@ export default function Calculator() {
         </Card>
 
         {/* Right results */}
-        <div className="space-y-5">
+        <div className={cx('space-y-5 transition-opacity', loading && 'opacity-75')}>
           <div className="grid gap-4 md:grid-cols-3">
             {methods.map((m) => (
               <Card
@@ -189,8 +191,8 @@ export default function Calculator() {
                     {m.highlight && <CheckCircle2 className="size-4 text-emerald-400" />}
                   </div>
                   <h3 className="mt-3 text-base font-semibold text-white">{m.title}</h3>
-                  <div className="mt-2 rounded-lg bg-black/30 px-3 py-2 font-mono text-[11px] text-zinc-400 ring-1 ring-inset ring-white/[0.05]">
-                    {m.formula}
+                  <div className="mt-2 rounded-lg bg-black/30 px-3 py-2 text-[11px] text-zinc-400 ring-1 ring-inset ring-white/[0.05]">
+                    {m.subtitle}
                   </div>
 
                   <div className="mt-5">
@@ -254,8 +256,8 @@ export default function Calculator() {
           <Callout icon={Info} tone="brand">
             <strong>Lưu ý thực tế:</strong> Theo Thông tư 14/2017/TT-NHNN của Ngân hàng Nhà nước, các ngân hàng thương
             mại và ngân hàng số tại Việt Nam niêm yết lãi suất năm dựa trên cơ sở <strong>365 ngày</strong>. Khi gửi kỳ
-            hạn ngắn (ví dụ 1 tháng = 30 ngày), số tiền lãi thực nhận sẽ tính theo công thức{' '}
-            <code className="text-indigo-200">Gốc × Lãi suất × Số ngày thực gửi / 365</code>.
+            hạn ngắn (ví dụ 1 tháng = 30 ngày), số tiền lãi thực nhận được tính tự động theo số ngày thực gửi qua máy
+            chủ tính toán bảo mật của VnSavingPro.
           </Callout>
 
           {/* Partial Early Withdrawal Simulator (v1.2 Feature) */}

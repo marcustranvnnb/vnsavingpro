@@ -1,6 +1,8 @@
 # VnSavingPro — Financial Domain & Formulas Reference
 
-## 1. Core Financial Calculation Engine (`src/utils/calculator.js`)
+## 1. Core Financial Calculation Engine (Server-Only: `api/_lib/calculator.js`)
+
+All financial algorithms reside exclusively on the server (`api/_lib/calculator.js` + `api/_lib/feasibilityEvaluator.js`) and are invoked via `POST /api/calculate` (`api/calculate.js`).
 
 ### A. Single Deposit Interest (`calculateInterest`)
 Supports two calculation modes and multiple payout methods:
@@ -63,11 +65,13 @@ Starts at baseline `70` (clamped `[10, 100]`):
 
 ---
 
-## 3. Baseline Digital Bank Data (`src/data/banksData.js` & `bankPackagesData.js`)
+## 3. Baseline Digital Bank Data (`src/data/banksData.js` & `bankPackagesData.js` — Updated 18/11/2026)
 
-| Bank | ID | Parent Bank | Key 1M Rate | Key 6M Rate | Key 12M Rate | Peak Rate | Flagship Product |
+All 4 banks comply with SBV ceiling caps (`0.50%/yr` non-term, `4.75%/yr` for `1M–5M` terms):
+
+| Bank | ID | Parent Bank | 1M Rate | 6M Rate | 12M Rate | Peak Standard Rate | Flagship Product & Promo Tier |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **TNEX** | `tnex` | MSB | 5.50% | 7.00% | **8.60%** | 8.60% (12M) | Tiết kiệm Flex (4.0% demand), Kỳ hạn 12M промо 8.6% |
-| **LioBank** | `liobank` | OCB | 4.75% | 6.40% | 6.70% | 6.80% (24M/36M) | Ống heo Pigg (4.75% không kỳ hạn) |
-| **CakeBank** | `cake` | VPBank | 4.75% | 5.20% | 5.80% | 5.90% (18M–36M) / 6.7% tích lũy | Tiết kiệm tích lũy, Trả lãi đầu kỳ, Rút gốc từng phần |
-| **Timo** | `timo` | BVBank | 4.80% | 5.80% | 6.20% | 6.30% (18M–36M) | Hũ tiết kiệm Smart, Chia nhỏ sổ (4 sổ tự động) |
+| **CakeBank** | `cake` | VPBank | 4.75% | **6.90%** | **6.90%** | **6.90%** (6M–24M) | Niêm yết cao nhất 6.90% + Promo đến `+2.2%` (`9.1%`), Rút gốc từng phần |
+| **Timo** | `timo` | BVBank | 4.75% | 6.20% | 6.70% | **6.90%** (18M–24M) | Tự động chia nhỏ 4 sổ + Gói ưu đãi đặc quyền lên đến `8.20%/năm` |
+| **TNEX** | `tnex` | MSB | 4.75% | 5.80% | 6.30% | 6.50% (18M–36M) | Biểu lãi suất online MSB (gói đặc biệt 12M đến `7.00%/năm`) |
+| **LioBank** | `liobank` | OCB | 4.75% | 5.90% | 6.20% | 6.70% (24M–36M) | Ống heo Pigg `4.75%/năm` (kỳ hạn 1 tháng), Tiết kiệm tự động `3.50%/năm` |

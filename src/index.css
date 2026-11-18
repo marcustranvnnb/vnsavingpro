@@ -132,8 +132,14 @@ input[type="number"]::-webkit-outer-spin-button {
   header,
   footer,
   nav,
-  button {
+  button,
+  .print-hidden {
     display: none !important;
+  }
+  .overflow-auto,
+  [class*="max-h-"] {
+    max-height: none !important;
+    overflow: visible !important;
   }
   body {
     background: #08090b !important;

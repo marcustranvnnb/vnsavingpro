@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Version 1.3: Tier 1 Serverless + Secret Server Engine + Digital Bank Rate & UX Upgrade
+- **Security & Architecture**:
+  - Moved `calculator.js` and `feasibilityEvaluator.js` out of `src/utils/` into server-only `api/_lib/` so proprietary financial and scoring algorithms never ship to the browser bundle (`build.sourcemap: false` in `vite.config.js`).
+  - Added `api/calculate.js` (`POST /api/calculate` with per-IP rate limiting) and `api/rates.js` (`GET /api/rates` with Edge cache headers).
+  - Created `src/utils/apiClient.js` (`useServerCalc` with 50ms debounce + Map cache, plus `loadSavedPlannerState()`).
+  - Added `vercelApiPlugin()` in `vite.config.js` and `/api/(.*)` routing in `vercel.json` for local dev/preview and Vercel parity.
+- **Data & UI/UX**:
+  - Updated all 4 digital banks (`CakeBank`, `Timo`, `LioBank`, `TNEX`) in `src/data/banksData.js` and `src/data/bankPackagesData.js` to SBV-compliant caps and latest market rates (`RATES_UPDATED_AT = "18/11/2026"`).
+  - Fixed `NumberInput` caret jump in `src/components/ui.jsx`, added mobile sticky summary bar in `Planner.jsx`, added cross-tool `PLANNER_STATE` pre-fill, added `"Lập kế hoạch"` CTAs in `Rates.jsx`, and expanded `@media print` tables in `src/index.css`.
+
 ## [2026-11-17] — Pushed v1.2 to GitHub (`marcustranvnnb/vnsavingpro`)
 - **Deployed**:
   - Initialized Git repository, set remote `origin` to `https://github.com/marcustranvnnb/vnsavingpro.git`, and pushed `main` branch (`23b79a2`).

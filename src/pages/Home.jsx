@@ -1,13 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, ArrowUpRight, Lock, RefreshCw, Sparkles, Zap } from 'lucide-react';
 import { TOOLS } from '../tools.js';
 import { href, useRates } from '../state.jsx';
-import { calculatePassiveIncomeRoadmap } from '../utils/calculator.js';
+import { useServerCalc } from '../utils/apiClient.js';
 import { compact, chip, pct } from '../utils/format.js';
 import { Badge, BankMark, Button, Card, Chip, cx } from '../components/ui.jsx';
 
 const TARGETS = [5_000_000, 10_000_000, 20_000_000, 30_000_000];
 const SAVINGS = [3_000_000, 5_000_000, 10_000_000];
+
+const INITIAL_ESTIMATE = {
+  timeText: '...',
+  requiredPrincipal: 0,
+  compoundSharePct: 0,
+  monthsNeeded: 0,
+};
 
 function QuickEstimate() {
   const { best } = useRates();
@@ -15,15 +22,15 @@ function QuickEstimate() {
   const [saving, setSaving] = useState(5_000_000);
   const top = best('12M');
 
-  const r = useMemo(
-    () =>
-      calculatePassiveIncomeRoadmap({
-        targetMonthlyInterest: target,
-        monthlySavingsAmount: saving,
-        initialCapital: 0,
-        annualInterestRate: top.rate,
-      }),
-    [target, saving, top.rate]
+  const { data: r, loading } = useServerCalc(
+    'quick_estimate',
+    {
+      targetMonthlyInterest: target,
+      monthlySavingsAmount: saving,
+      initialCapital: 0,
+      annualInterestRate: top.rate,
+    },
+    INITIAL_ESTIMATE
   );
 
   return (
@@ -55,7 +62,7 @@ function QuickEstimate() {
           ))}
         </div>
 
-        <div className="mt-6 border-t border-white/[0.06] pt-5">
+        <div className={cx('mt-6 border-t border-white/[0.06] pt-5 transition-opacity', loading && 'opacity-70')}>
           <div className="text-[13px] text-zinc-500">Bạn sẽ đạt mục tiêu sau</div>
           <div className="mt-1 text-3xl font-semibold tracking-tight text-white tabular-nums">{r.timeText}</div>
           <div className="mt-2 text-[13px] leading-relaxed text-zinc-400">
@@ -119,7 +126,7 @@ function RateSnapshot() {
 }
 
 export default function Home() {
-  const { best } = useRates();
+  const { best, updatedAt } = useRates();
   const top = best('12M');
   const primary = TOOLS.filter((t) => t.primary);
   const secondary = TOOLS.filter((t) => !t.primary);
@@ -137,7 +144,7 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-full bg-white/[0.04] py-1 pl-1 pr-3 text-xs text-zinc-300 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.07]"
             >
               <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-300">Mới</span>
-              Lãi suất cập nhật 30/09/2026
+              Lãi suất cập nhật {updatedAt}
               <ArrowRight className="size-3" />
             </a>
             <h1 className="mt-6 text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-[56px]">

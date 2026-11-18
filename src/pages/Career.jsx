@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Briefcase, Sparkles } from 'lucide-react';
 import { useRates } from '../state.jsx';
-import { calculateCareerGrowthImpact } from '../utils/calculator.js';
+import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
   Badge,
@@ -39,14 +39,40 @@ const OPTIONS = [
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v) }));
 
+const EMPTY_CAREER_RES = {
+  requiredPrincipal: 0,
+  monthsToGoal: 0,
+  yearsToGoal: 0,
+  finalMonthlySalary: 0,
+  annualLog: [],
+};
+
+const INITIAL_CAREER_DATA = {
+  results: {
+    FIXED_RAISE: EMPTY_CAREER_RES,
+    PERCENT_RAISE: EMPTY_CAREER_RES,
+    JOB_HOPPING: EMPTY_CAREER_RES,
+  },
+};
+
 export default function Career() {
   const { banks, getRate } = useRates();
-  const [salary, setSalary] = useState(30_000_000);
+  const saved = useMemo(() => loadSavedPlannerState(), []);
+
+  const initialBankId = saved.bankId || 'cake';
+  const initialTenure = saved.tenure || '12M';
+  const initialBank = banks.find((b) => b.id === initialBankId) || banks[0];
+  const initialRate =
+    saved.customRate !== '' && Number(saved.customRate) > 0
+      ? Number(saved.customRate)
+      : getRate(initialBank, initialTenure) || 6.9;
+
+  const [salary, setSalary] = useState(() => Number(saved.salary) || 30_000_000);
   const [savingsRate, setSavingsRate] = useState(20);
-  const [targetIncome, setTargetIncome] = useState(10_000_000);
-  const [bankId, setBankId] = useState('tnex');
-  const [tenure, setTenure] = useState('12M');
-  const [annualRate, setAnnualRate] = useState(8.6);
+  const [targetIncome, setTargetIncome] = useState(() => Number(saved.target) || 10_000_000);
+  const [bankId, setBankId] = useState(initialBankId);
+  const [tenure, setTenure] = useState(initialTenure);
+  const [annualRate, setAnnualRate] = useState(initialRate);
   const [selected, setSelected] = useState('JOB_HOPPING');
 
   const handleBankChange = (nextBankId) => {
@@ -61,19 +87,25 @@ export default function Career() {
     setAnnualRate(getRate(b, nextTenure) || 6.0);
   };
 
+  const careerPayload = useMemo(
+    () => ({
+      currentSalary: salary,
+      savingsRatePercent: savingsRate,
+      targetMonthlyInterest: targetIncome,
+      annualInterestRate: annualRate,
+    }),
+    [salary, savingsRate, targetIncome, annualRate]
+  );
+
+  const { data: careerBundle, loading } = useServerCalc('career', careerPayload, INITIAL_CAREER_DATA);
+
   const results = useMemo(
     () =>
       OPTIONS.map((opt) => ({
         ...opt,
-        res: calculateCareerGrowthImpact({
-          currentSalary: salary,
-          savingsRatePercent: savingsRate,
-          targetMonthlyInterest: targetIncome,
-          annualInterestRate: annualRate,
-          careerOption: opt.id,
-        }),
+        res: careerBundle.results?.[opt.id] || EMPTY_CAREER_RES,
       })),
-    [salary, savingsRate, targetIncome, annualRate]
+    [careerBundle]
   );
 
   const active = results.find((r) => r.id === selected) || results[0];
@@ -142,7 +174,7 @@ export default function Career() {
         </Card>
 
         {/* Results */}
-        <div className="min-w-0 space-y-5">
+        <div className={cx('min-w-0 space-y-5 transition-opacity', loading && 'opacity-75')}>
           {/* 3 Career Strategy Cards */}
           <div className="grid gap-3 md:grid-cols-3">
             {results.map((item) => {

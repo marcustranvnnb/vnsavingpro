@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, TrendingDown, ShieldCheck, Percent, Coins } from 'lucide-react';
-import { calculateInflationImpact } from '../utils/calculator.js';
+import { useRates } from '../state.jsx';
+import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
   Callout,
@@ -12,46 +13,50 @@ import {
   SliderField,
   Stat,
   Table,
+  cx,
 } from '../components/ui.jsx';
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v) }));
 
+const INITIAL_INFLATION_DATA = {
+  impact: {
+    realRate: 3.4,
+    fisherRealRate: 3.29,
+    equivalentCurrentValue: 0,
+    inflationLossAmount: 0,
+    purchasingPowerRetainedPercent: 0,
+  },
+  futureNominalNeeded: 0,
+  rows: [],
+};
+
 export default function Inflation() {
-  const [targetIncome, setTargetIncome] = useState(10_000_000);
-  const [nominalRate, setNominalRate] = useState(8.6);
+  const { banks, getRate } = useRates();
+  const saved = useMemo(() => loadSavedPlannerState(), []);
+
+  const initialBank = banks.find((b) => b.id === (saved.bankId || 'cake')) || banks[0];
+  const initialRate =
+    saved.customRate !== '' && Number(saved.customRate) > 0
+      ? Number(saved.customRate)
+      : getRate(initialBank, saved.tenure || '12M') || 6.9;
+
+  const [targetIncome, setTargetIncome] = useState(() => Number(saved.target) || 10_000_000);
+  const [nominalRate, setNominalRate] = useState(initialRate);
   const [inflationRate, setInflationRate] = useState(3.5);
   const [years, setYears] = useState(10);
 
-  const impact = useMemo(
-    () =>
-      calculateInflationImpact({
-        nominalRate,
-        inflationRate,
-        targetPassiveIncome: targetIncome,
-        years,
-      }),
+  const inflationPayload = useMemo(
+    () => ({
+      nominalRate,
+      inflationRate,
+      targetPassiveIncome: targetIncome,
+      years,
+    }),
     [nominalRate, inflationRate, targetIncome, years]
   );
 
-  // Also compute how much future nominal income is needed to keep today's purchasing power
-  const futureNominalNeeded = Math.round(targetIncome * Math.pow(1 + inflationRate / 100, years));
-
-  const rows = useMemo(() => {
-    const list = [];
-    for (let y = 1; y <= years; y++) {
-      const ratio = 1 / Math.pow(1 + inflationRate / 100, y);
-      const realValue = Math.round(targetIncome * ratio);
-      const needed = Math.round(targetIncome * Math.pow(1 + inflationRate / 100, y));
-      list.push({
-        year: y,
-        nominal: targetIncome,
-        realValue,
-        retainedPct: Number((ratio * 100).toFixed(1)),
-        neededForSamePower: needed,
-      });
-    }
-    return list;
-  }, [targetIncome, inflationRate, years]);
+  const { data: inflationBundle, loading } = useServerCalc('inflation', inflationPayload, INITIAL_INFLATION_DATA);
+  const { impact, futureNominalNeeded, rows } = inflationBundle;
 
   return (
     <>
@@ -109,7 +114,7 @@ export default function Inflation() {
         </Card>
 
         {/* Results */}
-        <div className="min-w-0 space-y-5">
+        <div className={cx('min-w-0 space-y-5 transition-opacity', loading && 'opacity-75')}>
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Stat
               icon={Percent}

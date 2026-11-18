@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ArrowRight,
   BarChart3,
   CheckCircle2,
   ChevronDown,
@@ -10,7 +11,7 @@ import {
   Shield,
   Sparkles,
 } from 'lucide-react';
-import { useRates, useToast } from '../state.jsx';
+import { href, useRates, useToast } from '../state.jsx';
 import { TENURE_LABELS } from '../data/banksData.js';
 import { DIGITAL_BANKS } from '../data/bankPackagesData.js';
 import { fmt, pct } from '../utils/format.js';
@@ -168,7 +169,7 @@ function PackageItem({ pkg }) {
 }
 
 export default function Rates() {
-  const { banks, getRate, isCustom, setRate, resetRate } = useRates();
+  const { banks, updatedAt, getRate, isCustom, setRate, resetRate } = useRates();
   const notify = useToast();
 
   const [tenure, setTenure] = useState('12M');
@@ -213,9 +214,9 @@ export default function Rates() {
     <>
       <PageHeader
         icon={BarChart3}
-        eyebrow="Dữ liệu lãi suất 2026"
+        eyebrow={`Dữ liệu lãi suất ${updatedAt}`}
         title="So sánh lãi suất ngân hàng số"
-        description="Bảng lãi suất niêm yết của TNEX, LioBank, Cake và Timo. Nhấn vào bất kỳ mức lãi suất nào để cập nhật theo chương trình ưu đãi riêng của bạn."
+        description="Bảng lãi suất niêm yết của Cake, Timo, LioBank và TNEX. Nhấn vào bất kỳ mức lãi suất nào để cập nhật theo chương trình ưu đãi riêng của bạn."
         actions={
           <Segmented
             value={section}
@@ -312,15 +313,23 @@ export default function Rates() {
                   )}
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-1 border-t border-white/[0.06] pt-3">
-                  {bank.partialWithdrawal && (
-                    <Badge tone="brand">Rút gốc từng phần</Badge>
-                  )}
-                  {bank.payoutMethods.map((m) => (
-                    <Badge key={m} tone="neutral">
-                      {PAYOUT_LABELS[m] || m}
-                    </Badge>
-                  ))}
+                <div className="mt-4 space-y-3 border-t border-white/[0.06] pt-3">
+                  <div className="flex flex-wrap gap-1">
+                    {bank.partialWithdrawal && (
+                      <Badge tone="brand">Rút gốc từng phần</Badge>
+                    )}
+                    {bank.payoutMethods.map((m) => (
+                      <Badge key={m} tone="neutral">
+                        {PAYOUT_LABELS[m] || m}
+                      </Badge>
+                    ))}
+                  </div>
+                  <a
+                    href={href('plan', { bank: bank.id, tenure })}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-300 transition-colors hover:text-indigo-200"
+                  >
+                    Lập kế hoạch với lãi suất này <ArrowRight className="size-3" />
+                  </a>
                 </div>
               </Card>
             ))}

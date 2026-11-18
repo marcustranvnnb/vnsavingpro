@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { fmt } from '../utils/format.js';
 
@@ -164,8 +164,24 @@ export function Range({ value, min, max, step = 1, onChange, ariaLabel }) {
   );
 }
 
-/** Text input that formats with thousand separators (vi-VN). */
+/** Text input that formats with thousand separators (vi-VN) without caret jump while editing. */
 export function NumberInput({ value, onChange, suffix, max, className, ariaLabel }) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const handleFocus = (e) => {
+    setFocused(true);
+    setDraft(value ? String(value) : '');
+    requestAnimationFrame(() => e.target?.select?.());
+  };
+
+  const handleChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    const clamped = digits === '' ? '' : String(max ? Math.min(max, Number(digits)) : Number(digits));
+    setDraft(clamped);
+    onChange(clamped === '' ? 0 : Number(clamped));
+  };
+
   return (
     <div
       className={cx(
@@ -176,11 +192,10 @@ export function NumberInput({ value, onChange, suffix, max, className, ariaLabel
       <input
         aria-label={ariaLabel}
         inputMode="numeric"
-        value={fmt(value)}
-        onChange={(e) => {
-          const n = Number(e.target.value.replace(/\D/g, '')) || 0;
-          onChange(max ? Math.min(max, n) : n);
-        }}
+        value={focused ? draft : fmt(value)}
+        onFocus={handleFocus}
+        onBlur={() => setFocused(false)}
+        onChange={handleChange}
         className="w-full min-w-0 bg-transparent text-right text-sm font-medium tabular-nums text-white outline-none"
       />
       {suffix && <span className="ml-2 shrink-0 text-xs text-zinc-500">{suffix}</span>}

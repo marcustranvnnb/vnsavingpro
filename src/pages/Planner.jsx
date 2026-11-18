@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  ArrowDown,
   CheckCircle2,
   Download,
   Target,
@@ -15,8 +16,7 @@ import {
   Printer,
 } from 'lucide-react';
 import { href, useRates, useToast } from '../state.jsx';
-import { calculatePassiveIncomeRoadmap } from '../utils/calculator.js';
-import { evaluatePlanFeasibility } from '../utils/feasibilityEvaluator.js';
+import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { compact, chip, duration, fmt, pct, vnd } from '../utils/format.js';
 import { TENURE_LABELS } from '../data/banksData.js';
@@ -40,10 +40,33 @@ import GrowthChart from '../components/GrowthChart.jsx';
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : chip(v) }));
 
+const INITIAL_PLANNER_DATA = {
+  roadmap: {
+    requiredPrincipal: 0,
+    monthsNeeded: 0,
+    yearsNeeded: 0,
+    timeText: 'Đang tính...',
+    totalDeposited: 0,
+    totalCompoundInterest: 0,
+    compoundSharePct: 0,
+    savingsRatePercent: 0,
+    isAlreadyReached: false,
+    monthByMonthLog: [],
+  },
+  feasibility: {
+    score: 70,
+    ratingLabel: 'Đang đánh giá...',
+    strengths: [],
+    warnings: [],
+  },
+  scenarios: [],
+  bankRuns: [],
+};
+
 export default function Planner({ params = {} }) {
   const { banks, getRate, best } = useRates();
   const notify = useToast();
-  const saved = useMemo(() => cryptoStorage.load('PLANNER_STATE', {}) || {}, []);
+  const saved = useMemo(() => loadSavedPlannerState(), []);
 
   const [target, setTarget] = useState(() => Number(params.target) || Number(saved.target) || 10_000_000);
   const [capital, setCapital] = useState(() =>
@@ -53,7 +76,7 @@ export default function Planner({ params = {} }) {
     params.saving !== undefined ? Number(params.saving) : saved.saving !== undefined ? Number(saved.saving) : 5_000_000
   );
   const [salary, setSalary] = useState(() => Number(params.salary) || Number(saved.salary) || 25_000_000);
-  const [bankId, setBankId] = useState(() => params.bank || saved.bankId || 'tnex');
+  const [bankId, setBankId] = useState(() => params.bank || saved.bankId || 'cake');
   const [tenure, setTenure] = useState(() => params.tenure || saved.tenure || '12M');
   const [customRate, setCustomRate] = useState(() => params.rate ?? saved.customRate ?? '');
   const [calcMode, setCalcMode] = useState(() => params.mode || saved.calcMode || 'NOMINAL_MONTHS');
@@ -77,55 +100,34 @@ export default function Planner({ params = {} }) {
   const usingCustom = customRate !== '' && Number(customRate) > 0;
   const rate = usingCustom ? Number(customRate) : getRate(bank, tenure) || 6;
 
-  const run = (o = {}) =>
-    calculatePassiveIncomeRoadmap({
+  const plannerPayload = useMemo(() => {
+    const top = best(tenure);
+    const bankComparisons = banks.map((b) => {
+      const [bestTenure, bestRate] = TENURE_OPTIONS.map((t) => [t, getRate(b, t)]).sort((x, y) => y[1] - x[1])[0];
+      return { bankId: b.id, bestTenure, bestRate };
+    });
+    return {
       targetMonthlyInterest: target,
       currentSalary: salary,
       monthlySavingsAmount: saving,
       initialCapital: capital,
       annualInterestRate: rate,
       calculationMode: calcMode,
-      ...o,
-    });
+      topForTenure: top ? { bankName: top.bank.name, rate: top.rate, rateLabel: pct(top.rate) } : null,
+      bankComparisons,
+    };
+  }, [target, salary, saving, capital, rate, calcMode, tenure, banks, getRate, best]);
 
-  const roadmap = useMemo(() => run(), [target, salary, saving, capital, rate, calcMode]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const feasibility = useMemo(
-    () =>
-      evaluatePlanFeasibility({
-        monthlySalary: salary,
-        monthlySavings: saving,
-        yearsToGoal: roadmap.yearsNeeded,
-        realYieldRate: Math.max(0, rate - 3.5),
-      }),
-    [salary, saving, roadmap.yearsNeeded, rate]
-  );
-
-  // What-if scenarios
-  const scenarios = useMemo(() => {
-    const top = best(tenure);
-    const list = [
-      { title: 'Tiết kiệm thêm 1 triệu/tháng', r: run({ monthlySavingsAmount: saving + 1_000_000 }) },
-      { title: 'Tiết kiệm thêm 3 triệu/tháng', r: run({ monthlySavingsAmount: saving + 3_000_000 }) },
-    ];
-    if (top && top.rate > rate) {
-      list.push({ title: `Chuyển sang ${top.bank.name} ${pct(top.rate)}`, r: run({ annualInterestRate: top.rate }) });
-    } else {
-      list.push({ title: 'Thêm 50 triệu vốn ban đầu', r: run({ initialCapital: capital + 50_000_000 }) });
-    }
-    return list;
-  }, [target, salary, saving, capital, rate, tenure, best]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Bank comparison (each bank at its highest-paying tenure)
+  const { data: bundle, loading } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA);
+  const { roadmap, feasibility, scenarios } = bundle;
   const bankRuns = useMemo(
     () =>
-      banks
-        .map((b) => {
-          const [bestTenure, bestRate] = TENURE_OPTIONS.map((t) => [t, getRate(b, t)]).sort((x, y) => y[1] - x[1])[0];
-          return { bank: b, tenure: bestTenure, rate: bestRate, r: run({ annualInterestRate: bestRate }) };
-        })
-        .sort((a, b) => a.r.monthsNeeded - b.r.monthsNeeded),
-    [banks, getRate, target, salary, saving, capital] // eslint-disable-line react-hooks/exhaustive-deps
+      (bundle.bankRuns || []).map((item) => ({
+        ...item,
+        bank: banks.find((b) => b.id === item.bankId) || banks[0],
+        r: { monthsNeeded: item.monthsNeeded },
+      })),
+    [bundle.bankRuns, banks]
   );
   const maxMonths = Math.max(...bankRuns.map((x) => Math.min(x.r.monthsNeeded, 720)), 1);
 
@@ -283,7 +285,7 @@ export default function Planner({ params = {} }) {
         </Card>
 
         {/* ── Results ── */}
-        <div className="min-w-0 space-y-5">
+        <div id="planner-results" className={cx('min-w-0 space-y-5 transition-opacity', loading && 'opacity-75')}>
           {/* Headline */}
           <Card className="relative overflow-hidden p-5 sm:p-7">
             <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-indigo-500/15 blur-3xl" />
@@ -299,7 +301,7 @@ export default function Planner({ params = {} }) {
               </div>
               <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
                 {roadmap.isAlreadyReached
-                  ? `Vốn hiện tại đã đủ tạo ra ${vnd(Math.round((capital * rate) / 1200))} lãi mỗi tháng.`
+                  ? `Vốn hiện tại đã đủ tạo ra ${vnd(roadmap.monthByMonthLog[0]?.monthlyPassiveIncomeGenerated || 0)} lãi mỗi tháng.`
                   : reachable
                     ? `Tích luỹ đủ ${vnd(roadmap.requiredPrincipal)} bằng cách gửi ${compact(saving)} mỗi tháng và để lãi tự tái đầu tư.`
                     : 'Với mức tiết kiệm hiện tại, mục tiêu quá xa. Hãy tăng số tiền gửi hàng tháng hoặc giảm mục tiêu.'}
@@ -488,6 +490,25 @@ export default function Planner({ params = {} }) {
             </Card>
           )}
         </div>
+      </div>
+      {/* Mobile sticky live summary bar */}
+      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.1rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+        <button
+          type="button"
+          onClick={() => document.getElementById('planner-results')?.scrollIntoView({ behavior: 'smooth' })}
+          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-indigo-400/25 bg-elevated/95 px-4 py-2.5 text-left shadow-2xl backdrop-blur"
+        >
+          <div className="min-w-0">
+            <div className="text-[11px] text-zinc-400">Đích đến ({pct(rate)}/năm)</div>
+            <div className="truncate text-sm font-semibold tabular-nums text-white">
+              {roadmap.isAlreadyReached ? 'Đã đạt mục tiêu' : reachable ? roadmap.timeText : '> 60 năm'} ·{' '}
+              <span className="text-emerald-300">{compact(roadmap.requiredPrincipal)}</span>
+            </div>
+          </div>
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-medium text-indigo-200">
+            Kết quả <ArrowDown className="size-3" />
+          </span>
+        </button>
       </div>
     </>
   );

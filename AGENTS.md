@@ -7,9 +7,10 @@ This workspace maintains a **Living Brain** in `docs/knowledge-base/` so that ev
 Whenever the user asks to **review**, **audit**, **give feedback**, **check current status**, or **plan changes**:
 1. **Read the Living Brain First**: Start by reading [INDEX.md](./docs/knowledge-base/INDEX.md) and any relevant domain/architecture docs in `docs/knowledge-base/`.
 2. **Verify Live Ground Truth**: Activate the `project-brain` skill (`.agents/skills/project-brain/SKILL.md`) or run its snapshot check to verify if any files in `src/` were modified more recently than the knowledge base.
-3. **Target Only the Active v2 Architecture**:
-   - **ACTIVE v2 code**: `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/pages/*.jsx`, `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal}.jsx`, `src/data/*.js`, and `src/utils/{calculator,feasibilityEvaluator,format,cryptoStorage}.js`.
-   - **ORPHANED v1 legacy files (DO NOT edit unless cleaning up)**: `src/components/{Header,PassiveIncomePlanner,BankRateMatrix,BankInfoHub,InterestCalculatorPanel,LadderStrategyPlanner,CareerSalaryPlanner,MacroEconomicMode,ReferralHub}.jsx` and `src/utils/{pdfExporter,translations}.js`. Even if these files are open in the user's editor tabs, always check whether the user meant the active v2 page in `src/pages/`!
+3. **Target Only the Active Architecture (v1.3 Tier 1 Serverless)**:
+   - **Frontend (`src/`)**: `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/pages/*.jsx`, `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal}.jsx`, `src/data/*.js`, and `src/utils/{apiClient,format,cryptoStorage}.js`.
+   - **Backend / Serverless (`api/`)**: `api/rates.js`, `api/calculate.js`, and server-only calculation modules `api/_lib/{calculator,feasibilityEvaluator}.js`. **NEVER** move proprietary calculation or feasibility scoring logic back into `src/` so algorithms stay private on Vercel.
+   - **Legacy Note**: All v1 legacy dead files have already been removed in v1.2, and client-side `calculator.js` / `feasibilityEvaluator.js` were moved to `api/_lib/` in v1.3.
 
 ## 2. Mandatory Post-Change Sync Rule (Keep the Brain Alive)
 
