@@ -23,17 +23,18 @@ const secondary = TOOLS.filter((t) => !t.primary);
 function MoreMenu({ route }) {
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [route]);
-  const active = secondary.some((t) => t.id === route);
+  const activeTool = secondary.find((t) => t.id === route);
   return (
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         className={cx(
           'flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm transition-colors',
-          active ? 'text-white' : 'text-zinc-400 hover:text-white'
+          activeTool ? 'bg-white/[0.06] text-white' : 'text-zinc-400 hover:text-white'
         )}
       >
-        Công cụ khác <ChevronDown className={cx('size-3.5 transition-transform', open && 'rotate-180')} />
+        {activeTool ? `Công cụ: ${activeTool.short}` : 'Công cụ khác'}{' '}
+        <ChevronDown className={cx('size-3.5 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
         <>

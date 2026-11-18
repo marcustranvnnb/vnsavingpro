@@ -4,7 +4,16 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
-## 1. Completed in Version 1.3 (2026-11-18)
+## 1. Completed in Version 1.4 (2026-11-18)
+
+- [x] **Basic vs. Advanced Input Modes**: Added `Cơ bản` / `Nâng cao` toggle on `Planner.jsx`, `Calculator.jsx`, and `Ladder.jsx` (persisted in `PLANNER_STATE` on Planner) with compact collapsed summaries.
+- [x] **Google Docs Export & Linking (`src/utils/googleDocsExporter.js`, `Planner.jsx`)**: Added rich HTML/text clipboard copy + 1-click `docs.new` launch and `.doc` file download compatible with Google Docs / Word.
+- [x] **Post-Result Rating & Feedback Backup (`FeedbackWidget.jsx`, `api/feedback.js`, `DataModal.jsx`)**: Added interactive 1–5 star rating, feedback tags, comment box, serverless `/api/feedback` endpoint, local `USER_FEEDBACK_LOG` backup, and JSON/CSV export in `DataModal.jsx`.
+- [x] **UI/UX Refinements**: Fixed sticky sidebar viewport height overflow (`lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto`), moved Feasibility insights directly below KPI stats in `Planner.jsx`, displayed active secondary tool names in `TopNav` `MoreMenu`, and tightened `MoneyField` spacing.
+
+---
+
+## 2. Completed in Version 1.3 (2026-11-18)
 
 - [x] **Secret Server-Side Calculation Engine**: Moved `calculator.js` and `feasibilityEvaluator.js` from `src/utils/` into server-only `api/_lib/`, exposed via rate-limited `POST /api/calculate` (`api/calculate.js`) and `src/utils/apiClient.js`. Verified zero algorithm symbols or `.map` sourcemaps in `dist/assets/*.js`.
 - [x] **Tier 1 Serverless Rate Feed (`GET /api/rates`)**: Added `api/rates.js` (Edge cached 1h) and updated `src/state.jsx` + `Home.jsx` + `Rates.jsx` to display a single `RATES_UPDATED_AT` (`18/11/2026`) timestamp.

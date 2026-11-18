@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, TrendingDown, ShieldCheck, Percent, Coins } from 'lucide-react';
 import { useRates } from '../state.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
   Callout,
@@ -185,6 +186,12 @@ export default function Inflation() {
               ))}
             </Table>
           </Card>
+
+          <FeedbackWidget
+            toolId="inflation"
+            toolLabel="Lạm phát & sức mua"
+            snapshot={{ targetIncome, nominalRate, inflationRate, years, fisherRealRate: impact.fisherRealRate }}
+          />
         </div>
       </div>
     </>

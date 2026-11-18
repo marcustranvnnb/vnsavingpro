@@ -15,6 +15,7 @@ import {
   cx,
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
+import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 
 const OPTIONS = [
   {
@@ -251,6 +252,12 @@ export default function Career() {
               })}
             </Table>
           </Card>
+
+          <FeedbackWidget
+            toolId="career"
+            toolLabel="Lộ trình tăng lương"
+            snapshot={{ salary, savingsRate, targetIncome, annualRate, selected, yearsToGoal: active.res.yearsToGoal }}
+          />
         </div>
       </div>
     </>

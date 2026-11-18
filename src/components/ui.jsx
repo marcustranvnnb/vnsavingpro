@@ -230,7 +230,7 @@ export function DecimalInput({ value, onChange, suffix, min = 0, max = 100, step
 /** Label + formatted number input + slider + quick presets. */
 export function MoneyField({ label, hint, value, onChange, min, max, step, presets, suffix = '₫', inputMax }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-3">
         <label className="text-[13px] font-medium text-zinc-300">{label}</label>
         <NumberInput value={value} onChange={onChange} suffix={suffix} max={inputMax} className="w-40" ariaLabel={label} />

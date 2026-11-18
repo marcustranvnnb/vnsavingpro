@@ -5,17 +5,22 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 /**
- * Local dev/preview adapter so `/api/rates` and `/api/calculate` work identically
- * under `vite dev` / `vite preview` and in Vercel Serverless Functions.
+ * Local dev/preview adapter so `/api/rates`, `/api/calculate`, and `/api/feedback` work
+ * identically under `vite dev` / `vite preview` and in Vercel Serverless Functions.
  */
 function vercelApiPlugin() {
+  const routes = {
+    '/api/rates': 'api/rates.js',
+    '/api/calculate': 'api/calculate.js',
+    '/api/feedback': 'api/feedback.js',
+  };
   const attach = (server) => {
     server.middlewares.use(async (req, res, next) => {
-      if (!req.url || (!req.url.startsWith('/api/rates') && !req.url.startsWith('/api/calculate'))) {
+      const route = req.url?.split('?')[0];
+      const file = route ? routes[route] : null;
+      if (!file) {
         return next();
       }
-      const route = req.url.split('?')[0];
-      const file = route === '/api/rates' ? 'api/rates.js' : 'api/calculate.js';
       const modUrl = pathToFileURL(path.resolve(process.cwd(), file)).href;
       try {
         const mod = await import(modUrl);

@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
-import { Download, Upload, Trash2, ShieldCheck } from 'lucide-react';
+import { Download, Upload, Trash2, ShieldCheck, MessageSquareText } from 'lucide-react';
 import { Button, Callout, Modal } from './ui.jsx';
+import { exportFeedbackCSV } from './FeedbackWidget.jsx';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { useRates, useToast } from '../state.jsx';
 
@@ -12,15 +13,18 @@ export function DataModal({ open, onClose }) {
   const fileRef = useRef(null);
   const referralCount = Object.keys(cryptoStorage.load('CUSTOM_REFERRAL_CODES', {})).length;
   const hasSavedPlan = Boolean(cryptoStorage.load('PLANNER_STATE', null));
+  const feedbackLog = cryptoStorage.load('USER_FEEDBACK_LOG', []);
+  const feedbackCount = Array.isArray(feedbackLog) ? feedbackLog.length : 0;
 
   const exportBackup = () => {
     const data = {
       app: 'VnSavingPro',
-      version: '1.2',
+      version: '1.4',
       exportedAt: new Date().toISOString(),
       customRates: cryptoStorage.load('CUSTOM_RATES', {}),
       customReferralCodes: cryptoStorage.load('CUSTOM_REFERRAL_CODES', {}),
       plannerState: cryptoStorage.load('PLANNER_STATE', null),
+      feedbackLog: Array.isArray(feedbackLog) ? feedbackLog : [],
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
@@ -42,6 +46,9 @@ export function DataModal({ open, onClose }) {
       cryptoStorage.save('CUSTOM_REFERRAL_CODES', data.customReferralCodes || {});
       if (data.plannerState && typeof data.plannerState === 'object') {
         cryptoStorage.save('PLANNER_STATE', data.plannerState);
+      }
+      if (Array.isArray(data.feedbackLog)) {
+        cryptoStorage.save('USER_FEEDBACK_LOG', data.feedbackLog);
       }
       notify('Đã khôi phục dữ liệu');
       onClose();
@@ -77,14 +84,28 @@ export function DataModal({ open, onClose }) {
           <dt className="text-zinc-400">Kế hoạch thu nhập thụ động</dt>
           <dd className="font-medium text-emerald-300">{hasSavedPlan ? 'Đã lưu tự động' : 'Chưa lưu'}</dd>
         </div>
+        <div className="flex items-center justify-between px-4 py-3 text-sm">
+          <dt className="text-zinc-400">Đánh giá &amp; góp ý đã lưu</dt>
+          <dd className="font-medium tabular-nums text-white">{feedbackCount}</dd>
+        </div>
       </dl>
       <div className="grid grid-cols-2 gap-2">
         <Button onClick={exportBackup}>
-          <Download className="size-4" /> Sao lưu
+          <Download className="size-4" /> Sao lưu JSON
         </Button>
         <Button onClick={() => fileRef.current?.click()}>
           <Upload className="size-4" /> Khôi phục
         </Button>
+        {feedbackCount > 0 && (
+          <Button
+            className="col-span-2"
+            onClick={() => {
+              if (exportFeedbackCSV()) notify('Đã xuất lịch sử đánh giá & góp ý (.CSV)');
+            }}
+          >
+            <MessageSquareText className="size-4" /> Xuất lịch sử Feedback (.CSV)
+          </Button>
+        )}
         <Button variant="danger" className="col-span-2" onClick={clearAll}>
           <Trash2 className="size-4" /> Xoá toàn bộ dữ liệu
         </Button>

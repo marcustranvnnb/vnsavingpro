@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v1.3 Tier 1 Serverless)
+# VnSavingPro — Architecture & Technical Reference (v1.4 Tier 1 Serverless)
 
 ## 1. High-Level Architecture
 
@@ -8,11 +8,13 @@ flowchart TD
     App --> State["src/state.jsx (Hash Router + RatesCtx + ToastCtx)"]
     State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached 1h)"]
     App --> Layout["src/components/Layout.jsx (TopNav, MobileTabBar, Footer)"]
-    App --> Modal["src/components/DataModal.jsx (JSON Export/Import/Reset)"]
+    App --> Modal["src/components/DataModal.jsx (JSON/CSV Backup, Feedback Log)"]
     App --> Pages["React.lazy() Tool Pages + Home.jsx"]
     Pages -->|useServerCalc()| ApiClient["src/utils/apiClient.js (50ms debounce + Map cache)"]
     ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Rate-Limited Serverless Handler)"]
     ApiCalc --> ServerLib["api/_lib/{calculator,feasibilityEvaluator}.js (Secret Server-Only)"]
+    Pages -->|FeedbackWidget| ApiFeedback["api/feedback.js + localStorage USER_FEEDBACK_LOG"]
+    Pages -->|Google Docs Export| GDocs["src/utils/googleDocsExporter.js (docs.new + .doc)"]
 ```
 
 ## 2. Proprietary Algorithm Protection (`api/_lib/` & `api/calculate.js`)
@@ -21,7 +23,8 @@ flowchart TD
 - **Endpoints**:
   - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` with `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
   - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with per-IP in-memory rate limiting (`120 req/min`).
-- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates` and `/api/calculate` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
+  - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Records post-result user star ratings, tags, comments, and snapshots; mirrored locally under `USER_FEEDBACK_LOG` via `cryptoStorage` and exportable via JSON/CSV in `DataModal.jsx`.
+- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, and `/api/feedback` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
 
 ## 3. Routing & State Management (`src/state.jsx`)
 

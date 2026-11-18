@@ -1,8 +1,8 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 11:15 (v1.3 Tier 1 Serverless + Secret Server Algorithms + Updated 4 Digital Banks)
-> **Current Architecture Version**: v1.3 (Hash-Routed SPA + Vercel Serverless API `/api/rates` & `/api/calculate`)
-> **Deployment Status**: Ready to push v1.3 to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`) & auto-deploy on Vercel.
+> **Last Synced**: 2026-11-18 11:54 (v1.4 Basic/Advanced Input Modes + Google Docs Export + Rating & Feedback Backup)
+> **Current Architecture Version**: v1.4 (Hash-Routed SPA + Vercel Serverless API `/api/rates`, `/api/calculate`, `/api/feedback`)
+> **Deployment Status**: Ready to push v1.4 to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`) & auto-deploy on Vercel.
 
 ---
 
@@ -37,11 +37,11 @@
 
 ---
 
-## File Registry (v1.3 Tier 1 Serverless Architecture)
+## File Registry (v1.4 Tier 1 Serverless Architecture)
 
-- **Serverless API (`api/`)**: `api/rates.js` (`GET /api/rates`), `api/calculate.js` (`POST /api/calculate`), `api/_lib/{calculator,feasibilityEvaluator}.js` (server-only proprietary math & scoring)
+- **Serverless API (`api/`)**: `api/rates.js` (`GET /api/rates`), `api/calculate.js` (`POST /api/calculate`), `api/feedback.js` (`GET`/`POST /api/feedback`), `api/_lib/{calculator,feasibilityEvaluator,http}.js` (server-only proprietary math, scoring & helpers)
 - **Root & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/index.css`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Referral}.jsx`
-- **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal}.jsx`
+- **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget}.jsx`
 - **Data**: `src/data/{banksData,bankPackagesData}.js`
-- **Client Utilities**: `src/utils/{apiClient,format,cryptoStorage}.js`
+- **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage}.js`

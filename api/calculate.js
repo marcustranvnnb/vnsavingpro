@@ -7,6 +7,7 @@ import {
   simulateLadderingMatrix,
 } from './_lib/calculator.js';
 import { evaluatePlanFeasibility } from './_lib/feasibilityEvaluator.js';
+import { readJsonBody } from './_lib/http.js';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
@@ -25,18 +26,6 @@ function isRateLimited(req) {
 
   entry.count += 1;
   return entry.count > RATE_LIMIT_MAX_REQUESTS;
-}
-
-async function readJsonBody(req) {
-  if (req.body && typeof req.body === 'object') {
-    return req.body;
-  }
-  const chunks = [];
-  for await (const chunk of req) {
-    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-  }
-  const raw = Buffer.concat(chunks).toString('utf8').trim();
-  return raw ? JSON.parse(raw) : {};
 }
 
 export default async function handler(req, res) {

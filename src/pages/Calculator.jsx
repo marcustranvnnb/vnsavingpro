@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Calculator as CalcIcon, CheckCircle2, Info, Scissors } from 'lucide-react';
+import { Calculator as CalcIcon, CheckCircle2, Info, Scissors, SlidersHorizontal } from 'lucide-react';
 import { useRates } from '../state.jsx';
 import { TENURE_DAYS_MAP, TENURE_LABELS } from '../data/banksData.js';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
@@ -13,10 +13,12 @@ import {
   MoneyField,
   NumberInput,
   PageHeader,
+  Segmented,
   SliderField,
   cx,
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
+import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v) }));
 
@@ -49,6 +51,7 @@ export default function Calculator() {
   const [tenure, setTenure] = useState(() => saved.tenure || '12M');
   const [customRate, setCustomRate] = useState('');
   const [customDays, setCustomDays] = useState('');
+  const [inputMode, setInputMode] = useState('basic');
   const [withdrawAmount, setWithdrawAmount] = useState(30_000_000);
   const [daysHeld, setDaysHeld] = useState(180);
 
@@ -121,7 +124,22 @@ export default function Calculator() {
 
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* Left controls */}
-        <Card className="space-y-6 p-5 sm:p-6">
+        <Card className="space-y-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+              <SlidersHorizontal className="size-3.5 text-indigo-300" /> Chế độ nhập liệu
+            </span>
+            <Segmented
+              size="sm"
+              value={inputMode}
+              onChange={setInputMode}
+              options={[
+                { value: 'basic', label: 'Cơ bản' },
+                { value: 'advanced', label: 'Nâng cao' },
+              ]}
+            />
+          </div>
+
           <MoneyField
             label="Số tiền gửi tiết kiệm"
             value={principal}
@@ -148,30 +166,43 @@ export default function Calculator() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-5">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-400">Lãi suất tuỳ chỉnh</label>
-              <DecimalInput
-                value={customRate}
-                onChange={setCustomRate}
-                suffix="%/năm"
-                min={0.1}
-                max={25}
-                step={0.1}
-                ariaLabel="Lãi suất tuỳ chỉnh"
-              />
+          {inputMode === 'basic' ? (
+            <button
+              type="button"
+              onClick={() => setInputMode('advanced')}
+              className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3.5 py-2.5 text-left text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.06] transition hover:bg-white/[0.05] hover:text-zinc-200"
+            >
+              <span className="truncate">
+                Nâng cao: {pct(rate)}/năm · {days} ngày thực gửi
+              </span>
+              <span className="shrink-0 font-medium text-indigo-300">Tuỳ chỉnh</span>
+            </button>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 border-t border-white/[0.06] pt-5">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Lãi suất tuỳ chỉnh</label>
+                <DecimalInput
+                  value={customRate}
+                  onChange={setCustomRate}
+                  suffix="%/năm"
+                  min={0.1}
+                  max={25}
+                  step={0.1}
+                  ariaLabel="Lãi suất tuỳ chỉnh"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Số ngày thực tế</label>
+                <NumberInput
+                  value={customDays === '' ? defaultDays : customDays}
+                  onChange={setCustomDays}
+                  suffix="ngày"
+                  max={3650}
+                  ariaLabel="Số ngày thực tế"
+                />
+              </div>
             </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-400">Số ngày thực tế</label>
-              <NumberInput
-                value={customDays === '' ? defaultDays : customDays}
-                onChange={setCustomDays}
-                suffix="ngày"
-                max={3650}
-                ariaLabel="Số ngày thực tế"
-              />
-            </div>
-          </div>
+          )}
         </Card>
 
         {/* Right results */}
@@ -338,6 +369,12 @@ export default function Calculator() {
               </div>
             </div>
           </Card>
+
+          <FeedbackWidget
+            toolId="calculator"
+            toolLabel="Tính lãi tiết kiệm"
+            snapshot={{ principal, bankId, tenure, rate, days, m1Interest: m1.interest }}
+          />
         </div>
       </div>
     </>

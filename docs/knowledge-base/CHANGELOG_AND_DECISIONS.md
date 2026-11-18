@@ -4,6 +4,15 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Version 1.4: Basic/Advanced Inputs, Google Docs Integration, Rating & Feedback Backup, UI/UX Polish
+- **Added**:
+  - Created `src/utils/googleDocsExporter.js` and Google Docs export modal in `src/pages/Planner.jsx` (`docs.new` rich-HTML copy-paste + `.doc` download).
+  - Created `src/components/FeedbackWidget.jsx` and `api/feedback.js` (`GET`/`POST /api/feedback` + `api/_lib/http.js`) for post-result star ratings, feedback tags, and comments across `Planner`, `Calculator`, `Ladder`, `Career`, and `Inflation`.
+  - Added `USER_FEEDBACK_LOG` backup/restore and CSV feedback export inside `src/components/DataModal.jsx`.
+- **Changed**:
+  - Added `Cơ bản` / `Nâng cao` input mode split to `Planner.jsx`, `Calculator.jsx`, and `Ladder.jsx`.
+  - Refined UI/UX: scrollable sticky sidebar (`lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto`), moved Feasibility insights below KPI stats in `Planner.jsx`, active secondary tool name in `Layout.jsx` `MoreMenu`, and compact `MoneyField` spacing in `ui.jsx`.
+
 ## [2026-11-18] — Version 1.3: Tier 1 Serverless + Secret Server Engine + Digital Bank Rate & UX Upgrade
 - **Security & Architecture**:
   - Moved `calculator.js` and `feasibilityEvaluator.js` out of `src/utils/` into server-only `api/_lib/` so proprietary financial and scoring algorithms never ship to the browser bundle (`build.sourcemap: false` in `vite.config.js`).

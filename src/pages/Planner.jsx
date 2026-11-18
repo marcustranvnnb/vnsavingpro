@@ -3,12 +3,16 @@ import {
   AlertTriangle,
   ArrowDown,
   CheckCircle2,
+  Copy,
   Download,
+  ExternalLink,
+  FileText,
   Target,
   Wallet,
   PiggyBank,
   Coins,
   Gauge,
+  SlidersHorizontal,
   Sparkles,
   Pencil,
   RotateCcw,
@@ -17,6 +21,7 @@ import {
 } from 'lucide-react';
 import { href, useRates, useToast } from '../state.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { copyReportForGoogleDocs, downloadGoogleDocsFile } from '../utils/googleDocsExporter.js';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { compact, chip, duration, fmt, pct, vnd } from '../utils/format.js';
 import { TENURE_LABELS } from '../data/banksData.js';
@@ -24,9 +29,11 @@ import {
   Badge,
   BankMark,
   Button,
+  Callout,
   Card,
   CardHeader,
   DecimalInput,
+  Modal,
   MoneyField,
   PageHeader,
   Progress,
@@ -36,6 +43,7 @@ import {
   cx,
 } from '../components/ui.jsx';
 import { BankPicker, TENURE_OPTIONS } from '../components/BankPicker.jsx';
+import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 import GrowthChart from '../components/GrowthChart.jsx';
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : chip(v) }));
@@ -80,6 +88,8 @@ export default function Planner({ params = {} }) {
   const [tenure, setTenure] = useState(() => params.tenure || saved.tenure || '12M');
   const [customRate, setCustomRate] = useState(() => params.rate ?? saved.customRate ?? '');
   const [calcMode, setCalcMode] = useState(() => params.mode || saved.calcMode || 'NOMINAL_MONTHS');
+  const [inputMode, setInputMode] = useState(() => saved.inputMode || 'basic');
+  const [gdocsOpen, setGdocsOpen] = useState(false);
   const [view, setView] = useState('growth');
   const [rows, setRows] = useState('yearly');
 
@@ -93,8 +103,9 @@ export default function Planner({ params = {} }) {
       tenure,
       customRate,
       calcMode,
+      inputMode,
     });
-  }, [target, capital, saving, salary, bankId, tenure, customRate, calcMode]);
+  }, [target, capital, saving, salary, bankId, tenure, customRate, calcMode, inputMode]);
 
   const bank = banks.find((b) => b.id === bankId) || banks[0];
   const usingCustom = customRate !== '' && Number(customRate) > 0;
@@ -174,6 +185,31 @@ export default function Planner({ params = {} }) {
     });
   };
 
+  const reportPayload = {
+    target,
+    capital,
+    saving,
+    salary,
+    bankName: usingCustom ? 'Lãi suất tự nhập' : bank.name,
+    tenureLabel: TENURE_LABELS[tenure] || tenure,
+    rate,
+    calcMode,
+    roadmap,
+    feasibility,
+    scenarios,
+  };
+
+  const handleOpenGoogleDocs = async () => {
+    await copyReportForGoogleDocs(reportPayload);
+    window.open('https://docs.new', '_blank', 'noopener,noreferrer');
+    notify('Đã chép báo cáo! Hãy nhấn Ctrl+V (hoặc Cmd+V) trong trang Google Docs mới mở.');
+  };
+
+  const handleCopyForGoogleDocs = async () => {
+    await copyReportForGoogleDocs(reportPayload);
+    notify('Đã sao chép báo cáo (kèm bảng định dạng) vào clipboard');
+  };
+
   return (
     <>
       <PageHeader
@@ -185,6 +221,9 @@ export default function Planner({ params = {} }) {
           <>
             <Button size="sm" onClick={sharePlan}>
               <Share2 className="size-3.5" /> Chia sẻ link
+            </Button>
+            <Button size="sm" onClick={() => setGdocsOpen(true)} disabled={!roadmap.monthByMonthLog.length}>
+              <FileText className="size-3.5 text-indigo-300" /> Google Docs
             </Button>
             <Button size="sm" onClick={() => window.print()}>
               <Printer className="size-3.5" /> In / PDF
@@ -198,7 +237,22 @@ export default function Planner({ params = {} }) {
 
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* ── Inputs ── */}
-        <Card className="space-y-7 p-5 sm:p-6 lg:sticky lg:top-20">
+        <Card className="space-y-5 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+          <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+              <SlidersHorizontal className="size-3.5 text-indigo-300" /> Chế độ nhập liệu
+            </span>
+            <Segmented
+              size="sm"
+              value={inputMode}
+              onChange={setInputMode}
+              options={[
+                { value: 'basic', label: 'Cơ bản' },
+                { value: 'advanced', label: 'Nâng cao' },
+              ]}
+            />
+          </div>
+
           <MoneyField
             label="Thu nhập thụ động mong muốn / tháng"
             value={target}
@@ -229,59 +283,77 @@ export default function Planner({ params = {} }) {
             inputMax={1_000_000_000}
             presets={presets([2_000_000, 5_000_000, 10_000_000, 15_000_000])}
           />
-          <MoneyField
-            label="Thu nhập hàng tháng"
-            hint={`Dùng để đánh giá độ khả thi. Bạn đang tiết kiệm ${pct(roadmap.savingsRatePercent, 1)} thu nhập, chi tiêu còn ${compact(Math.max(0, salary - saving))}.`}
-            value={salary}
-            onChange={setSalary}
-            min={5_000_000}
-            max={200_000_000}
-            step={1_000_000}
-            inputMax={10_000_000_000}
-          />
 
-          <div className="space-y-4 border-t border-white/[0.06] pt-6">
+          <div className="border-t border-white/[0.06] pt-5">
             <BankPicker bankId={bankId} onBank={(id) => { setBankId(id); setCustomRate(''); }} tenure={tenure} onTenure={setTenure} />
-            <div className="flex items-center justify-between gap-3">
-              <label className="flex items-center gap-1.5 text-[13px] text-zinc-400">
-                <Pencil className="size-3.5" /> Hoặc nhập lãi suất khác
-              </label>
-              <div className="flex items-center gap-1.5">
-                <DecimalInput
-                  value={customRate}
-                  onChange={setCustomRate}
-                  suffix="%"
-                  min={0}
-                  max={20}
-                  step={0.1}
-                  className="w-24"
-                  ariaLabel="Lãi suất tuỳ chỉnh"
+          </div>
+
+          {inputMode === 'basic' ? (
+            <button
+              type="button"
+              onClick={() => setInputMode('advanced')}
+              className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3.5 py-2.5 text-left text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.06] transition hover:bg-white/[0.05] hover:text-zinc-200"
+            >
+              <span className="truncate">
+                Nâng cao: Lương {compact(salary)} · {calcMode === 'ACTUAL_DAYS' ? 'Chuẩn TT14' : 'Tháng/12'}
+                {usingCustom ? ` · Tự nhập ${pct(rate)}` : ''}
+              </span>
+              <span className="shrink-0 font-medium text-indigo-300">Chỉnh sửa</span>
+            </button>
+          ) : (
+            <div className="space-y-5 border-t border-white/[0.06] pt-5">
+              <MoneyField
+                label="Thu nhập hàng tháng"
+                hint={`Đánh giá độ khả thi: đang tiết kiệm ${pct(roadmap.savingsRatePercent, 1)} thu nhập, chi tiêu còn ${compact(Math.max(0, salary - saving))}.`}
+                value={salary}
+                onChange={setSalary}
+                min={5_000_000}
+                max={200_000_000}
+                step={1_000_000}
+                inputMax={10_000_000_000}
+              />
+
+              <div className="flex items-center justify-between gap-3">
+                <label className="flex items-center gap-1.5 text-[13px] text-zinc-400">
+                  <Pencil className="size-3.5" /> Hoặc nhập lãi suất khác
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <DecimalInput
+                    value={customRate}
+                    onChange={setCustomRate}
+                    suffix="%"
+                    min={0}
+                    max={20}
+                    step={0.1}
+                    className="w-24"
+                    ariaLabel="Lãi suất tuỳ chỉnh"
+                  />
+                  {usingCustom && (
+                    <button
+                      onClick={() => setCustomRate('')}
+                      aria-label="Bỏ lãi suất tuỳ chỉnh"
+                      className="rounded-lg p-2 text-zinc-500 hover:bg-white/5 hover:text-white"
+                    >
+                      <RotateCcw className="size-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <span className="text-xs text-zinc-400">Cơ sở tính lãi</span>
+                <Segmented
+                  size="sm"
+                  value={calcMode}
+                  onChange={setCalcMode}
+                  options={[
+                    { value: 'NOMINAL_MONTHS', label: 'Tháng đều / 12' },
+                    { value: 'ACTUAL_DAYS', label: 'Chuẩn TT14 (30/365)' },
+                  ]}
                 />
-                {usingCustom && (
-                  <button
-                    onClick={() => setCustomRate('')}
-                    aria-label="Bỏ lãi suất tuỳ chỉnh"
-                    className="rounded-lg p-2 text-zinc-500 hover:bg-white/5 hover:text-white"
-                  >
-                    <RotateCcw className="size-3.5" />
-                  </button>
-                )}
               </div>
             </div>
-
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <span className="text-xs text-zinc-400">Cơ sở tính lãi</span>
-              <Segmented
-                size="sm"
-                value={calcMode}
-                onChange={setCalcMode}
-                options={[
-                  { value: 'NOMINAL_MONTHS', label: 'Tháng đều / 12' },
-                  { value: 'ACTUAL_DAYS', label: 'Chuẩn TT14 (30/365)' },
-                ]}
-              />
-            </div>
-          </div>
+          )}
         </Card>
 
         {/* ── Results ── */}
@@ -342,6 +414,25 @@ export default function Planner({ params = {} }) {
               hint={feasibility.ratingLabel.replace('High', 'cao')}
             />
           </div>
+
+          {/* Insights right below Stats */}
+          {(feasibility.strengths.length > 0 || feasibility.warnings.length > 0) && (
+            <Card className="p-5 sm:p-6">
+              <CardHeader title="Nhận xét về kế hoạch" />
+              <ul className="mt-4 space-y-2.5">
+                {feasibility.strengths.map((s) => (
+                  <li key={s} className="flex gap-2.5 text-[13px] leading-relaxed text-zinc-300">
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" /> {s}
+                  </li>
+                ))}
+                {feasibility.warnings.map((w) => (
+                  <li key={w} className="flex gap-2.5 text-[13px] leading-relaxed text-zinc-300">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" /> {w}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
 
           {/* Chart / bank comparison */}
           <Card className="p-5 sm:p-6">
@@ -431,25 +522,6 @@ export default function Planner({ params = {} }) {
             </div>
           </Card>
 
-          {/* Insights */}
-          {(feasibility.strengths.length > 0 || feasibility.warnings.length > 0) && (
-            <Card className="p-5 sm:p-6">
-              <CardHeader title="Nhận xét về kế hoạch" />
-              <ul className="mt-4 space-y-2.5">
-                {feasibility.strengths.map((s) => (
-                  <li key={s} className="flex gap-2.5 text-[13px] leading-relaxed text-zinc-300">
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" /> {s}
-                  </li>
-                ))}
-                {feasibility.warnings.map((w) => (
-                  <li key={w} className="flex gap-2.5 text-[13px] leading-relaxed text-zinc-300">
-                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-400" /> {w}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-
           {/* Table */}
           {roadmap.monthByMonthLog.length > 0 && (
             <Card className="p-5 sm:p-6">
@@ -489,8 +561,47 @@ export default function Planner({ params = {} }) {
               </Table>
             </Card>
           )}
+
+          <FeedbackWidget
+            toolId="plan"
+            toolLabel="Kế hoạch thu nhập thụ động"
+            snapshot={{ target, capital, saving, bankId, tenure, rate, timeText: roadmap.timeText }}
+          />
         </div>
       </div>
+
+      {/* Google Docs Modal */}
+      <Modal open={gdocsOpen} onClose={() => setGdocsOpen(false)} title="Liên kết & xuất sang Google Docs">
+        <div className="space-y-4">
+          <Callout icon={FileText} tone="brand">
+            Báo cáo bao gồm đầy đủ thông số kế hoạch, điểm khả thi, kịch bản tăng tốc và bảng lộ trình theo năm — được
+            định dạng sẵn để dán trực tiếp vào Google Docs hoặc tải file <code className="text-indigo-200">.doc</code>.
+          </Callout>
+          <div className="space-y-2.5">
+            <Button variant="primary" className="w-full" onClick={handleOpenGoogleDocs}>
+              <ExternalLink className="size-4" /> Chép báo cáo &amp; Mở Google Docs (docs.new)
+            </Button>
+            <Button variant="secondary" className="w-full" onClick={handleCopyForGoogleDocs}>
+              <Copy className="size-4" /> Chỉ sao chép nội dung báo cáo (Ctrl+V)
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                downloadGoogleDocsFile(reportPayload);
+                notify('Đã tải file .DOC tương thích Google Docs & Word');
+              }}
+            >
+              <Download className="size-4" /> Tải file .DOC (Upload lên Google Drive / Word)
+            </Button>
+          </div>
+          <p className="text-xs leading-relaxed text-zinc-500">
+            Mẹo: Khi trang Google Docs mới mở ra, bạn chỉ cần nhấn <strong className="text-zinc-300">Ctrl + V</strong>{' '}
+            (hoặc <strong className="text-zinc-300">Cmd + V</strong> trên Mac) để chèn toàn bộ tiêu đề và bảng số liệu
+            vừa tính.
+          </p>
+        </div>
+      </Modal>
       {/* Mobile sticky live summary bar */}
       <div className="print-hidden fixed inset-x-3 bottom-[calc(4.1rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
         <button

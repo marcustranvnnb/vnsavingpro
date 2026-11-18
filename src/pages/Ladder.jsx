@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Layers, Coins, PiggyBank, Wallet } from 'lucide-react';
+import { Layers, Coins, PiggyBank, SlidersHorizontal, Wallet } from 'lucide-react';
 import { useRates } from '../state.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
@@ -9,12 +9,14 @@ import {
   CardHeader,
   MoneyField,
   PageHeader,
+  Segmented,
   SliderField,
   Stat,
   Table,
   cx,
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
+import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 
 const STRATEGIES = [
   {
@@ -61,6 +63,7 @@ export default function Ladder() {
   const [totalMonths, setTotalMonths] = useState(12);
   const [bankId, setBankId] = useState(() => saved.bankId || 'cake');
   const [strategy, setStrategy] = useState('SPLIT_50_50');
+  const [inputMode, setInputMode] = useState('basic');
   const [shortTerm, setShortTerm] = useState('1M');
   const [longTerm, setLongTerm] = useState('12M');
   const [shortPct, setShortPct] = useState(40);
@@ -115,7 +118,27 @@ export default function Ladder() {
 
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* Controls */}
-        <Card className="space-y-6 p-5 sm:p-6">
+        <Card className="space-y-5 p-5 sm:p-6">
+          <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] pb-4">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
+              <SlidersHorizontal className="size-3.5 text-indigo-300" /> Chế độ nhập liệu
+            </span>
+            <Segmented
+              size="sm"
+              value={inputMode}
+              onChange={(mode) => {
+                setInputMode(mode);
+                if (mode === 'basic' && strategy === 'CUSTOM') {
+                  setStrategy('SPLIT_50_50');
+                }
+              }}
+              options={[
+                { value: 'basic', label: 'Cơ bản' },
+                { value: 'advanced', label: 'Nâng cao' },
+              ]}
+            />
+          </div>
+
           <MoneyField
             label="Số tiền gửi mới mỗi tháng"
             value={monthlySavings}
@@ -127,15 +150,17 @@ export default function Ladder() {
             presets={presets([1_000_000, 3_000_000, 5_000_000, 10_000_000, 20_000_000])}
           />
 
-          <SliderField
-            label="Thời gian mô phỏng"
-            display={`${totalMonths} tháng (${(totalMonths / 12).toFixed(1)} năm)`}
-            value={totalMonths}
-            onChange={setTotalMonths}
-            min={6}
-            max={60}
-            step={3}
-          />
+          {inputMode === 'advanced' && (
+            <SliderField
+              label="Thời gian mô phỏng"
+              display={`${totalMonths} tháng (${(totalMonths / 12).toFixed(1)} năm)`}
+              value={totalMonths}
+              onChange={setTotalMonths}
+              min={6}
+              max={60}
+              step={3}
+            />
+          )}
 
           <div className="border-t border-white/[0.06] pt-5">
             <BankPicker bankId={bankId} onBank={setBankId} tenure="6M" label="Chọn ngân hàng áp dụng lãi suất" />
@@ -143,7 +168,7 @@ export default function Ladder() {
 
           <div className="space-y-2.5 border-t border-white/[0.06] pt-5">
             <div className="text-[13px] font-medium text-zinc-300">Chiến lược phân bổ sổ</div>
-            {STRATEGIES.map((s) => {
+            {STRATEGIES.filter((s) => inputMode === 'advanced' || s.id !== 'CUSTOM').map((s) => {
               const active = strategy === s.id;
               return (
                 <button
@@ -166,7 +191,18 @@ export default function Ladder() {
               );
             })}
 
-            {strategy === 'CUSTOM' && (
+            {inputMode === 'basic' && (
+              <button
+                type="button"
+                onClick={() => setInputMode('advanced')}
+                className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3.5 py-2.5 text-left text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.06] transition hover:bg-white/[0.05] hover:text-zinc-200"
+              >
+                <span>Nâng cao: Thời gian {totalMonths} tháng &amp; Tuỳ chỉnh % kỳ hạn</span>
+                <span className="shrink-0 font-medium text-indigo-300">Mở rộng</span>
+              </button>
+            )}
+
+            {inputMode === 'advanced' && strategy === 'CUSTOM' && (
               <div className="mt-3 space-y-4 rounded-xl bg-black/25 p-4 ring-1 ring-inset ring-white/[0.08]">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -281,6 +317,12 @@ export default function Ladder() {
               ))}
             </Table>
           </Card>
+
+          <FeedbackWidget
+            toolId="ladder"
+            toolLabel="Tiết kiệm bậc thang"
+            snapshot={{ monthlySavings, totalMonths, bankId, strategy, finalValue: result.finalPortfolioValue }}
+          />
         </div>
       </div>
     </>
