@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Updated Website Favicon & Brand Logo Assets
+
+- **Request**: Update the website's favicon and navigation logo with the newly designed VnSavingPro icon.
+- **Changes Implemented**:
+  - Generated optimized web icons in `public/`: [favicon.png](../../public/favicon.png) (`64x64`), [apple-touch-icon.png](../../public/apple-touch-icon.png) (`180x180`), and [logo.png](../../public/logo.png) (`256x256`).
+  - Updated [index.html](../../index.html): Replaced inline SVG data-URI favicon with `/favicon.png`, `/apple-touch-icon.png`, and `og:image` (`/logo.png`).
+  - Updated [src/components/Layout.jsx](../../src/components/Layout.jsx): Replaced `<Logo />` placeholder `TrendingUp` badge with `/logo.png` (`32x32`, rounded `[10px]`, ring & glow).
+
+---
+
 ## [2026-11-18] — Supabase Free Tier Integration (Postgres Persistence, Cloud Plan Sync & Scraper Push)
 
 - **Request**: Connect and set up VnSavingPro with Supabase Free Tier to elevate persistence beyond ephemeral serverless memory.

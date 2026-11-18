@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, Cookie, Home, Info, LayoutGrid, ShieldCheck, TrendingUp } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Cookie, Home, Info, LayoutGrid, ShieldCheck } from 'lucide-react';
 import { APP_VERSION, APP_VERSION_DATE, APP_VERSION_LABEL, TOOLS, VERSION_HIGHLIGHTS } from '../tools.js';
 import { href, useRates } from '../state.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
@@ -82,9 +82,13 @@ export function VersionBadge({ compact = false }) {
 export function Logo({ className }) {
   return (
     <a href={href('home')} className={cx('flex items-center gap-2.5', className)} aria-label="VnSavingPro – Trang chủ">
-      <span className="flex size-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-400 to-violet-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_6px_20px_-6px_rgba(99,102,241,0.8)]">
-        <TrendingUp className="size-4 text-white" strokeWidth={2.5} />
-      </span>
+      <img
+        src="/logo.png"
+        alt=""
+        width={32}
+        height={32}
+        className="size-8 rounded-[10px] object-cover ring-1 ring-white/15 shadow-[0_6px_20px_-6px_rgba(99,102,241,0.75)]"
+      />
       <span className="text-[15px] font-semibold tracking-tight text-white">
         VnSaving<span className="text-indigo-300">Pro</span>
       </span>
