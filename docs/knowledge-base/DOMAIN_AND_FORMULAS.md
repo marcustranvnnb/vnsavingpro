@@ -26,6 +26,10 @@ Supports two independent goal modes (`goalType`), two solving directions (`solve
 3. **Monthly Factor**:
    - `NOMINAL_MONTHS`: $\text{monthlyFactor} = \frac{1}{12}$
    - `ACTUAL_DAYS` (Circular 14 conservative 30-day month): $\text{monthlyFactor} = \frac{30}{365}$
+4. **Per-Stage Passbook & Cohort Breakdown (`buildStagePackageSnapshot`)**:
+   - Tracks every individual deposit (`Sổ #1`, `Sổ #2`, ...) opened at month $m_0$ (`INITIAL`, `MONTHLY`, `BONUS`), its rollover cycles $\lfloor (\text{stageMonth} - m_0) / \text{tenureMonths} \rfloor$, next maturity month, current compounded balance $A_0 (1 + i)^{\text{age}}$, and monthly interest yield.
+   - Groups passbooks into cohorts (`INITIAL`, `YEAR_1..N`, `BONUS_1..N`) with exact Dong-level reconciliation against `stageTotalBalance` and `stageMonthlyInterest`.
+   - Emits `activePackagesCount` / `rolledOverPackagesCount` per log row and `stageSnapshots` for Option 4's Interactive Passbook Shelf and Expandable Matrix.
 
 ### F. Partial vs. Full Early Withdrawal Breakeven (`calculateEarlyWithdrawalComparison`)
 Compares holding to maturity vs. breaking the entire deposit at `daysHeld` (receiving `nonTermRate = 0.5%/yr` on 100% of principal) vs. partial early withdrawal / split deposits (only `withdrawAmount` gets `nonTermRate` for `daysHeld`, while `remainingPrincipal` keeps `ratePercent` until `totalDays`).

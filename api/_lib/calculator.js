@@ -125,11 +125,203 @@ function formatDurationVi(monthsNeeded, isAlreadyReached) {
   return `${fullYears} năm ${remainingMonths} tháng`;
 }
 
+function buildStagePackageSnapshot({
+  stageMonth,
+  finalMonth,
+  isGoalReached,
+  contributions,
+  monthlyRate,
+  tenureCode,
+  tenureMonths,
+  logRow,
+  nominalRequiredPrincipal,
+  requiredPrincipal,
+}) {
+  const active = contributions.filter((c) => c.openMonth <= stageMonth);
+  const stageTotalBalance = logRow ? logRow.totalBalance : 0;
+  const stageMonthlyInterest = logRow ? logRow.monthlyPassiveIncomeGenerated : 0;
+  const stageTotalDeposited = logRow ? logRow.principalDeposited : 0;
+  const stageAccumulatedInterest = logRow ? logRow.interestEarnedTotal : 0;
+
+  let rolledOverCount = 0;
+  let firstCycleCount = 0;
+  const cohortMap = new Map();
+  const detailedPackages = [];
+
+  for (const c of active) {
+    const ageMonths = Math.max(0, stageMonth - c.openMonth);
+    const growthFactor = Math.pow(1 + monthlyRate, ageMonths);
+    const exactBal = c.amount * growthFactor;
+    const currentBalance = Math.round(exactBal);
+    const accumulatedInterest = Math.max(0, currentBalance - c.amount);
+    const exactMonthlyInt = exactBal * monthlyRate;
+    const monthlyInterest = Math.round(exactMonthlyInt);
+    const rolloverCount = ageMonths >= tenureMonths ? Math.floor(ageMonths / tenureMonths) : 0;
+    const nextMaturityMonth = c.openMonth + (rolloverCount + 1) * tenureMonths;
+
+    if (rolloverCount > 0) rolledOverCount++;
+    else firstCycleCount++;
+
+    const groupKey =
+      c.type === 'INITIAL' ? 'INITIAL' : c.type === 'BONUS' ? `BONUS_${c.cohortYear}` : `YEAR_${c.cohortYear}`;
+    const groupLabel =
+      c.type === 'INITIAL'
+        ? 'Vốn ban đầu'
+        : c.type === 'BONUS'
+          ? `Thưởng cuối Năm ${c.cohortYear}`
+          : `Đợt gửi Năm ${c.cohortYear}`;
+
+    detailedPackages.push({
+      id: c.id,
+      code: c.code,
+      type: c.type,
+      groupKey,
+      groupLabel,
+      openMonth: c.openMonth,
+      cohortYear: c.cohortYear,
+      initialPrincipal: c.amount,
+      currentBalance,
+      accumulatedInterest,
+      monthlyInterest,
+      sharePct: stageMonthlyInterest > 0 ? Number(((monthlyInterest / stageMonthlyInterest) * 100).toFixed(1)) : 0,
+      rolloverCount,
+      nextMaturityMonth,
+    });
+
+    if (!cohortMap.has(groupKey)) {
+      cohortMap.set(groupKey, {
+        key: groupKey,
+        type: c.type,
+        label: groupLabel,
+        cohortYear: c.cohortYear,
+        firstCode: c.code,
+        lastCode: c.code,
+        packageCount: 0,
+        totalInitial: 0,
+        exactBalanceSum: 0,
+        exactMonthlyIntSum: 0,
+        maxRolloverCount: 0,
+        rolledPackages: 0,
+      });
+    }
+    const g = cohortMap.get(groupKey);
+    g.lastCode = c.code;
+    g.packageCount += 1;
+    g.totalInitial += c.amount;
+    g.exactBalanceSum += exactBal;
+    g.exactMonthlyIntSum += exactMonthlyInt;
+    g.maxRolloverCount = Math.max(g.maxRolloverCount, rolloverCount);
+    if (rolloverCount > 0) g.rolledPackages += 1;
+  }
+
+  const cohorts = Array.from(cohortMap.values()).map((g) => {
+    const totalBalance = Math.round(g.exactBalanceSum);
+    const totalMonthlyInterest = Math.round(g.exactMonthlyIntSum);
+    const tone =
+      g.type === 'INITIAL'
+        ? 'indigo'
+        : g.type === 'BONUS'
+          ? 'amber'
+          : g.rolledPackages > 0
+            ? 'sky'
+            : 'emerald';
+    return {
+      key: g.key,
+      type: g.type,
+      tone,
+      label: g.label,
+      cohortYear: g.cohortYear,
+      codeRange: g.packageCount === 1 ? g.firstCode : `${g.firstCode} → ${g.lastCode}`,
+      packageCount: g.packageCount,
+      perPackageInitial: Math.round(g.totalInitial / Math.max(1, g.packageCount)),
+      totalInitial: g.totalInitial,
+      totalBalance,
+      totalAccumulatedInterest: Math.max(0, totalBalance - g.totalInitial),
+      totalMonthlyInterest,
+      perPackageMonthlyInterest: Math.round(totalMonthlyInterest / Math.max(1, g.packageCount)),
+      sharePct: 0,
+      maxRolloverCount: g.maxRolloverCount,
+      rolledPackages: g.rolledPackages,
+    };
+  });
+
+  // Reconcile sub-dong Math.round residual onto the largest cohort so cohort sums match stage totals exactly
+  if (cohorts.length > 0) {
+    let largestIdx = 0;
+    for (let idx = 1; idx < cohorts.length; idx++) {
+      if (cohorts[idx].totalBalance > cohorts[largestIdx].totalBalance) largestIdx = idx;
+    }
+    const balSum = cohorts.reduce((s, c) => s + c.totalBalance, 0);
+    const intSum = cohorts.reduce((s, c) => s + c.totalMonthlyInterest, 0);
+    const balDiff = stageTotalBalance - balSum;
+    const intDiff = stageMonthlyInterest - intSum;
+    if (Math.abs(balDiff) <= cohorts.length * 2) {
+      cohorts[largestIdx].totalBalance = Math.max(0, cohorts[largestIdx].totalBalance + balDiff);
+      cohorts[largestIdx].totalAccumulatedInterest = Math.max(
+        0,
+        cohorts[largestIdx].totalBalance - cohorts[largestIdx].totalInitial
+      );
+    }
+    if (Math.abs(intDiff) <= cohorts.length * 2) {
+      cohorts[largestIdx].totalMonthlyInterest = Math.max(0, cohorts[largestIdx].totalMonthlyInterest + intDiff);
+      cohorts[largestIdx].perPackageMonthlyInterest = Math.round(
+        cohorts[largestIdx].totalMonthlyInterest / Math.max(1, cohorts[largestIdx].packageCount)
+      );
+    }
+    cohorts.forEach((c) => {
+      c.sharePct = stageMonthlyInterest > 0 ? Number(((c.totalMonthlyInterest / stageMonthlyInterest) * 100).toFixed(1)) : 0;
+    });
+  }
+
+  let packages = detailedPackages;
+  let packagesTruncated = false;
+  if (detailedPackages.length > 120) {
+    packages = [...detailedPackages.slice(0, 12), ...detailedPackages.slice(-108)];
+    packagesTruncated = true;
+  }
+
+  const label =
+    stageMonth === 0
+      ? 'Hiện tại'
+      : stageMonth === finalMonth && isGoalReached
+        ? stageMonth % 12 === 0
+          ? `Năm ${stageMonth / 12} · Đạt mục tiêu`
+          : `Tháng ${stageMonth} · Đạt mục tiêu`
+        : stageMonth % 12 === 0
+          ? `Năm ${stageMonth / 12}`
+          : `Tháng ${stageMonth}`;
+
+  const targetBase = requiredPrincipal || nominalRequiredPrincipal || 1;
+  const goalProgressPct = Number(Math.min(100, (stageTotalBalance / Math.max(1, targetBase)) * 100).toFixed(1));
+
+  return {
+    month: stageMonth,
+    year: Number((stageMonth / 12).toFixed(1)),
+    label,
+    tenureCode,
+    tenureMonths,
+    totalPackages: active.length,
+    rolledOverCount,
+    firstCycleCount,
+    totalDeposited: stageTotalDeposited,
+    totalBalance: stageTotalBalance,
+    accumulatedInterest: stageAccumulatedInterest,
+    monthlyInterest: stageMonthlyInterest,
+    annualInterest: stageMonthlyInterest * 12,
+    goalProgressPct,
+    isGoal: stageMonth === finalMonth && isGoalReached,
+    cohorts,
+    packages,
+    packagesTotalCount: active.length,
+    packagesTruncated,
+  };
+}
+
 /**
  * Passive Income & Target Savings Roadmap Solver
  * Supports 2 goal types (`PASSIVE_INCOME` | `TARGET_AMOUNT`),
  * bidirectional solving (`TIME` | `SAVING`), plus step-up deposits,
- * annual bonus lump sums, and inflation adjustment.
+ * annual bonus lump sums, inflation adjustment, and per-stage package breakdowns.
  */
 export function calculatePassiveIncomeRoadmap({
   goalType = 'PASSIVE_INCOME',
@@ -142,6 +334,7 @@ export function calculatePassiveIncomeRoadmap({
   initialCapital = 0,
   annualInterestRate = 6.0,
   calculationMode = 'NOMINAL_MONTHS',
+  tenureCode = '12M',
   annualStepUpPct = 0,
   annualBonusAmount = 0,
   inflationRatePct = 0,
@@ -152,6 +345,8 @@ export function calculatePassiveIncomeRoadmap({
   const inputMonthlyDeposit = num(monthlySavingsAmount, 0, 0, 1e12);
   const p0 = num(initialCapital, 0, 0, 1e13);
   const rate = num(annualInterestRate, 6.0, 0.1, 30);
+  const safeTenure = typeof tenureCode === 'string' && /^(?:\d+[WM])$/.test(tenureCode) ? tenureCode : '12M';
+  const tenureMonths = safeTenure.endsWith('W') ? 1 : Math.max(1, parseInt(safeTenure, 10) || 12);
   const stepUp = num(annualStepUpPct, 0, 0, 50);
   const bonus = num(annualBonusAmount, 0, 0, 1e12);
   const inflation = num(inflationRatePct, 0, 0, 20);
@@ -176,6 +371,63 @@ export function calculatePassiveIncomeRoadmap({
   let requiredMonthlyDeposit = inputMonthlyDeposit;
   let isAlreadyReached = p0 >= nominalRequiredPrincipal;
   const monthByMonthLog = [];
+  const contributions = [];
+  let nextPkgId = 1;
+  let rolloverCursor = 0;
+
+  if (p0 > 0) {
+    contributions.push({
+      id: nextPkgId,
+      code: `Sổ #${nextPkgId}`,
+      type: 'INITIAL',
+      openMonth: 0,
+      cohortYear: 0,
+      amount: p0,
+    });
+    nextPkgId++;
+  }
+
+  const pushLogRow = (m) => {
+    while (rolloverCursor < contributions.length && m - contributions[rolloverCursor].openMonth >= tenureMonths) {
+      rolloverCursor++;
+    }
+    monthByMonthLog.push({
+      month: m,
+      year: m === 0 ? 0 : Number((m / 12).toFixed(1)),
+      principalDeposited: Math.round(depositedSoFar),
+      interestEarnedTotal: Math.round(Math.max(0, currentBalance - depositedSoFar)),
+      totalBalance: Math.round(currentBalance),
+      monthlyPassiveIncomeGenerated: Math.round(currentBalance * i),
+      activePackagesCount: contributions.length,
+      rolledOverPackagesCount: rolloverCursor,
+    });
+  };
+
+  const recordMonthDeposits = (m, depositAmt, bonusAmt) => {
+    const cohortYear = Math.floor((m - 1) / 12) + 1;
+    if (depositAmt > 0) {
+      contributions.push({
+        id: nextPkgId,
+        code: `Sổ #${nextPkgId}`,
+        type: 'MONTHLY',
+        openMonth: m,
+        cohortYear,
+        amount: depositAmt,
+      });
+      nextPkgId++;
+    }
+    if (bonusAmt > 0) {
+      contributions.push({
+        id: nextPkgId,
+        code: `Sổ #${nextPkgId}`,
+        type: 'BONUS',
+        openMonth: m,
+        cohortYear,
+        amount: bonusAmt,
+      });
+      nextPkgId++;
+    }
+  };
 
   if (normalizedSolve === 'SAVING') {
     const safeYears = num(targetYears, 5, 1, 50);
@@ -187,14 +439,7 @@ export function calculatePassiveIncomeRoadmap({
     if (isAlreadyReached) {
       requiredMonthlyDeposit = 0;
       monthsNeeded = 0;
-      monthByMonthLog.push({
-        month: 0,
-        year: 0,
-        principalDeposited: p0,
-        interestEarnedTotal: 0,
-        totalBalance: p0,
-        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
-      });
+      pushLogRow(0);
     } else {
       let baseBalance = p0;
       let unitFactor = 0;
@@ -208,14 +453,7 @@ export function calculatePassiveIncomeRoadmap({
       requiredMonthlyDeposit =
         baseBalance >= requiredPrincipal ? 0 : Math.ceil((requiredPrincipal - baseBalance) / Math.max(1e-9, unitFactor));
 
-      monthByMonthLog.push({
-        month: 0,
-        year: 0,
-        principalDeposited: p0,
-        interestEarnedTotal: 0,
-        totalBalance: p0,
-        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
-      });
+      pushLogRow(0);
 
       for (let m = 1; m <= targetMonths; m++) {
         const yearIdx = Math.floor((m - 1) / 12);
@@ -223,15 +461,8 @@ export function calculatePassiveIncomeRoadmap({
         const bonusThisMonth = m % 12 === 0 ? bonus : 0;
         currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
         depositedSoFar += depositThisMonth + bonusThisMonth;
-
-        monthByMonthLog.push({
-          month: m,
-          year: Number((m / 12).toFixed(1)),
-          principalDeposited: Math.round(depositedSoFar),
-          interestEarnedTotal: Math.round(Math.max(0, currentBalance - depositedSoFar)),
-          totalBalance: Math.round(currentBalance),
-          monthlyPassiveIncomeGenerated: Math.round(currentBalance * i),
-        });
+        recordMonthDeposits(m, depositThisMonth, bonusThisMonth);
+        pushLogRow(m);
       }
       monthsNeeded = targetMonths;
     }
@@ -240,25 +471,11 @@ export function calculatePassiveIncomeRoadmap({
 
     if (isAlreadyReached) {
       monthsNeeded = 0;
-      monthByMonthLog.push({
-        month: 0,
-        year: 0,
-        principalDeposited: p0,
-        interestEarnedTotal: 0,
-        totalBalance: p0,
-        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
-      });
+      pushLogRow(0);
     } else if (inputMonthlyDeposit <= 0 && bonus <= 0 && p0 <= 0) {
       monthsNeeded = 999;
     } else {
-      monthByMonthLog.push({
-        month: 0,
-        year: 0,
-        principalDeposited: p0,
-        interestEarnedTotal: 0,
-        totalBalance: p0,
-        monthlyPassiveIncomeGenerated: Math.round(p0 * i),
-      });
+      pushLogRow(0);
 
       while (monthsNeeded < 720) {
         monthsNeeded++;
@@ -270,20 +487,59 @@ export function calculatePassiveIncomeRoadmap({
         currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
         depositedSoFar += depositThisMonth + bonusThisMonth;
         requiredPrincipal = targetAtMonth;
-
-        monthByMonthLog.push({
-          month: monthsNeeded,
-          year: Number((monthsNeeded / 12).toFixed(1)),
-          principalDeposited: Math.round(depositedSoFar),
-          interestEarnedTotal: Math.round(Math.max(0, currentBalance - depositedSoFar)),
-          totalBalance: Math.round(currentBalance),
-          monthlyPassiveIncomeGenerated: Math.round(currentBalance * i),
-        });
+        recordMonthDeposits(monthsNeeded, depositThisMonth, bonusThisMonth);
+        pushLogRow(monthsNeeded);
 
         if (currentBalance >= targetAtMonth) {
           break;
         }
       }
+    }
+  }
+
+  // Build stage snapshots for Option 4 Explorer
+  const stageSnapshots = [];
+  if (monthByMonthLog.length > 0) {
+    const finalMonth = monthByMonthLog[monthByMonthLog.length - 1].month;
+    const isGoalReached = isAlreadyReached || currentBalance >= requiredPrincipal;
+    const stageMonthsSet = new Set();
+    if (p0 > 0) stageMonthsSet.add(0);
+
+    if (finalMonth < 12) {
+      for (const m of [1, 3, 6, 9]) {
+        if (m < finalMonth) stageMonthsSet.add(m);
+      }
+    } else if (finalMonth <= 180) {
+      for (let m = 12; m <= finalMonth; m += 12) {
+        stageMonthsSet.add(m);
+      }
+    } else {
+      for (const y of [1, 2, 3, 5]) {
+        if (y * 12 < finalMonth) stageMonthsSet.add(y * 12);
+      }
+      for (let m = 60; m < finalMonth; m += 60) {
+        stageMonthsSet.add(m);
+      }
+    }
+    stageMonthsSet.add(finalMonth);
+
+    const logMap = new Map(monthByMonthLog.map((row) => [row.month, row]));
+    const sortedStageMonths = Array.from(stageMonthsSet).sort((a, b) => a - b);
+    for (const sm of sortedStageMonths) {
+      stageSnapshots.push(
+        buildStagePackageSnapshot({
+          stageMonth: sm,
+          finalMonth,
+          isGoalReached,
+          contributions,
+          monthlyRate: i,
+          tenureCode: safeTenure,
+          tenureMonths,
+          logRow: logMap.get(sm),
+          nominalRequiredPrincipal,
+          requiredPrincipal,
+        })
+      );
     }
   }
 
@@ -302,6 +558,8 @@ export function calculatePassiveIncomeRoadmap({
     goalType: normalizedGoal,
     solveMode: normalizedSolve,
     targetYears: Number((monthsNeeded / 12).toFixed(1)),
+    tenureCode: safeTenure,
+    tenureMonths,
     targetMonthlyInterest: Math.round(requiredPrincipal * i),
     baseMonthlyInterest,
     nominalRequiredPrincipal,
@@ -326,6 +584,7 @@ export function calculatePassiveIncomeRoadmap({
     finalMonthlyPassiveIncome: Math.round(finalBalance * i),
     isAlreadyReached,
     monthByMonthLog,
+    stageSnapshots,
     isAchievableShortTerm: yearsNeeded <= 10,
   };
 }

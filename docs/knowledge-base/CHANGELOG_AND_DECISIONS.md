@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Option 4: Interactive Stage Passbook Shelf & Expandable 2-Level Roadmap Explorer
+
+- **Request**: Upgrade roadmap details to visually show how many savings passbooks/packages a user holds at each stage, how much interest each package generates, and provide Option 4 combining an interactive Passbook Shelf + Expandable Matrix with switching between Cohort Grouping (`Gộp theo lô / đợt`) and Individual Passbooks (`Sổ #1, #2...`).
+- **Changes Implemented**:
+  - Updated [api/_lib/calculator.js](../../api/_lib/calculator.js) & [api/calculate.js](../../api/calculate.js): Added `tenureCode` tracking, per-row `activePackagesCount`/`rolledOverPackagesCount`, and `buildStagePackageSnapshot()` producing `stageSnapshots` with reconciled `cohorts` (`INITIAL`, `YEAR_k`, `BONUS_k`) and up to 120 `packages` (`Sổ #k`, rollover counts, next maturity, per-package balance & monthly interest).
+  - Updated [src/pages/Planner.jsx](../../src/pages/Planner.jsx): Added `RoadmapPackageExplorer` + `StagePackageDetails` supporting `Kệ sổ theo giai đoạn` (timeline pills, 4 KPIs, stacked contribution bar) & `Bảng phân tầng` (6-column accordion table expanding any stage row), plus live switching between `Gộp theo lô / đợt` and `Từng sổ lẻ` with group filters.
+  - Updated [DOMAIN_AND_FORMULAS.md](./DOMAIN_AND_FORMULAS.md), [INDEX.md](./INDEX.md).
+
+---
+
 ## [2026-11-18] — Detailed Monthly Income Breakdown (`Full-time`, `Freelance Min–Max`, `Investment Min–Max`, `Total Income`) in Basic & Advanced Modes
 
 - **Request**: Surface monthly income in both `Cơ bản` and `Chuyên sâu` planner modes with breakdown into main full-time job, freelance/part-time range (Min–Max), investment income range (Min–Max), and computed total monthly income.

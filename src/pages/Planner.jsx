@@ -3,10 +3,14 @@ import {
   AlertTriangle,
   ArrowDown,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Copy,
   Download,
   ExternalLink,
   FileText,
+  Layers,
+  Package,
   Target,
   Wallet,
   PiggyBank,
@@ -97,6 +101,424 @@ function IncomeRangeField({ label, sublabel, minVal, maxVal, onMin, onMax, quick
   );
 }
 
+const COHORT_STYLE = {
+  indigo: {
+    bar: 'bg-indigo-400',
+    dot: 'bg-indigo-400',
+    badge: 'brand',
+    border: 'border-indigo-400/20',
+  },
+  sky: {
+    bar: 'bg-sky-400',
+    dot: 'bg-sky-400',
+    badge: 'brand',
+    border: 'border-sky-400/20',
+  },
+  emerald: {
+    bar: 'bg-emerald-400',
+    dot: 'bg-emerald-400',
+    badge: 'success',
+    border: 'border-emerald-400/20',
+  },
+  amber: {
+    bar: 'bg-amber-400',
+    dot: 'bg-amber-400',
+    badge: 'warning',
+    border: 'border-amber-400/20',
+  },
+};
+
+function StagePackageDetails({ stage, granularity }) {
+  const [groupFilter, setGroupFilter] = useState('all');
+
+  if (!stage) return null;
+
+  const validFilter =
+    groupFilter === 'all' || stage.cohorts.some((c) => c.key === groupFilter) ? groupFilter : 'all';
+  const filteredPackages =
+    validFilter === 'all' ? stage.packages : stage.packages.filter((p) => p.groupKey === validFilter);
+
+  if (granularity === 'cohorts') {
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        {stage.cohorts.map((cohort) => {
+          const st = COHORT_STYLE[cohort.tone] || COHORT_STYLE.emerald;
+          return (
+            <div
+              key={cohort.key}
+              className={cx('flex flex-col justify-between rounded-xl border bg-white/[0.02] p-4', st.border)}
+            >
+              <div>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={cx('size-2.5 shrink-0 rounded-full', st.dot)} />
+                    <span className="text-sm font-semibold text-white">{cohort.label}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone="neutral" className="tabular-nums">
+                      {cohort.packageCount} gói
+                    </Badge>
+                    <Badge tone={cohort.rolledPackages > 0 ? 'brand' : 'neutral'}>
+                      {cohort.rolledPackages > 0 ? `Tái tục ${cohort.maxRolloverCount} lần` : 'Đang kỳ đầu'}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="mt-1.5 text-[11px] font-mono text-zinc-400">{cohort.codeRange}</div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs tabular-nums">
+                  <div className="rounded-lg bg-black/25 px-2.5 py-2">
+                    <div className="text-[11px] text-zinc-500">Gốc mở sổ</div>
+                    <div className="mt-0.5 font-medium text-zinc-200">
+                      {cohort.packageCount === 1 ? vnd(cohort.totalInitial) : `${compact(cohort.perPackageInitial)}/sổ`}
+                    </div>
+                    {cohort.packageCount > 1 && (
+                      <div className="text-[10px] text-zinc-500">Tổng gốc: {compact(cohort.totalInitial)}</div>
+                    )}
+                  </div>
+                  <div className="rounded-lg bg-black/25 px-2.5 py-2">
+                    <div className="text-[11px] text-zinc-500">Số dư hiện tại</div>
+                    <div className="mt-0.5 font-semibold text-white">{vnd(cohort.totalBalance)}</div>
+                    <div className="text-[10px] text-emerald-300/80">
+                      +{compact(cohort.totalAccumulatedInterest)} lãi gộp
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-emerald-500/[0.08] px-3 py-2 text-xs tabular-nums ring-1 ring-inset ring-emerald-400/20">
+                <div className="text-emerald-200">
+                  {cohort.packageCount > 1 && (
+                    <span className="mr-1.5 text-[11px] text-emerald-300/80">
+                      Mỗi sổ +{compact(cohort.perPackageMonthlyInterest)}/th ·
+                    </span>
+                  )}
+                  <strong className="font-semibold text-emerald-300">+{vnd(cohort.totalMonthlyInterest)}/tháng</strong>
+                </div>
+                <span className="font-semibold text-emerald-300">{pct(cohort.sharePct, 1)} tổng lãi</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Chip active={validFilter === 'all'} onClick={() => setGroupFilter('all')}>
+          Tất cả ({stage.packagesTotalCount} sổ)
+        </Chip>
+        {stage.cohorts.map((c) => (
+          <Chip key={c.key} active={validFilter === c.key} onClick={() => setGroupFilter(c.key)}>
+            {c.label} ({c.packageCount})
+          </Chip>
+        ))}
+      </div>
+
+      {stage.packagesTruncated && (
+        <p className="rounded-lg bg-white/[0.03] px-3 py-2 text-[11px] text-zinc-400 ring-1 ring-inset ring-white/[0.06]">
+          Đang hiển thị 12 sổ đầu + 108 sổ gần nhất trên tổng số <strong className="text-white">{stage.packagesTotalCount}</strong> sổ để giữ giao diện mượt mà. Chuyển sang <strong className="text-indigo-300">Gộp theo lô / đợt</strong> để xem trọn bộ từng năm.
+        </p>
+      )}
+
+      <div className="grid max-h-[420px] gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+        {filteredPackages.map((pkg) => (
+          <div
+            key={pkg.id}
+            className="flex flex-col justify-between rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-xs tabular-nums"
+          >
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[13px] font-semibold text-white">{pkg.code}</span>
+                <Badge tone={pkg.rolloverCount > 0 ? 'brand' : 'neutral'}>
+                  {pkg.rolloverCount > 0 ? `Tái tục ${pkg.rolloverCount} lần` : `Đáo hạn T${pkg.nextMaturityMonth}`}
+                </Badge>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[11px] text-zinc-500">
+                <span>{pkg.groupLabel}</span>
+                <span>Mở {pkg.openMonth === 0 ? 'ban đầu' : `T${pkg.openMonth}`}</span>
+              </div>
+              <div className="mt-2.5 space-y-1 border-t border-white/[0.05] pt-2 text-[11px]">
+                <div className="flex justify-between text-zinc-400">
+                  <span>Gốc mở sổ:</span>
+                  <span>{vnd(pkg.initialPrincipal)}</span>
+                </div>
+                <div className="flex justify-between font-medium text-white">
+                  <span>Số dư hiện tại:</span>
+                  <span>{vnd(pkg.currentBalance)}</span>
+                </div>
+                <div className="flex justify-between text-emerald-300/80">
+                  <span>Lãi đã tích luỹ:</span>
+                  <span>+{vnd(pkg.accumulatedInterest)}</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between rounded-lg bg-emerald-500/[0.08] px-2.5 py-1.5 font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
+              <span>+{vnd(pkg.monthlyInterest)}/tháng</span>
+              <span className="text-[11px] opacity-80">{pct(pkg.sharePct, 1)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RoadmapPackageExplorer({ roadmap, rows, onRowsChange }) {
+  const snapshots = roadmap.stageSnapshots || [];
+  const [explorerView, setExplorerView] = useState('shelf'); // 'shelf' | 'matrix'
+  const [granularity, setGranularity] = useState('cohorts'); // 'cohorts' | 'individual'
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [expandedMonth, setExpandedMonth] = useState(null);
+
+  const defaultMonth = useMemo(() => {
+    if (snapshots.length === 0) return 0;
+    const yearOne = snapshots.find((s) => s.month === 12);
+    return yearOne ? yearOne.month : snapshots[snapshots.length - 1].month;
+  }, [snapshots]);
+
+  const activeStage = useMemo(() => {
+    if (snapshots.length === 0) return null;
+    return snapshots.find((s) => s.month === selectedMonth) || snapshots.find((s) => s.month === defaultMonth) || snapshots[0];
+  }, [snapshots, selectedMonth, defaultMonth]);
+
+  const activeExpandedMonth = expandedMonth !== null ? expandedMonth : defaultMonth;
+
+  const findNearestSnapshot = (targetMonth) => {
+    if (snapshots.length === 0) return null;
+    const exact = snapshots.find((s) => s.month === targetMonth);
+    if (exact) return { stage: exact, exact: true };
+    let best = snapshots[0];
+    let minDiff = Math.abs(snapshots[0].month - targetMonth);
+    for (const s of snapshots) {
+      const diff = Math.abs(s.month - targetMonth);
+      if (diff < minDiff) {
+        best = s;
+        minDiff = diff;
+      }
+    }
+    return { stage: best, exact: false };
+  };
+
+  const matrixRows = roadmap.monthByMonthLog.filter(
+    (r) => rows === 'all' || r.month === 0 || r.month % 12 === 0 || r.totalBalance >= roadmap.requiredPrincipal
+  );
+
+  if (roadmap.monthByMonthLog.length === 0) return null;
+
+  return (
+    <Card className="p-5 sm:p-6">
+      <CardHeader
+        title="Chi tiết lộ trình & Danh mục gói tiết kiệm"
+        description={`Theo dõi chính xác ở từng giai đoạn bạn sở hữu bao nhiêu sổ (kỳ hạn ${roadmap.tenureMonths || 12} tháng) và mỗi sổ đang mang lại bao nhiêu tiền lãi.`}
+        right={
+          <div className="flex flex-wrap items-center gap-2">
+            <Segmented
+              size="sm"
+              value={explorerView}
+              onChange={setExplorerView}
+              options={[
+                { value: 'shelf', label: 'Kệ sổ theo giai đoạn' },
+                { value: 'matrix', label: 'Bảng phân tầng' },
+              ]}
+            />
+            <Segmented
+              size="sm"
+              value={granularity}
+              onChange={setGranularity}
+              options={[
+                { value: 'cohorts', label: 'Gộp theo lô / đợt' },
+                { value: 'individual', label: 'Từng sổ lẻ' },
+              ]}
+            />
+          </div>
+        }
+      />
+
+      {explorerView === 'shelf' && activeStage ? (
+        <div className="mt-5 space-y-5">
+          {/* Timeline stage pills */}
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+            {snapshots.map((s) => {
+              const active = s.month === activeStage.month;
+              return (
+                <button
+                  key={s.month}
+                  type="button"
+                  onClick={() => setSelectedMonth(s.month)}
+                  className={cx(
+                    'flex shrink-0 flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5 text-left transition-all',
+                    active
+                      ? 'border-indigo-400/50 bg-indigo-500/15 shadow-sm'
+                      : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.15] hover:bg-white/[0.04]'
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={cx('text-xs font-semibold', active ? 'text-white' : 'text-zinc-300')}>
+                      {s.isGoal ? `${s.label.replace(' · Đạt mục tiêu', '')} 🎯` : s.label}
+                    </span>
+                    <Badge tone={active ? 'brand' : 'neutral'}>{s.totalPackages} gói</Badge>
+                  </div>
+                  <div className="text-[11px] tabular-nums text-zinc-400">
+                    +{compact(s.monthlyInterest)}/th · {pct(s.goalProgressPct, 0)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected stage summary KPIs & stacked bar */}
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                <Layers className="size-4 text-indigo-300" />
+                Giai đoạn: {activeStage.label}
+              </div>
+              <span className="text-xs text-zinc-400 tabular-nums">
+                Đã tích luỹ {pct(activeStage.goalProgressPct, 1)} mục tiêu
+              </span>
+            </div>
+
+            <div className="mt-3.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <div className="rounded-xl bg-black/30 p-3">
+                <div className="flex items-center gap-1 text-[11px] text-zinc-500">
+                  <Package className="size-3.5 text-indigo-300" /> Tổng số gói đang mở
+                </div>
+                <div className="mt-1 text-lg font-semibold tabular-nums text-white">{activeStage.totalPackages} gói</div>
+                <div className="text-[11px] text-zinc-500">
+                  {activeStage.rolledOverCount} đã tái tục · {activeStage.firstCycleCount} kỳ đầu
+                </div>
+              </div>
+              <div className="rounded-xl bg-black/30 p-3">
+                <div className="text-[11px] text-zinc-500">Tổng số dư các sổ</div>
+                <div className="mt-1 text-lg font-semibold tabular-nums text-white">{compact(activeStage.totalBalance)}</div>
+                <div className="text-[11px] text-zinc-500 tabular-nums">Vốn gửi: {compact(activeStage.totalDeposited)}</div>
+              </div>
+              <div className="rounded-xl bg-black/30 p-3">
+                <div className="text-[11px] text-zinc-500">Lãi các sổ đẻ ra / tháng</div>
+                <div className="mt-1 text-lg font-semibold tabular-nums text-emerald-300">
+                  +{compact(activeStage.monthlyInterest)}/th
+                </div>
+                <div className="text-[11px] text-zinc-500 tabular-nums">~{compact(activeStage.annualInterest)}/năm</div>
+              </div>
+              <div className="rounded-xl bg-black/30 p-3">
+                <div className="text-[11px] text-zinc-500">Tổng lãi kép tích luỹ</div>
+                <div className="mt-1 text-lg font-semibold tabular-nums text-indigo-300">
+                  +{compact(activeStage.accumulatedInterest)}
+                </div>
+                <div className="text-[11px] text-zinc-500">từ lãi nhập gốc</div>
+              </div>
+            </div>
+
+            {activeStage.cohorts.length > 0 && activeStage.monthlyInterest > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                  <span>Tỷ trọng nguồn lãi theo đợt mở sổ</span>
+                  <span className="tabular-nums">Tổng +{vnd(activeStage.monthlyInterest)}/tháng (100%)</span>
+                </div>
+                <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                  {activeStage.cohorts.map((c) => {
+                    const st = COHORT_STYLE[c.tone] || COHORT_STYLE.emerald;
+                    return (
+                      <div
+                        key={c.key}
+                        title={`${c.label}: +${vnd(c.totalMonthlyInterest)}/th (${pct(c.sharePct, 1)})`}
+                        className={cx('h-full border-r border-canvas/70 last:border-r-0', st.bar)}
+                        style={{ width: `${Math.max(1, c.sharePct)}%` }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-zinc-400">
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-400" /> Vốn ban đầu</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-sky-400" /> Các lô cũ đã tái tục</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-400" /> Lô mới kỳ đầu</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-400" /> Thưởng cuối năm</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <StagePackageDetails stage={activeStage} granularity={granularity} />
+        </div>
+      ) : (
+        <div className="mt-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-zinc-500">Nhấn vào một dòng giai đoạn để mở chi tiết các gói bên trong.</span>
+            <Segmented
+              size="sm"
+              value={rows}
+              onChange={onRowsChange}
+              options={[
+                { value: 'yearly', label: 'Theo năm' },
+                { value: 'all', label: 'Theo tháng' },
+              ]}
+            />
+          </div>
+
+          <Table
+            className="max-h-[560px]"
+            head={['Giai đoạn', 'Số gói mở', 'Tiền đã gửi', 'Lãi tích luỹ', 'Tổng tài sản', 'Lãi / tháng']}
+          >
+            {matrixRows.map((r) => {
+              const goal = r.month > 0 && r.totalBalance >= roadmap.requiredPrincipal;
+              const isExpanded = activeExpandedMonth === r.month;
+              const match = isExpanded ? findNearestSnapshot(r.month) : null;
+              return (
+                <React.Fragment key={r.month}>
+                  <tr
+                    onClick={() => setExpandedMonth(isExpanded ? -1 : r.month)}
+                    className={cx(
+                      'cursor-pointer transition-colors',
+                      goal ? 'bg-emerald-500/[0.06] hover:bg-emerald-500/[0.1]' : 'hover:bg-white/[0.03]',
+                      isExpanded && 'bg-white/[0.04]'
+                    )}
+                  >
+                    <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-200">
+                      <span className="inline-flex items-center gap-1.5">
+                        {isExpanded ? (
+                          <ChevronDown className="size-3.5 text-indigo-300" />
+                        ) : (
+                          <ChevronRight className="size-3.5 text-zinc-500" />
+                        )}
+                        {r.month === 0 ? 'Hiện tại' : r.month % 12 === 0 ? `Năm ${r.month / 12}` : `Tháng ${r.month}`}
+                      </span>
+                      {goal && <Badge tone="success" className="ml-2">Đạt mục tiêu</Badge>}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <Badge tone={isExpanded ? 'brand' : 'neutral'}>
+                        {r.activePackagesCount ?? 0} gói
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right text-zinc-400">{fmt(r.principalDeposited)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-300/90">+{fmt(r.interestEarnedTotal)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-white">{fmt(r.totalBalance)}</td>
+                    <td className="px-4 py-3 text-right text-indigo-300">{fmt(r.monthlyPassiveIncomeGenerated)}</td>
+                  </tr>
+                  {isExpanded && match?.stage && (
+                    <tr className="bg-black/25">
+                      <td colSpan={6} className="p-4">
+                        {!match.exact && (
+                          <p className="mb-3 text-[11px] text-amber-300/90">
+                            Đang hiển thị cơ cấu gói tại cột mốc gần nhất ({match.stage.label}).
+                          </p>
+                        )}
+                        <StagePackageDetails stage={match.stage} granularity={granularity} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </Table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 const INITIAL_PLANNER_DATA = {
   roadmap: {
     goalType: 'PASSIVE_INCOME',
@@ -118,7 +540,9 @@ const INITIAL_PLANNER_DATA = {
     annualBonusAmount: 0,
     inflationRatePct: 0,
     isAlreadyReached: false,
+    tenureMonths: 12,
     monthByMonthLog: [],
+    stageSnapshots: [],
   },
   feasibility: {
     score: 70,
@@ -297,6 +721,7 @@ export default function Planner({ params = {} }) {
       initialCapital: capital,
       annualInterestRate: rate,
       calculationMode: calcMode,
+      tenureCode: tenure,
       annualStepUpPct: effectiveStepUp,
       annualBonusAmount: effectiveBonus,
       inflationRatePct: effectiveInflation,
@@ -345,10 +770,6 @@ export default function Planner({ params = {} }) {
   const reachable = isSavingSolver ? !roadmap.isAlreadyReached || roadmap.monthsNeeded < 720 : roadmap.monthsNeeded < 720;
   const progress = roadmap.requiredPrincipal > 0 ? (capital / roadmap.requiredPrincipal) * 100 : 0;
   const scoreTone = feasibility.score >= 80 ? 'emerald' : feasibility.score >= 60 ? 'indigo' : 'amber';
-
-  const tableRows = roadmap.monthByMonthLog.filter(
-    (r) => rows === 'all' || r.month === 0 || r.month % 12 === 0 || r.totalBalance >= roadmap.requiredPrincipal
-  );
 
   const exportCSV = () => {
     const head = ['Tháng', 'Vốn đã gửi (VND)', 'Lãi kép tích luỹ (VND)', 'Tổng tài sản (VND)', 'Thu nhập thụ động/tháng (VND)'];
@@ -1057,45 +1478,8 @@ export default function Planner({ params = {} }) {
             </div>
           </Card>
 
-          {/* Table */}
-          {roadmap.monthByMonthLog.length > 0 && (
-            <Card className="p-5 sm:p-6">
-              <CardHeader
-                title="Chi tiết lộ trình"
-                right={
-                  <Segmented
-                    size="sm"
-                    value={rows}
-                    onChange={setRows}
-                    options={[
-                      { value: 'yearly', label: 'Theo năm' },
-                      { value: 'all', label: 'Theo tháng' },
-                    ]}
-                  />
-                }
-              />
-              <Table
-                className="mt-5 max-h-[440px]"
-                head={['Thời điểm', 'Tiền đã gửi', 'Lãi tích luỹ', 'Tổng tài sản', 'Lãi / tháng']}
-              >
-                {tableRows.map((r) => {
-                  const goal = r.month > 0 && r.totalBalance >= roadmap.requiredPrincipal;
-                  return (
-                    <tr key={r.month} className={goal ? 'bg-emerald-500/[0.06]' : 'hover:bg-white/[0.02]'}>
-                      <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-200">
-                        {r.month === 0 ? 'Hiện tại' : r.month % 12 === 0 ? `Năm ${r.month / 12}` : `Tháng ${r.month}`}
-                        {goal && <Badge tone="success" className="ml-2">Đạt mục tiêu</Badge>}
-                      </td>
-                      <td className="px-4 py-3 text-right text-zinc-400">{fmt(r.principalDeposited)}</td>
-                      <td className="px-4 py-3 text-right text-emerald-300/90">+{fmt(r.interestEarnedTotal)}</td>
-                      <td className="px-4 py-3 text-right font-medium text-white">{fmt(r.totalBalance)}</td>
-                      <td className="px-4 py-3 text-right text-indigo-300">{fmt(r.monthlyPassiveIncomeGenerated)}</td>
-                    </tr>
-                  );
-                })}
-              </Table>
-            </Card>
-          )}
+          {/* Stage Passbook Shelf & Expandable Matrix (Option 4) */}
+          <RoadmapPackageExplorer roadmap={roadmap} rows={rows} onRowsChange={setRows} />
 
           <FeedbackWidget
             toolId="plan"

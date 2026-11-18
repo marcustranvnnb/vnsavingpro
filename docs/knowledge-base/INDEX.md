@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 22:20 (Added Detailed Monthly Income Breakdown across Basic & Advanced Modes + Server Feasibility Range Check)
+> **Last Synced**: 2026-11-18 22:35 (Added Option 4 Stage Passbook Shelf, Expandable 2-Level Matrix, & Cohort vs Individual Passbook Views)
 > **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 

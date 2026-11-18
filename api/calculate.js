@@ -75,6 +75,7 @@ export default async function handler(req, res) {
         initialCapital: payload.initialCapital,
         annualInterestRate: payload.annualInterestRate,
         calculationMode: payload.calculationMode || 'NOMINAL_MONTHS',
+        tenureCode: payload.tenureCode || '12M',
         annualStepUpPct: payload.annualStepUpPct ?? 0,
         annualBonusAmount: payload.annualBonusAmount ?? 0,
         inflationRatePct: payload.inflationRatePct ?? 0,
