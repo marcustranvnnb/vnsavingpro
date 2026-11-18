@@ -5,7 +5,7 @@
 ```mermaid
 flowchart TD
     Entry["src/main.jsx"] --> App["src/App.jsx (AppProvider + Shell)"]
-    App --> State["src/state.jsx (Hash Router + RatesCtx + ToastCtx)"]
+    App --> State["src/state.jsx (Clean History Router + RatesCtx + ToastCtx)"]
     State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached 1h)"]
     App --> Layout["src/components/Layout.jsx (TopNav, MobileTabBar, Footer)"]
     App --> Modal["src/components/DataModal.jsx (JSON/CSV Backup, Feedback Log)"]
@@ -33,11 +33,12 @@ flowchart TD
   - GitHub Actions runs both daily at `09:00 AM` Vietnam time (`0 2 * * *`) and pushes updates to `main`; `scripts/register-daily-9am-task.ps1` sets up an equivalent Windows Scheduled Task locally.
 - **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, and `/api/cron/sync-rates` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
 
-## 3. Routing & State Management (`src/state.jsx`)
+## 3. Routing & State Management (`src/state.jsx` & `src/tools.js`)
 
-- **Hash Router (`useRoute`, `href`)**:
-  - Parses `window.location.hash` into `{ route, params }` (e.g., `#/plan?target=10000000&saving=5000000`).
-  - Scrolls to top automatically on `hashchange`.
+- **Clean History API Router (`useRoute`, `href`, `navigate`)**:
+  - Single source of truth for page naming & URLs lives in `src/tools.js` (`HOME_PAGE` & `TOOLS` with `path`, `aliases`, and `pageTitle`) plus helpers `normalizePath()`, `resolveRouteId()`, `getRoutePath()`, and `getPageTitle()`.
+  - Parses `window.location.pathname` and `window.location.search` into `{ route, params }` (e.g., `/`, `/plan?target=10000000&saving=5000000`, or Vietnamese aliases like `/ke-hoach`).
+  - Automatically migrates legacy `#/...` URLs via `history.replaceState`, intercepts same-origin `<a>` clicks for zero-reload SPA transitions, syncs `document.title` per route, and scrolls to top on navigation/popstate.
 - **Rates Context (`useRates`)**:
   - Fetches `/api/rates` on mount (falling back to `INITIAL_BANKS_DATA` + `RATES_UPDATED_AT`), merges with user-customized overrides stored in `localStorage` under `VNSAVING_SECURE_CUSTOM_RATES` via `cryptoStorage`.
   - Exposes: `banks`, `updatedAt`, `customRates`, `getRate`, `isCustom`, `setRate`, `resetRate`, `replaceAll`, and `best(tenure)`.

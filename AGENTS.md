@@ -21,6 +21,6 @@ Whenever you modify code, formulas, bank rates, UI components, or deployment con
 ## 3. Coding & Design Conventions
 
 - **Stack**: React 18 + Vite 5 + Tailwind CSS v4 (`@tailwindcss/vite`) + `chart.js` / `react-chartjs-2` + `lucide-react`.
-- **Routing**: Hash-based router (`#/`, `#/plan`, `#/rates`, `#/calculator`, `#/ladder`, `#/career`, `#/inflation`, `#/referral`) in `src/state.jsx` for zero-rewrite static hosting compatibility.
+- **Routing**: Clean History API router (`/`, `/plan`, `/rates`, `/calculator`, `/ladder`, `/career`, `/inflation`, `/referral`) configured in `src/tools.js` (`HOME_PAGE` & `TOOLS` with `path`, `aliases`, `pageTitle`) and handled in `src/state.jsx` with automatic legacy `#/...` migration.
 - **UI Primitives**: Always reuse primitives from `src/components/ui.jsx` (`Card`, `Button`, `Badge`, `Chip`, `Segmented`, `MoneyField`, `DecimalInput`, `NumberInput`, `SliderField`, `Stat`, `Table`, `Modal`, `PageHeader`) rather than inline styles.
 - **Formatting**: Format all VND amounts, percentages, and durations through `src/utils/format.js` (`vnd`, `compact`, `chip`, `pct`, `duration`, `fmt`) with `tabular-nums`.

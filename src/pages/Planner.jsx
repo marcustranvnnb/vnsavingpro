@@ -179,7 +179,7 @@ export default function Planner({ params = {} }) {
       mode: calcMode,
     };
     if (usingCustom) query.rate = customRate;
-    const url = `${window.location.origin}${window.location.pathname}${href('plan', query)}`;
+    const url = `${window.location.origin}${href('plan', query)}`;
     navigator.clipboard.writeText(url).then(() => {
       notify('Đã sao chép link chia sẻ kế hoạch');
     });

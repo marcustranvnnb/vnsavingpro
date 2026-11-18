@@ -1,8 +1,8 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 16:30 (v1.5.2 UI Version Badge, Release Notes Modal & `DataModal` Version Sync)
-> **Current Architecture Version**: v1.5.2 (Hash-Routed SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
-> **Deployment Status**: Pushed v1.5.2 & synced with UI version badge/modal (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
+> **Last Synced**: 2026-11-18 17:15 (Clean History API URLs without `#` + Per-Page Naming Config in `src/tools.js`)
+> **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
+> **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---
 
@@ -26,14 +26,14 @@
 
 | Route | Tool ID | Active File | Purpose |
 | :--- | :--- | :--- | :--- |
-| `#/` | `home` | [src/pages/Home.jsx](../../src/pages/Home.jsx) | Landing page with interactive `QuickEstimate` widget, 12M rate leaderboard, and tool grid |
-| `#/plan` | `plan` | [src/pages/Planner.jsx](../../src/pages/Planner.jsx) | Flagship Passive Income Roadmap solver, feasibility score, what-if scenarios, Chart.js projection, and CSV export |
-| `#/rates` | `rates` | [src/pages/Rates.jsx](../../src/pages/Rates.jsx) | Interactive rate comparison matrix across 11 tenures (`1W`–`36M`), inline custom rate overrides, and detailed digital bank product packages |
-| `#/calculator` | `calculator` | [src/pages/Calculator.jsx](../../src/pages/Calculator.jsx) | Side-by-side comparison of 3 interest calculation methods: Actual Days/365 (SBV Circular 14), Nominal Months/12, and Monthly Compounding |
-| `#/ladder` | `ladder` | [src/pages/Ladder.jsx](../../src/pages/Ladder.jsx) | Multi-tranche Savings Ladder simulator (`ROLLING_1M`, `SPLIT_50_50`, `TNEX_PROMO_30_70`) across 6–60 months |
-| `#/career` | `career` | [src/pages/Career.jsx](../../src/pages/Career.jsx) | Models how annual raises (+2M/yr, +10%/yr) vs. job hopping (+30% every 2 yrs) accelerate time to financial freedom |
-| `#/inflation` | `inflation` | [src/pages/Inflation.jsx](../../src/pages/Inflation.jsx) | Real interest rate & future purchasing power erosion calculator |
-| `#/referral` | `referral` | [src/pages/Referral.jsx](../../src/pages/Referral.jsx) | Digital bank account opening promotions, referral codes, and QR codes |
+| `/` | `home` | [src/pages/Home.jsx](../../src/pages/Home.jsx) | Landing page with interactive `QuickEstimate` widget, 12M rate leaderboard, and tool grid |
+| `/plan` | `plan` | [src/pages/Planner.jsx](../../src/pages/Planner.jsx) | Flagship Passive Income Roadmap solver, feasibility score, what-if scenarios, Chart.js projection, and CSV export |
+| `/rates` | `rates` | [src/pages/Rates.jsx](../../src/pages/Rates.jsx) | Interactive rate comparison matrix across 11 tenures (`1W`–`36M`), inline custom rate overrides, and detailed digital bank product packages |
+| `/calculator` | `calculator` | [src/pages/Calculator.jsx](../../src/pages/Calculator.jsx) | Side-by-side comparison of 3 interest calculation methods: Actual Days/365 (SBV Circular 14), Nominal Months/12, and Monthly Compounding |
+| `/ladder` | `ladder` | [src/pages/Ladder.jsx](../../src/pages/Ladder.jsx) | Multi-tranche Savings Ladder simulator (`ROLLING_1M`, `SPLIT_50_50`, `TNEX_PROMO_30_70`) across 6–60 months |
+| `/career` | `career` | [src/pages/Career.jsx](../../src/pages/Career.jsx) | Models how annual raises (+2M/yr, +10%/yr) vs. job hopping (+30% every 2 yrs) accelerate time to financial freedom |
+| `/inflation` | `inflation` | [src/pages/Inflation.jsx](../../src/pages/Inflation.jsx) | Real interest rate & future purchasing power erosion calculator |
+| `/referral` | `referral` | [src/pages/Referral.jsx](../../src/pages/Referral.jsx) | Digital bank account opening promotions, referral codes, and QR codes |
 
 ---
 

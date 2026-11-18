@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Clean History API URLs (`/`, `/plan`, ...) & Per-Page Naming Config
+
+- **Request**: Explain why the home URL previously contained `#` and switch to customizable clean page names/paths without `#`.
+- **Changes Implemented**:
+  - Added `HOME_PAGE`, per-tool `path`, `aliases` (Vietnamese slugs such as `/ke-hoach`, `/lai-suat`, `/tinh-lai`, `/bac-thang`, `/tang-luong`, `/lam-phat`, `/uu-dai`), `pageTitle`, and helpers (`normalizePath`, `resolveRouteId`, `getRoutePath`, `getPageTitle`) in [src/tools.js](../../src/tools.js).
+  - Replaced `Hash Router` (`window.location.hash` / `#/`) in [src/state.jsx](../../src/state.jsx) with a Clean History API Router (`readLocation`, `navigate`, `href`, `useRoute`), complete with automatic `#/...` legacy hash stripping, delegated same-origin link interception, `popstate` support, and automatic `document.title` updates per page.
+  - Updated `sharePlan` in [src/pages/Planner.jsx](../../src/pages/Planner.jsx) to build share links via `${window.location.origin}${href('plan', query)}` so pathname segments never duplicate.
+  - Updated [AGENTS.md](../../AGENTS.md), [INDEX.md](./INDEX.md), and [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+---
+
 ## [2026-11-18] — Version 1.5.2 (UI): Visible Web Tool Version Badge & Release Notes Modal
 
 - **Request**: Display and describe the current web tool version directly on the VnSavingPro website.
