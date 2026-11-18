@@ -24,7 +24,12 @@ flowchart TD
   - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` with `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
   - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with per-IP in-memory rate limiting (`120 req/min`).
   - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Records post-result user star ratings, tags, comments, and snapshots; mirrored locally under `USER_FEEDBACK_LOG` via `cryptoStorage` and exportable via JSON/CSV in `DataModal.jsx`.
-- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, and `/api/feedback` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
+  - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Scheduled via `vercel.json` (`0 2 * * *` UTC = 09:00 AM UTC+7) to live-scrape TNEX and TIMO and refresh `api/_lib/liveRatesCache.js`.
+- **Automated Daily 9:00 AM Rate Scrapers (`scripts/` & `.github/workflows/daily-rates-sync.yml`)**:
+  - `scripts/scrape-tnex.js` scrapes `https://www.tnex.vn/san-pham/tiet-kiem` (`parseTnexHtml`) and updates `src/data/banksData.js`, `src/data/bankPackagesData.js`, and `src/data/scraped/tnex-latest.json`.
+  - `scripts/scrape-timo.js` scrapes `https://timo.vn/tiet-kiem-co-ky-han/` and updates `src/data/banksData.js`, `src/data/bankPackagesData.js`, and `src/data/scraped/timo-latest.json`.
+  - GitHub Actions runs both daily at `09:00 AM` Vietnam time (`0 2 * * *`) and pushes updates to `main`; `scripts/register-daily-9am-task.ps1` sets up an equivalent Windows Scheduled Task locally.
+- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, and `/api/cron/sync-rates` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
 
 ## 3. Routing & State Management (`src/state.jsx`)
 

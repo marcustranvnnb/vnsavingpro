@@ -53,12 +53,12 @@ export const INITIAL_BANKS_DATA = [
       "3W": 0.50,
       "1M": 4.75,
       "3M": 4.75,
-      "6M": 6.20,
-      "9M": 6.40,
-      "12M": 6.70,
-      "18M": 6.90,
-      "24M": 6.90,
-      "36M": 6.80
+      "6M": 6.70,
+      "9M": 6.70,
+      "12M": 6.90,
+      "18M": 6.70,
+      "24M": 6.70,
+      "36M": 6.70
     },
     payoutMethods: ["MATURITY", "MONTHLY", "FLEXIBLE"],
     partialWithdrawal: true,
@@ -103,7 +103,7 @@ export const INITIAL_BANKS_DATA = [
     name: "TNEX",
     fullName: "Ngân hàng số TNEX (by MSB)",
     type: "Digital Bank",
-    badge: "⚡ Bảo trợ bởi MSB · Lãi đến 6.5%–7.0%",
+    badge: "⚡ Top 1 TNEX 8.6% (12M+) · 8.4% (6M+)",
     color: "#00b4d8",
     logoText: "TNEX",
     featured: true,
@@ -117,16 +117,16 @@ export const INITIAL_BANKS_DATA = [
       "3W": 0.50,
       "1M": 4.75,
       "3M": 4.75,
-      "6M": 5.80,
-      "9M": 6.00,
-      "12M": 6.30,
-      "18M": 6.50,
-      "24M": 6.50,
-      "36M": 6.50
+      "6M": 8.40,
+      "9M": 8.40,
+      "12M": 8.60,
+      "18M": 8.60,
+      "24M": 8.60,
+      "36M": 8.60
     },
     payoutMethods: ["MATURITY", "MONTHLY", "FLEXIBLE"],
     partialWithdrawal: false,
-    rateTierNote: "Áp dụng biểu lãi suất online MSB (Gói đặc biệt 12M lên đến 7.00%/năm)",
+    rateTierNote: "Đồng bộ tự động từ tnex.vn/san-pham/tiet-kiem (8.40% từ 6T, 8.60% từ 12T+)",
     notes: "Gửi từ 100.000đ trên ứng dụng TNEX by MSB, khóa lãi suất cố định suốt kỳ hạn."
   }
 ];

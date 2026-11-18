@@ -1,0 +1,39 @@
+name: Daily 9AM Digital Bank Rates Sync (TNEX & TIMO)
+
+on:
+  schedule:
+    # 02:00 UTC = 09:00 AM Asia/Ho_Chi_Minh (UTC+7) every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-rates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run TNEX & TIMO rate scrapers
+        run: |
+          npm run scrape:tnex
+          npm run scrape:timo
+
+      - name: Commit and push updated rates if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain src/data/)" ]; then
+            git add src/data/
+            git commit -m "chore(rates): daily 9:00 AM sync for TNEX & TIMO"
+            git push
+          else
+            echo "No rate changes detected today."
+          fi

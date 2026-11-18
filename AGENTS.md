@@ -7,10 +7,10 @@ This workspace maintains a **Living Brain** in `docs/knowledge-base/` so that ev
 Whenever the user asks to **review**, **audit**, **give feedback**, **check current status**, or **plan changes**:
 1. **Read the Living Brain First**: Start by reading [INDEX.md](./docs/knowledge-base/INDEX.md) and any relevant domain/architecture docs in `docs/knowledge-base/`.
 2. **Verify Live Ground Truth**: Activate the `project-brain` skill (`.agents/skills/project-brain/SKILL.md`) or run its snapshot check to verify if any files in `src/` were modified more recently than the knowledge base.
-3. **Target Only the Active Architecture (v1.4 Tier 1 Serverless)**:
-   - **Frontend (`src/`)**: `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/pages/*.jsx`, `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget}.jsx`, `src/data/*.js`, and `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage}.js`.
-   - **Backend / Serverless (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, and server-only calculation/helper modules `api/_lib/{calculator,feasibilityEvaluator,http}.js`. **NEVER** move proprietary calculation or feasibility scoring logic back into `src/` so algorithms stay private on Vercel.
-   - **Legacy Note**: All v1 legacy dead files have already been removed in v1.2, and client-side `calculator.js` / `feasibilityEvaluator.js` were moved to `api/_lib/` in v1.3.
+3. **Target Only the Active Architecture (v1.5 Tier 1 Serverless + Daily Rate Scrapers)**:
+   - **Frontend (`src/`)**: `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/pages/*.jsx`, `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget}.jsx`, `src/data/*.js`, `src/data/scraped/*.json`, and `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage}.js`.
+   - **Backend / Serverless (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/cron/sync-rates.js`, and server-only modules `api/_lib/{calculator,feasibilityEvaluator,http,liveRatesCache}.js`. **NEVER** move proprietary calculation or feasibility scoring logic back into `src/` so algorithms stay private on Vercel.
+   - **Automated Daily Scrapers (`scripts/` & `.github/workflows/`)**: `scripts/scrape-tnex.js` (`https://www.tnex.vn/san-pham/tiet-kiem`), `scripts/scrape-timo.js` (`https://timo.vn/tiet-kiem-co-ky-han/`), `scripts/scrape-all.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, and `.github/workflows/daily-rates-sync.yml` (`0 2 * * *` UTC = 09:00 AM UTC+7).
 
 ## 2. Mandatory Post-Change Sync Rule (Keep the Brain Alive)
 

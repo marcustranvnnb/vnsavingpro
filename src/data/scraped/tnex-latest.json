@@ -1,0 +1,23 @@
+{
+  "bankId": "tnex",
+  "sourceUrl": "https://www.tnex.vn/san-pham/tiet-kiem",
+  "fetchedUrl": "https://www.tnex.vn/san-pham/tiet-kiem",
+  "scrapedAt": "2026-11-18T15:41:42+07:00",
+  "updatedDate": "18/11/2026",
+  "liveFetchSucceeded": true,
+  "parsedTenuresCount": 8,
+  "rates": {
+    "1W": 0.5,
+    "2W": 0.5,
+    "3W": 0.5,
+    "1M": 4.75,
+    "3M": 4.75,
+    "6M": 8.4,
+    "9M": 8.4,
+    "12M": 8.6,
+    "18M": 8.6,
+    "24M": 8.6,
+    "36M": 8.6
+  },
+  "note": "Parsed live from TNEX page (effective date on site: 11/09/2026)."
+}

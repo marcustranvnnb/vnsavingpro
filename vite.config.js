@@ -13,6 +13,7 @@ function vercelApiPlugin() {
     '/api/rates': 'api/rates.js',
     '/api/calculate': 'api/calculate.js',
     '/api/feedback': 'api/feedback.js',
+    '/api/cron/sync-rates': 'api/cron/sync-rates.js',
   };
   const attach = (server) => {
     server.middlewares.use(async (req, res, next) => {

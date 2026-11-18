@@ -4,6 +4,12 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Version 1.5: Dedicated Daily 9:00 AM TNEX & TIMO Rate Scrapers
+- **Added**:
+  - Created `scripts/_lib/rateUpdater.js`, `scripts/scrape-tnex.js` (`https://www.tnex.vn/san-pham/tiet-kiem`), `scripts/scrape-timo.js` (`https://timo.vn/tiet-kiem-co-ky-han/`), `scripts/scrape-all.js`, and npm scripts (`scrape:tnex`, `scrape:timo`, `scrape:all`).
+  - Added 3 daily 09:00 AM (`Asia/Ho_Chi_Minh`) automation runners: `.github/workflows/daily-rates-sync.yml` (`cron: '0 2 * * *'`), Vercel Cron endpoint `api/cron/sync-rates.js` + `api/_lib/liveRatesCache.js` (`vercel.json` `crons`), and `scripts/register-daily-9am-task.ps1` for local Windows Task Scheduler.
+  - Saved live-parsed snapshots in `src/data/scraped/{tnex,timo}-latest.json` and updated `src/data/banksData.js` & `src/data/bankPackagesData.js`.
+
 ## [2026-11-18] — Version 1.4: Basic/Advanced Inputs, Google Docs Integration, Rating & Feedback Backup, UI/UX Polish
 - **Added**:
   - Created `src/utils/googleDocsExporter.js` and Google Docs export modal in `src/pages/Planner.jsx` (`docs.new` rich-HTML copy-paste + `.doc` download).

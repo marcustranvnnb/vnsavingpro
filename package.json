@@ -1,12 +1,15 @@
 {
   "name": "vnsavingpro",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "scrape:tnex": "node scripts/scrape-tnex.js",
+    "scrape:timo": "node scripts/scrape-timo.js",
+    "scrape:all": "node scripts/scrape-all.js",
     "cf:deploy": "vite build && npx wrangler deploy",
     "cf:pages": "vite build && npx wrangler pages deploy dist --project-name=vnsavingpro"
   },

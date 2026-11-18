@@ -4,7 +4,15 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
-## 1. Completed in Version 1.4 (2026-11-18)
+## 1. Completed in Version 1.5 (2026-11-18)
+
+- [x] **Dedicated TNEX Scraper (`scripts/scrape-tnex.js`)**: Scrapes `https://www.tnex.vn/san-pham/tiet-kiem` (`parseTnexHtml`, extracting 8 tenures `1M–36M` live: `4.75%`, `8.40%`, `8.60%`) and updates `banksData.js`, `bankPackagesData.js`, and `src/data/scraped/tnex-latest.json`.
+- [x] **Dedicated TIMO Scraper (`scripts/scrape-timo.js`)**: Scrapes `https://timo.vn/tiet-kiem-co-ky-han/` (extracting 7 tenures live: `4.75%`, `6.70%`, `6.90%`) and updates `banksData.js`, `bankPackagesData.js`, and `src/data/scraped/timo-latest.json`.
+- [x] **Daily 9:00 AM Auto-Run Pipeline**: Configured GitHub Actions workflow (`.github/workflows/daily-rates-sync.yml` at `0 2 * * *` UTC = 09:00 AM Vietnam time), Vercel Cron (`/api/cron/sync-rates` in `vercel.json` updating `api/_lib/liveRatesCache.js`), and local Windows Scheduled Task helper (`scripts/register-daily-9am-task.ps1`).
+
+---
+
+## 2. Completed in Version 1.4 (2026-11-18)
 
 - [x] **Basic vs. Advanced Input Modes**: Added `Cơ bản` / `Nâng cao` toggle on `Planner.jsx`, `Calculator.jsx`, and `Ladder.jsx` (persisted in `PLANNER_STATE` on Planner) with compact collapsed summaries.
 - [x] **Google Docs Export & Linking (`src/utils/googleDocsExporter.js`, `Planner.jsx`)**: Added rich HTML/text clipboard copy + 1-click `docs.new` launch and `.doc` file download compatible with Google Docs / Word.

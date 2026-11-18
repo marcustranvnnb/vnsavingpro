@@ -1,0 +1,23 @@
+{
+  "bankId": "timo",
+  "sourceUrl": "https://timo.vn/tiet-kiem-co-ky-han/",
+  "fetchedUrl": "https://timo.vn/tiet-kiem-co-ky-han/",
+  "scrapedAt": "2026-11-18T15:41:42+07:00",
+  "updatedDate": "18/11/2026",
+  "liveFetchSucceeded": true,
+  "parsedTenuresCount": 7,
+  "rates": {
+    "1W": 0.5,
+    "2W": 0.5,
+    "3W": 0.5,
+    "1M": 4.75,
+    "3M": 4.75,
+    "6M": 6.7,
+    "9M": 6.7,
+    "12M": 6.9,
+    "18M": 6.7,
+    "24M": 6.7,
+    "36M": 6.7
+  },
+  "note": "Fetched directly from Timo Term Deposit page."
+}
