@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-19 01:03 (Supabase Auth: Google OAuth, Email/Password, Password Reset & User Profile `/profile`)
+> **Last Synced**: 2026-11-19 01:07 (Resend Email Helper & Supabase Auth Vietnamese Email Templates Ready)
 > **Current Architecture Version**: v1.5.5 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 

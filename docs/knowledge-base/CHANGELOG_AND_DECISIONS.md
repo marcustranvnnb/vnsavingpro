@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Resend Email Helper & Supabase Custom SMTP Templates
+
+- **Request**: Prepare Resend integration and configuration for Supabase Auth emails.
+- **Changes Implemented**:
+  - Created server-only [api/_lib/resend.js](../../api/_lib/resend.js) (`isResendConfigured`, `sendResendEmail`) using Resend REST API (`https://api.resend.com/emails`).
+  - Created Vietnamese HTML Auth email templates in [supabase/email-templates/confirm-signup.html](../../supabase/email-templates/confirm-signup.html) and [supabase/email-templates/reset-password.html](../../supabase/email-templates/reset-password.html).
+  - Updated [.env.example](../../.env.example) and [.env.local](../../.env.local) with `RESEND_API_KEY` and `RESEND_FROM_EMAIL` placeholders.
+
+---
+
 ## [2026-11-19] — Supabase Authentication (Google OAuth + Email/Password) & User Profile (`/auth`, `/profile`)
 
 - **Request**: Implement user authentication (Sign in / Sign up with Google and Email/Password, password reset) and user profile management with saved plans.
