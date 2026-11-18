@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 20:10 (Fixed `src/index.css` CSS linter & Tailwind v4 at-rule diagnostics + added `.vscode/` CSS custom data)
+> **Last Synced**: 2026-11-18 20:15 (Added Google Tag Manager `GTM-MZVGJMWL` in `index.html` & SPA `page_view` tracking in `src/state.jsx`)
 > **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 

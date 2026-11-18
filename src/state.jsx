@@ -39,7 +39,16 @@ export function useRoute() {
   const [state, setState] = useState(readLocation);
 
   useEffect(() => {
-    document.title = getPageTitle(state.route);
+    const title = getPageTitle(state.route);
+    document.title = title;
+    if (typeof window !== 'undefined' && Array.isArray(window.dataLayer)) {
+      window.dataLayer.push({
+        event: 'page_view',
+        page_path: `${window.location.pathname}${window.location.search}`,
+        page_title: title,
+        route_id: state.route,
+      });
+    }
   }, [state.route]);
 
   useEffect(() => {

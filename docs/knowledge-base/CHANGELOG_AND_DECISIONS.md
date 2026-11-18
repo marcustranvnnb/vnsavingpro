@@ -4,6 +4,15 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Add Google Tag Manager (`GTM-MZVGJMWL`) & SPA `page_view` Tracking
+
+- **Request**: Integrate Google Tag Manager snippet (`GTM-MZVGJMWL`) into VnSavingPro.
+- **Changes Implemented**:
+  - Updated [index.html](../../index.html): Added async `https://www.googletagmanager.com/gtm.js?id=GTM-MZVGJMWL` script, `dataLayer` (`gtm.start` + `gtag`) initialization in `<head>`, and GTM `<noscript>` iframe fallback inside `<body>`.
+  - Updated [src/state.jsx](../../src/state.jsx): Pushed `{ event: 'page_view', page_path, page_title, route_id }` to `window.dataLayer` inside `useRoute()` whenever `state.route` changes for Clean-URL SPA navigation tracking.
+
+---
+
 ## [2026-11-18] — Fix CSS Diagnostics & Vendor Prefix Compatibility in `src/index.css`
 
 - **Request**: Fix CSS issues reported in `src/index.css`.
