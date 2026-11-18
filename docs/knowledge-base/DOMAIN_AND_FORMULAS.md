@@ -74,4 +74,4 @@ All 4 banks comply with SBV ceiling caps (`0.50%/yr` non-term, `4.75%/yr` for `1
 | **TNEX** | `tnex` | MSB | 4.75% | **8.40%** | **8.60%** | **8.60%** (12M–36M) | Auto-scraped from `tnex.vn/san-pham/tiet-kiem` (`1–<6M`: `4.75%`, `6–<12M`: `8.40%`, `12M+`: `8.60%`) |
 | **CakeBank** | `cake` | VPBank | 4.75% | 6.90% | 6.90% | 6.90% (6M–24M) | Niêm yết 6.90% + Promo đến `+2.2%` (`9.1%`), Rút gốc từng phần |
 | **Timo** | `timo` | BVBank | 4.75% | 6.70% | 6.90% | 6.90% (12M) | Auto-scraped from `timo.vn/tiet-kiem-co-ky-han/` (`6–11M`: `6.70%`, `12M`: `6.90%`, `15–24M`: `6.70%`) |
-| **LioBank** | `liobank` | OCB | 4.75% | 5.90% | 6.20% | 6.70% (24M–36M) | Ống heo Pigg `4.75%/năm` (kỳ hạn 1 tháng), Tiết kiệm tự động `3.50%/năm` |
+| **LioBank** | `liobank` | OCB | 4.75% | 5.90% | 6.20% | 6.20% mặc định / **8.20%** CTKM | Auto-scraped from `deposit-tariffs` (effective `11/11/2026`) + dynamic CTKM PDF (`6–9M: 8.00%`, `10–12M: 8.20%`, `15–24M: 7.70%`), Ống heo Pigg `4.75%` |

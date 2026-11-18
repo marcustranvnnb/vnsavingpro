@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "scrape:tnex": "node scripts/scrape-tnex.js",
     "scrape:timo": "node scripts/scrape-timo.js",
+    "scrape:liobank": "node scripts/scrape-liobank.js",
     "scrape:all": "node scripts/scrape-all.js",
     "cf:deploy": "vite build && npx wrangler deploy",
     "cf:pages": "vite build && npx wrangler pages deploy dist --project-name=vnsavingpro"

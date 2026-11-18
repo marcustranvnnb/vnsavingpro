@@ -71,7 +71,7 @@ export const INITIAL_BANKS_DATA = [
     name: "LioBank",
     fullName: "Ngân hàng số LioBank (by OCB)",
     type: "Digital Bank",
-    badge: "🦁 Kỳ hạn đến 6.7% · Ống heo Pigg 4.75%",
+    badge: "🦁 Mặc định 6.2% · CTKM đến 8.2%",
     color: "#f97316",
     logoText: "LIO",
     featured: true,
@@ -88,14 +88,28 @@ export const INITIAL_BANKS_DATA = [
       "6M": 5.90,
       "9M": 5.90,
       "12M": 6.20,
-      "18M": 6.40,
-      "24M": 6.70,
-      "36M": 6.70
+      "18M": 5.90,
+      "24M": 5.90,
+      "36M": 5.90
+    },
+    promoUrl: "https://liobank.vn/doc/Liobank_The_Le_CTKM_Cong_Lai_suat_Tiet_kiem_11.11.2026.pdf",
+    promoRates: {
+      "1W": 0.50,
+      "2W": 0.50,
+      "3W": 0.50,
+      "1M": 4.75,
+      "3M": 4.75,
+      "6M": 8.00,
+      "9M": 8.00,
+      "12M": 8.20,
+      "18M": 7.70,
+      "24M": 7.70,
+      "36M": 7.70
     },
     payoutMethods: ["MATURITY", "MONTHLY", "FLEXIBLE"],
     partialWithdrawal: true,
-    rateTierNote: "Ống heo Pigg 4.75%/năm (kỳ hạn 1 tháng) · Tiết kiệm tự động 3.50%/năm",
-    notes: "Ống heo Pigg hưởng 4.75%/năm khi duy trì đủ 1 tháng. Gửi trực tuyến OCB/Liobank đến 6.70%/năm."
+    rateTierNote: "Mặc định từ deposit-tariffs (11/11/2026) · CTKM cộng lãi đến 8.20%/năm",
+    notes: "Biểu mặc định 12T 6.20%/năm; gói CTKM cộng lãi lên đến 8.20%/năm (Ống heo Pigg 4.75%)."
   },
   {
     id: "tnex",

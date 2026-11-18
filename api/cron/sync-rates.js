@@ -1,6 +1,7 @@
 import { INITIAL_BANKS_DATA } from '../../src/data/banksData.js';
 import { fetchTnexRates } from '../../scripts/scrape-tnex.js';
 import { fetchTimoRates } from '../../scripts/scrape-timo.js';
+import { fetchLiobankRates } from '../../scripts/scrape-liobank.js';
 import { setLiveRatesSnapshot } from '../_lib/liveRatesCache.js';
 
 export default async function handler(req, res) {
@@ -15,24 +16,43 @@ export default async function handler(req, res) {
 
   res.setHeader('Cache-Control', 'no-store');
 
-  const [tnex, timo] = await Promise.all([fetchTnexRates(), fetchTimoRates()]);
+  const [tnex, timo, liobank] = await Promise.all([
+    fetchTnexRates(),
+    fetchTimoRates(),
+    fetchLiobankRates(),
+  ]);
 
   const updatedBanks = INITIAL_BANKS_DATA.map((bank) => {
     if (bank.id === 'tnex') return { ...bank, rates: tnex.rates };
     if (bank.id === 'timo') return { ...bank, rates: timo.rates };
+    if (bank.id === 'liobank') {
+      return {
+        ...bank,
+        rates: liobank.rates,
+        promoRates: liobank.promoRates,
+        promoUrl: liobank.promoPdfUrl,
+      };
+    }
     return bank;
   });
 
-  const updatedAt = tnex.updatedDate || timo.updatedDate;
+  const updatedAt = liobank.updatedDate || tnex.updatedDate || timo.updatedDate;
   setLiveRatesSnapshot(updatedBanks, updatedAt, {
     tnex: { live: tnex.liveFetchSucceeded, parsed: tnex.parsedTenuresCount, note: tnex.note },
     timo: { live: timo.liveFetchSucceeded, parsed: timo.parsedTenuresCount, note: timo.note },
+    liobank: {
+      live: liobank.liveFetchSucceeded,
+      parsed: liobank.parsedTenuresCount,
+      parsedPromo: liobank.parsedPromoTenuresCount,
+      promoPdfUrl: liobank.promoPdfUrl,
+      note: liobank.note,
+    },
   });
 
   return res.status(200).json({
     ok: true,
     updatedAt,
-    syncedAt: tnex.scrapedAt,
+    syncedAt: liobank.scrapedAt,
     sources: {
       tnex: {
         url: tnex.sourceUrl,
@@ -47,6 +67,18 @@ export default async function handler(req, res) {
         parsedTenuresCount: timo.parsedTenuresCount,
         rates: timo.rates,
         note: timo.note,
+      },
+      liobank: {
+        url: liobank.sourceUrl,
+        promoPdfUrl: liobank.promoPdfUrl,
+        promoDate: liobank.promoDate,
+        liveTariffSucceeded: liobank.liveTariffSucceeded,
+        livePromoPdfSucceeded: liobank.livePromoPdfSucceeded,
+        parsedTenuresCount: liobank.parsedTenuresCount,
+        parsedPromoTenuresCount: liobank.parsedPromoTenuresCount,
+        rates: liobank.rates,
+        promoRates: liobank.promoRates,
+        note: liobank.note,
       },
     },
   });

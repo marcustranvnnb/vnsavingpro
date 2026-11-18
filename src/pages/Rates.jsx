@@ -149,18 +149,35 @@ function PackageItem({ pkg }) {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.05] pt-3 text-xs text-zinc-500">
-            <span>Cập nhật: {pkg.lastUpdated}</span>
-            {pkg.sourceUrl && (
-              <a
-                href={pkg.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-indigo-300 hover:text-indigo-200"
-              >
-                Nguồn chính thức <ExternalLink className="size-3" />
-              </a>
-            )}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-3 text-xs text-zinc-500">
+            <div className="flex flex-wrap items-center gap-2">
+              <span>Cập nhật: {pkg.lastUpdated}</span>
+              {pkg.promotion && (
+                <Badge tone="success">{pkg.promotion}</Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {pkg.promotionUrl && (
+                <a
+                  href={pkg.promotionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-emerald-300 hover:text-emerald-200"
+                >
+                  Thể lệ CTKM (PDF) <ExternalLink className="size-3" />
+                </a>
+              )}
+              {pkg.sourceUrl && (
+                <a
+                  href={pkg.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-indigo-300 hover:text-indigo-200"
+                >
+                  Nguồn chính thức <ExternalLink className="size-3" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -297,6 +314,21 @@ export default function Rates() {
                         {pct(rate)}
                         <span className="ml-1 text-xs font-normal text-zinc-500">/năm</span>
                       </div>
+                      {bank.promoRates?.[tenure] > rate && (
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          <Badge tone="success">CTKM: {pct(bank.promoRates[tenure])}</Badge>
+                          {bank.promoUrl && (
+                            <a
+                              href={bank.promoUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-0.5 text-[11px] text-emerald-300 hover:underline"
+                            >
+                              PDF <ExternalLink className="size-2.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <button
                       type="button"

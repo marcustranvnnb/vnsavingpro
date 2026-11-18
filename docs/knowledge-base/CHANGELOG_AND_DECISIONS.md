@@ -4,6 +4,12 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Version 1.5.1: Dedicated LioBank Default Tariff & Dynamic CTKM Promo PDF Scraper
+- **Added**:
+  - Created `scripts/scrape-liobank.js` to scrape LioBank's default tariffs (`https://liobank.vn/vn/deposit-tariffs`, 15 terms effective `11/11/2026`) AND dynamically discover & parse the latest CTKM promo PDF (`Liobank_The_Le_CTKM_Cong_Lai_suat_Tiet_kiem_11.11.2026.pdf`, 10 terms: `6–9M: 8.00%`, `10–12M: 8.20%`, `15–24M: 7.70%`) using built-in `node:zlib`.
+  - Updated `scripts/scrape-all.js`, `package.json` (`scrape:liobank`), `.github/workflows/daily-rates-sync.yml`, and `api/cron/sync-rates.js` to sync LioBank daily at 09:00 AM alongside TNEX & TIMO.
+  - Updated `src/pages/Rates.jsx` to display live CTKM promo badges and clickable `Thể lệ CTKM (PDF)` links on LioBank rate cards and packages.
+
 ## [2026-11-18] — Version 1.5: Dedicated Daily 9:00 AM TNEX & TIMO Rate Scrapers
 - **Added**:
   - Created `scripts/_lib/rateUpdater.js`, `scripts/scrape-tnex.js` (`https://www.tnex.vn/san-pham/tiet-kiem`), `scripts/scrape-timo.js` (`https://timo.vn/tiet-kiem-co-ky-han/`), `scripts/scrape-all.js`, and npm scripts (`scrape:tnex`, `scrape:timo`, `scrape:all`).

@@ -1,0 +1,39 @@
+{
+  "bankId": "liobank",
+  "sourceUrl": "https://liobank.vn/vn/deposit-tariffs",
+  "promoPdfUrl": "https://liobank.vn/doc/Liobank_The_Le_CTKM_Cong_Lai_suat_Tiet_kiem_11.11.2026.pdf",
+  "promoDate": "11/11/2026",
+  "effectiveDate": "11/11/2026",
+  "scrapedAt": "2026-11-18T15:57:53+07:00",
+  "updatedDate": "18/11/2026",
+  "liveFetchSucceeded": true,
+  "parsedTenuresCount": 15,
+  "parsedPromoTenuresCount": 10,
+  "rates": {
+    "1W": 0.5,
+    "2W": 0.5,
+    "3W": 0.5,
+    "1M": 4.75,
+    "3M": 4.75,
+    "6M": 5.9,
+    "9M": 5.9,
+    "12M": 6.2,
+    "18M": 5.9,
+    "24M": 5.9,
+    "36M": 5.9
+  },
+  "promoRates": {
+    "1W": 0.5,
+    "2W": 0.5,
+    "3W": 0.5,
+    "1M": 4.75,
+    "3M": 4.75,
+    "6M": 8,
+    "9M": 8,
+    "12M": 8.2,
+    "18M": 7.7,
+    "24M": 7.7,
+    "36M": 7.7
+  },
+  "note": "Synced tariff (15 terms, effective 11/11/2026) + promo PDF (10 terms up to 8.20%)."
+}

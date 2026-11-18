@@ -1,4 +1,4 @@
-name: Daily 9AM Digital Bank Rates Sync (TNEX & TIMO)
+name: Daily 9AM Digital Bank Rates Sync (TNEX, TIMO & LIOBANK)
 
 on:
   schedule:
@@ -21,10 +21,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Run TNEX & TIMO rate scrapers
+      - name: Run TNEX, TIMO & LIOBANK rate scrapers
         run: |
           npm run scrape:tnex
           npm run scrape:timo
+          npm run scrape:liobank
 
       - name: Commit and push updated rates if changed
         run: |
@@ -32,7 +33,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ -n "$(git status --porcelain src/data/)" ]; then
             git add src/data/
-            git commit -m "chore(rates): daily 9:00 AM sync for TNEX & TIMO"
+            git commit -m "chore(rates): daily 9:00 AM sync for TNEX, TIMO & LIOBANK"
             git push
           else
             echo "No rate changes detected today."
