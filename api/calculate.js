@@ -87,6 +87,9 @@ export default async function handler(req, res) {
         monthlySavings: roadmap.requiredMonthlyDeposit,
         yearsToGoal: roadmap.yearsNeeded,
         realYieldRate: Math.max(0, Number(baseArgs.annualInterestRate || 0) - (Number(baseArgs.inflationRatePct) || 3.5)),
+        incomeMin: payload.totalIncomeMin ?? null,
+        incomeMax: payload.totalIncomeMax ?? null,
+        hasExtraIncome: Boolean(payload.hasExtraIncome),
       });
 
       const saving = Number(baseArgs.monthlySavingsAmount) || 0;

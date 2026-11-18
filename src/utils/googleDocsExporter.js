@@ -18,6 +18,13 @@ export function buildPlanReportHTML({
   capital,
   saving,
   salary,
+  salaryFullTime,
+  freelanceMin = 0,
+  freelanceMax = 0,
+  investMin = 0,
+  investMax = 0,
+  totalIncomeMin,
+  totalIncomeMax,
   bankName,
   tenureLabel,
   rate,
@@ -60,6 +67,43 @@ export function buildPlanReportHTML({
         : `<li><strong>${esc(s.title)}:</strong> ${esc(s.r?.timeText || '—')}</li>`
     )
     .join('');
+
+  const hasTotalRange =
+    typeof totalIncomeMin === 'number' && typeof totalIncomeMax === 'number' && totalIncomeMin !== totalIncomeMax;
+  const totalIncomeLabel = hasTotalRange ? `${vnd(totalIncomeMin)} – ${vnd(totalIncomeMax)}` : vnd(salary);
+  const fullTimeVal = salaryFullTime !== undefined ? salaryFullTime : salary;
+
+  const incomeDetailRows = `
+    <tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Thu nhập công việc chính (Full-time)</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(vnd(fullTimeVal))}/tháng</td>
+    </tr>
+    ${
+      freelanceMax > 0
+        ? `<tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Thu nhập công việc phụ (Freelance / Part-time)</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${
+        freelanceMin === freelanceMax ? esc(vnd(freelanceMax)) : `${esc(vnd(freelanceMin))} – ${esc(vnd(freelanceMax))}`
+      }/tháng</td>
+    </tr>`
+        : ''
+    }
+    ${
+      investMax > 0
+        ? `<tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Thu nhập từ các khoản đầu tư</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${
+        investMin === investMax ? esc(vnd(investMax)) : `${esc(vnd(investMin))} – ${esc(vnd(investMax))}`
+      }/tháng</td>
+    </tr>`
+        : ''
+    }
+    <tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>Tổng thu nhập hàng tháng</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;font-weight:bold;">${esc(
+        totalIncomeLabel
+      )} (${esc(pct(roadmap?.savingsRatePercent || 0, 1))} tiết kiệm)</td>
+    </tr>`;
 
   const proExtrasRows =
     inputMode === 'advanced' && (annualStepUpPct > 0 || annualBonusAmount > 0 || inflationRatePct > 0)
@@ -107,9 +151,10 @@ export function buildPlanReportHTML({
       <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${
         isSavingSolver
           ? `${esc(targetYears)} năm`
-          : `${esc(vnd(saving))} (${esc(pct(roadmap?.savingsRatePercent || 0, 1))} lương ${esc(compact(salary))})`
+          : `${esc(vnd(saving))} (${esc(pct(roadmap?.savingsRatePercent || 0, 1))} tổng thu nhập ${esc(compact(salary))})`
       }</td>
     </tr>
+    ${incomeDetailRows}
     <tr>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Ngân hàng &amp; lãi suất áp dụng</strong></td>
       <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(bankName)} (${esc(tenureLabel)}) — ${esc(pct(rate))}/năm</td>
@@ -175,6 +220,14 @@ export function buildPlanReportText(data) {
     targetYears,
     capital,
     saving,
+    salary,
+    salaryFullTime,
+    freelanceMin = 0,
+    freelanceMax = 0,
+    investMin = 0,
+    investMax = 0,
+    totalIncomeMin,
+    totalIncomeMax,
     bankName,
     tenureLabel,
     rate,
@@ -198,6 +251,18 @@ export function buildPlanReportText(data) {
       : `- Thu nhập thụ động mong muốn: ${vnd(target)}/tháng`,
     `- Vốn ban đầu: ${vnd(capital)}`,
     isSavingSolver ? `- Thời hạn mong muốn: ${targetYears} năm` : `- Gửi thêm mỗi tháng: ${vnd(saving)}`,
+    `- Thu nhập chính (Full-time): ${vnd(salaryFullTime !== undefined ? salaryFullTime : salary)}/tháng`,
+    ...(freelanceMax > 0
+      ? [`- Công việc phụ (Freelance/Part-time): ${freelanceMin === freelanceMax ? vnd(freelanceMax) : `${vnd(freelanceMin)} – ${vnd(freelanceMax)}`}/tháng`]
+      : []),
+    ...(investMax > 0
+      ? [`- Thu nhập từ đầu tư: ${investMin === investMax ? vnd(investMax) : `${vnd(investMin)} – ${vnd(investMax)}`}/tháng`]
+      : []),
+    `- Tổng thu nhập hàng tháng: ${
+      typeof totalIncomeMin === 'number' && typeof totalIncomeMax === 'number' && totalIncomeMin !== totalIncomeMax
+        ? `${vnd(totalIncomeMin)} – ${vnd(totalIncomeMax)}`
+        : vnd(salary)
+    }`,
     `- Ngân hàng & lãi suất: ${bankName} (${tenureLabel}) — ${pct(rate)}/năm`,
     '',
     '2. KẾT QUẢ & ĐÁNH GIÁ',

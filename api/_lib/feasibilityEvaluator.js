@@ -14,12 +14,17 @@ export function evaluatePlanFeasibility({
   monthlySavings = 1000000,
   yearsToGoal = 10,
   strategy = "SPLIT_50_50",
-  realYieldRate = 3.4
+  realYieldRate = 3.4,
+  incomeMin = null,
+  incomeMax = null,
+  hasExtraIncome = false
 }) {
   const safeSalary = num(monthlySalary, 35000000, 1, 1e12);
   const safeSavings = num(monthlySavings, 1000000, 0, 1e12);
   const safeYears = num(yearsToGoal, 10, 0, 100);
   const safeRealYield = num(realYieldRate, 3.4, -50, 50);
+  const safeIncomeMin = incomeMin === null || incomeMin === undefined ? null : num(incomeMin, 0, 0, 1e12);
+  const safeIncomeMax = incomeMax === null || incomeMax === undefined ? null : num(incomeMax, 0, 0, 1e12);
 
   let score = 70;
   const savingsToIncomeRatio = (safeSavings / safeSalary) * 100;
@@ -35,6 +40,21 @@ export function evaluatePlanFeasibility({
   } else if (savingsToIncomeRatio > 50) {
     score -= 10;
     warnings.push("Tỷ lệ tiết kiệm quá cao (>50% thu nhập), rủi ro gây áp lực căng thẳng tài chính hàng ngày.");
+  }
+
+  if (hasExtraIncome) {
+    score += 5;
+    strengths.push(
+      safeIncomeMax !== null && safeIncomeMin !== null && safeIncomeMax > safeIncomeMin
+        ? "Đa dạng nguồn thu nhập (công việc chính kết hợp công việc phụ / đầu tư), hỗ trợ dòng tiền tích lũy linh hoạt hơn."
+        : "Đa dạng nguồn thu nhập (công việc chính kết hợp công việc phụ / đầu tư), giúp gia tăng năng lực tích lũy hàng tháng."
+    );
+  }
+
+  if (safeIncomeMin !== null && safeIncomeMin > 0 && safeSavings > safeIncomeMin) {
+    warnings.push(
+      "Mức tiết kiệm hàng tháng cao hơn tổng thu nhập ở tháng thấp nhất — cần dự phòng cho những tháng thu nhập phụ/đầu tư giảm."
+    );
   }
 
   if (safeYears > 30) {

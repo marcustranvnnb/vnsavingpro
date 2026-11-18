@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Detailed Monthly Income Breakdown (`Full-time`, `Freelance Min–Max`, `Investment Min–Max`, `Total Income`) in Basic & Advanced Modes
+
+- **Request**: Surface monthly income in both `Cơ bản` and `Chuyên sâu` planner modes with breakdown into main full-time job, freelance/part-time range (Min–Max), investment income range (Min–Max), and computed total monthly income.
+- **Changes Implemented**:
+  - Updated [src/pages/Planner.jsx](../../src/pages/Planner.jsx): Added `IncomeRangeField` component and **3. Thu nhập hàng tháng** block visible in both `Cơ bản` and `Chuyên sâu` modes, computing `totalIncomeMin`, `totalIncomeMax`, and `totalIncomeAvg`, displaying total income summary (`Tổng thu nhập hàng tháng`), savings rate %, and remaining spending budget, while removing the duplicate `advanced`-only single salary input.
+  - Updated [src/utils/cryptoStorage.js](../../src/utils/cryptoStorage.js): Extended `PLANNER_STATE` schema validation to persist and sanitize `salaryFullTime`, `freelanceIncomeMin`, `freelanceIncomeMax`, `investIncomeMin`, `investIncomeMax`, and `salary`.
+  - Updated [api/_lib/feasibilityEvaluator.js](../../api/_lib/feasibilityEvaluator.js) & [api/calculate.js](../../api/calculate.js): Added income diversification bonus (`hasExtraIncome`) and low-month cashflow buffer warning (`safeSavings > safeIncomeMin`).
+  - Updated [src/utils/googleDocsExporter.js](../../src/utils/googleDocsExporter.js) to export full income breakdown tables & text.
+
+---
+
 ## [2026-11-18] — Fix HTML, CSS & Webhint Problems (`index.html`, `src/index.css`, `.hintrc`)
 
 - **Request**: Resolve all IDE Problems reported in `index.html` and `src/index.css`.

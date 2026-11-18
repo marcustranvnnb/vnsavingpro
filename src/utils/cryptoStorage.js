@@ -293,7 +293,12 @@ export function validateBySchema(key, raw) {
         targetYears: Math.round(clampNum(raw.targetYears, 5, 1, 50)),
         capital: clampNum(raw.capital, 50_000_000, 0, 100_000_000_000),
         saving: clampNum(raw.saving, 5_000_000, 0, 1_000_000_000),
-        salary: clampNum(raw.salary, 25_000_000, 1_000_000, 10_000_000_000),
+        salaryFullTime: clampNum(raw.salaryFullTime ?? raw.salary, 25_000_000, 0, 10_000_000_000),
+        freelanceIncomeMin: clampNum(raw.freelanceIncomeMin, 0, 0, 10_000_000_000),
+        freelanceIncomeMax: clampNum(raw.freelanceIncomeMax, 0, 0, 10_000_000_000),
+        investIncomeMin: clampNum(raw.investIncomeMin, 0, 0, 10_000_000_000),
+        investIncomeMax: clampNum(raw.investIncomeMax, 0, 0, 10_000_000_000),
+        salary: clampNum(raw.salary, 25_000_000, 0, 30_000_000_000),
         bankId: ALLOWED_BANKS.has(raw.bankId) ? raw.bankId : 'cake',
         tenure: ALLOWED_TENURES.has(raw.tenure) ? raw.tenure : '12M',
         customRate:

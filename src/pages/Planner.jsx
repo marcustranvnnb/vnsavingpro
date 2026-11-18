@@ -36,6 +36,7 @@ import {
   DecimalInput,
   Modal,
   MoneyField,
+  NumberInput,
   PageHeader,
   Progress,
   Segmented,
@@ -49,6 +50,52 @@ import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 import GrowthChart from '../components/GrowthChart.jsx';
 
 const presets = (arr) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : chip(v) }));
+
+function IncomeRangeField({ label, sublabel, minVal, maxVal, onMin, onMax, quickValues }) {
+  const applyPreset = (v) => {
+    onMin(v);
+    onMax(v);
+  };
+  const bothEqual = minVal === maxVal;
+  return (
+    <div className="space-y-2 rounded-xl bg-white/[0.02] p-3 ring-1 ring-inset ring-white/[0.06]">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-xs font-medium text-zinc-200">{label}</span>
+        {sublabel && <span className="text-[11px] text-zinc-500">{sublabel}</span>}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <span className="mb-1 block text-[11px] text-zinc-500">Thấp nhất / tháng</span>
+          <NumberInput
+            value={minVal}
+            onChange={onMin}
+            suffix="₫"
+            max={10_000_000_000}
+            ariaLabel={`${label} thấp nhất`}
+          />
+        </div>
+        <div>
+          <span className="mb-1 block text-[11px] text-zinc-500">Cao nhất / tháng</span>
+          <NumberInput
+            value={maxVal}
+            onChange={onMax}
+            suffix="₫"
+            max={10_000_000_000}
+            ariaLabel={`${label} cao nhất`}
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 text-[11px] text-zinc-500">Đặt nhanh:</span>
+        {quickValues.map((v) => (
+          <Chip key={v} active={bothEqual && minVal === v} onClick={() => applyPreset(v)}>
+            {v === 0 ? '0 ₫' : chip(v)}
+          </Chip>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const INITIAL_PLANNER_DATA = {
   roadmap: {
@@ -112,7 +159,35 @@ export default function Planner({ params = {} }) {
   const [saving, setSaving] = useState(() =>
     params.saving !== undefined ? Number(params.saving) : saved.saving !== undefined ? Number(saved.saving) : 5_000_000
   );
-  const [salary, setSalary] = useState(() => Number(params.salary) || Number(saved.salary) || 25_000_000);
+  const [salaryFullTime, setSalaryFullTime] = useState(() =>
+    params.salary !== undefined
+      ? Number(params.salary)
+      : saved.salaryFullTime !== undefined
+        ? Number(saved.salaryFullTime)
+        : Number(saved.salary) || 25_000_000
+  );
+  const [freelanceIncomeMin, setFreelanceIncomeMin] = useState(
+    () => Number(params.freeMin) || Number(saved.freelanceIncomeMin) || 0
+  );
+  const [freelanceIncomeMax, setFreelanceIncomeMax] = useState(
+    () => Number(params.freeMax) || Number(saved.freelanceIncomeMax) || 0
+  );
+  const [investIncomeMin, setInvestIncomeMin] = useState(
+    () => Number(params.invMin) || Number(saved.investIncomeMin) || 0
+  );
+  const [investIncomeMax, setInvestIncomeMax] = useState(
+    () => Number(params.invMax) || Number(saved.investIncomeMax) || 0
+  );
+
+  const freeLow = Math.min(freelanceIncomeMin, freelanceIncomeMax);
+  const freeHigh = Math.max(freelanceIncomeMin, freelanceIncomeMax);
+  const invLow = Math.min(investIncomeMin, investIncomeMax);
+  const invHigh = Math.max(investIncomeMin, investIncomeMax);
+  const totalIncomeMin = salaryFullTime + freeLow + invLow;
+  const totalIncomeMax = salaryFullTime + freeHigh + invHigh;
+  const totalIncomeAvg = Math.round((totalIncomeMin + totalIncomeMax) / 2);
+  const salary = totalIncomeAvg;
+  const hasExtraIncome = freeHigh > 0 || invHigh > 0;
   const [bankId, setBankId] = useState(() => params.bank || saved.bankId || 'cake');
   const [tenure, setTenure] = useState(() => params.tenure || saved.tenure || '12M');
   const [customRate, setCustomRate] = useState(() => params.rate ?? saved.customRate ?? '');
@@ -156,7 +231,12 @@ export default function Planner({ params = {} }) {
       targetYears,
       capital,
       saving,
-      salary,
+      salaryFullTime,
+      freelanceIncomeMin,
+      freelanceIncomeMax,
+      investIncomeMin,
+      investIncomeMax,
+      salary: totalIncomeAvg,
       bankId,
       tenure,
       customRate,
@@ -174,7 +254,12 @@ export default function Planner({ params = {} }) {
     targetYears,
     capital,
     saving,
-    salary,
+    salaryFullTime,
+    freelanceIncomeMin,
+    freelanceIncomeMax,
+    investIncomeMin,
+    investIncomeMax,
+    totalIncomeAvg,
     bankId,
     tenure,
     customRate,
@@ -205,6 +290,9 @@ export default function Planner({ params = {} }) {
       solveMode,
       targetYears,
       currentSalary: salary,
+      totalIncomeMin,
+      totalIncomeMax,
+      hasExtraIncome,
       monthlySavingsAmount: saving,
       initialCapital: capital,
       annualInterestRate: rate,
@@ -222,6 +310,9 @@ export default function Planner({ params = {} }) {
     solveMode,
     targetYears,
     salary,
+    totalIncomeMin,
+    totalIncomeMax,
+    hasExtraIncome,
     saving,
     capital,
     rate,
@@ -287,11 +378,15 @@ export default function Planner({ params = {} }) {
       years: targetYears,
       capital,
       saving,
-      salary,
+      salary: salaryFullTime,
       bank: bankId,
       tenure,
       calcMode,
     };
+    if (freeLow > 0) query.freeMin = freeLow;
+    if (freeHigh > 0) query.freeMax = freeHigh;
+    if (invLow > 0) query.invMin = invLow;
+    if (invHigh > 0) query.invMax = invHigh;
     if (usingCustom) query.rate = customRate;
     if (effectiveStepUp > 0) query.stepUp = effectiveStepUp;
     if (effectiveBonus > 0) query.bonus = effectiveBonus;
@@ -312,6 +407,13 @@ export default function Planner({ params = {} }) {
     capital,
     saving: isSavingSolver ? roadmap.requiredMonthlyDeposit : saving,
     salary,
+    salaryFullTime,
+    freelanceMin: freeLow,
+    freelanceMax: freeHigh,
+    investMin: invLow,
+    investMax: invHigh,
+    totalIncomeMin,
+    totalIncomeMax,
     bankName: usingCustom ? 'Lãi suất tự nhập' : bank.name,
     tenureLabel: TENURE_LABELS[tenure] || tenure,
     rate,
@@ -486,6 +588,75 @@ export default function Planner({ params = {} }) {
             )}
           </div>
 
+          {/* Step 3: Monthly Income Breakdown (Both Basic & Advanced) */}
+          <div className="space-y-4 border-t border-white/[0.06] pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                3. Thu nhập hàng tháng
+              </span>
+              <Badge tone="neutral" className="tabular-nums">
+                Tổng: {totalIncomeMin === totalIncomeMax ? compact(totalIncomeAvg) : `${compact(totalIncomeMin)}–${compact(totalIncomeMax)}`}
+              </Badge>
+            </div>
+
+            <MoneyField
+              label="Thu nhập từ công việc chính (Full-time)"
+              value={salaryFullTime}
+              onChange={setSalaryFullTime}
+              min={0}
+              max={200_000_000}
+              step={1_000_000}
+              inputMax={10_000_000_000}
+              presets={presets([10_000_000, 15_000_000, 25_000_000, 40_000_000, 60_000_000])}
+            />
+
+            <IncomeRangeField
+              label="Công việc phụ (Freelance / Part-time)"
+              sublabel="Khoảng thu nhập / tháng"
+              minVal={freelanceIncomeMin}
+              maxVal={freelanceIncomeMax}
+              onMin={setFreelanceIncomeMin}
+              onMax={setFreelanceIncomeMax}
+              quickValues={[0, 2_000_000, 5_000_000, 10_000_000, 20_000_000]}
+            />
+
+            <IncomeRangeField
+              label="Thu nhập từ các khoản đầu tư"
+              sublabel="Khoảng thu nhập / tháng"
+              minVal={investIncomeMin}
+              maxVal={investIncomeMax}
+              onMin={setInvestIncomeMin}
+              onMax={setInvestIncomeMax}
+              quickValues={[0, 1_000_000, 3_000_000, 5_000_000, 15_000_000]}
+            />
+
+            {/* Total monthly income summary card */}
+            <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-indigo-200">Tổng thu nhập hàng tháng</span>
+                <span className="text-base font-semibold tabular-nums text-white">
+                  {totalIncomeMin === totalIncomeMax
+                    ? vnd(totalIncomeAvg)
+                    : `${compact(totalIncomeMin)} – ${compact(totalIncomeMax)}`}
+                </span>
+              </div>
+              {totalIncomeMin !== totalIncomeMax && (
+                <div className="mt-1 text-[11px] tabular-nums text-zinc-400">
+                  Thấp nhất: {vnd(totalIncomeMin)} · Cao nhất: {vnd(totalIncomeMax)} · TB: {vnd(totalIncomeAvg)}
+                </div>
+              )}
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-2 text-[11px] text-zinc-400 tabular-nums">
+                <span>Tỷ lệ tiết kiệm: <strong className="text-emerald-300">{pct(roadmap.savingsRatePercent, 1)}</strong></span>
+                <span>
+                  Chi tiêu còn:{' '}
+                  <strong className="text-zinc-200">
+                    {compact(Math.max(0, totalIncomeAvg - (roadmap.requiredMonthlyDeposit || saving)))}
+                  </strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div className="border-t border-white/[0.06] pt-5">
             <BankPicker bankId={bankId} onBank={(id) => { setBankId(id); setCustomRate(''); }} tenure={tenure} onTenure={setTenure} />
           </div>
@@ -497,7 +668,7 @@ export default function Planner({ params = {} }) {
               className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3.5 py-2.5 text-left text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.06] transition hover:bg-white/[0.05] hover:text-zinc-200"
             >
               <span className="truncate">
-                Chuyên sâu: Tăng gửi/năm · Thưởng Tết · Bù lạm phát · Lương &amp; TT14
+                Chuyên sâu: Tăng gửi/năm · Thưởng Tết · Bù lạm phát · Chuẩn TT14
               </span>
               <span className="shrink-0 font-medium text-indigo-300">Mở rộng</span>
             </button>
@@ -573,19 +744,6 @@ export default function Planner({ params = {} }) {
                   </p>
                 )}
               </div>
-
-              <MoneyField
-                label="Thu nhập hàng tháng"
-                hint={`Độ khả thi: đang tiết kiệm ${pct(roadmap.savingsRatePercent, 1)} thu nhập, chi tiêu còn ${compact(
-                  Math.max(0, salary - (roadmap.requiredMonthlyDeposit || saving))
-                )}.`}
-                value={salary}
-                onChange={setSalary}
-                min={5_000_000}
-                max={200_000_000}
-                step={1_000_000}
-                inputMax={10_000_000_000}
-              />
 
               <div className="flex items-center justify-between gap-3">
                 <label className="flex items-center gap-1.5 text-[13px] text-zinc-400">
