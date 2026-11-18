@@ -1,5 +1,7 @@
-import React, { Suspense, lazy, useState } from 'react';
+import React, { Component, Suspense, lazy, useState } from 'react';
+import { RotateCcw, ShieldAlert } from 'lucide-react';
 import { AppProvider, useRoute } from './state.jsx';
+import { cryptoStorage } from './utils/cryptoStorage.js';
 import { TopNav, MobileTabBar, Footer } from './components/Layout.jsx';
 import { DataModal } from './components/DataModal.jsx';
 import Home from './pages/Home.jsx';
@@ -54,10 +56,63 @@ function Shell() {
   );
 }
 
+class AppErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch() {
+    cryptoStorage.auditAndClean();
+  }
+
+  handleRecover = () => {
+    cryptoStorage.clearAll();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    } else {
+      this.setState({ hasError: false });
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 text-zinc-200">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-surface p-6 text-center shadow-2xl">
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/25">
+              <ShieldAlert className="size-6" />
+            </div>
+            <h1 className="text-lg font-semibold text-white">Phát hiện dữ liệu trình duyệt không hợp lệ</h1>
+            <p className="mt-2 text-xs leading-relaxed text-zinc-400">
+              Hệ thống bảo vệ đã chặn dữ liệu bị hỏng hoặc sai định dạng để bảo vệ thiết bị của bạn. Nhấn nút dưới đây để
+              dọn sạch bộ nhớ tạm và khôi phục ngay lập tức.
+            </p>
+            <button
+              type="button"
+              onClick={this.handleRecover}
+              className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 text-sm font-medium text-white transition hover:bg-indigo-400"
+            >
+              <RotateCcw className="size-4" /> Khôi phục dữ liệu mặc định &amp; Tải lại
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AppProvider>
-      <Shell />
-    </AppProvider>
+    <AppErrorBoundary>
+      <AppProvider>
+        <Shell />
+      </AppProvider>
+    </AppErrorBoundary>
   );
 }

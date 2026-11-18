@@ -4,6 +4,18 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Comprehensive Security Hardening (Storage Integrity, Anti-NaN/Infinity, ErrorBoundary, CSP & Build SRI)
+
+- **Request**: Remediate findings from the security / resilience audit (localStorage JSON poisoning, NaN/Infinity injection, XSS polyglot persistence, missing CSP/security headers, and missing Subresource Integrity hashes).
+- **Changes Implemented**:
+  - Rewrote [src/utils/cryptoStorage.js](../../src/utils/cryptoStorage.js): Implemented strict key allowlist (`CUSTOM_RATES`, `CUSTOM_REFERRAL_CODES`, `PLANNER_STATE`, `USER_FEEDBACK_LOG`), signed device-keyed cipher envelopes (`v2.<nonce>.<sig>.<cipherB64>`), circular-reference-safe `safeStringify`, XSS stripping (`sanitizeText`, `sanitizeReferralCode`), strict per-key schema validators, `auditAndCleanStorage()` foreign-key flood purge, `safeExternalUrl()`, and automatic self-healing removal of tampered entries.
+  - Updated [src/utils/format.js](../../src/utils/format.js), [api/_lib/calculator.js](../../api/_lib/calculator.js), and [api/_lib/feasibilityEvaluator.js](../../api/_lib/feasibilityEvaluator.js): Replaced `Number(...) || 0` patterns with finite-checked `safeNum` / `num` helpers blocking `NaN`, `Infinity`, `-Infinity`, and extreme numbers.
+  - Updated [src/App.jsx](../../src/App.jsx), [src/state.jsx](../../src/state.jsx), [src/pages/Referral.jsx](../../src/pages/Referral.jsx), [src/pages/Rates.jsx](../../src/pages/Rates.jsx), [src/components/FeedbackWidget.jsx](../../src/components/FeedbackWidget.jsx), and [src/components/DataModal.jsx](../../src/components/DataModal.jsx): Added `AppErrorBoundary` recovery UI, state object/range guards, XSS input sanitization, 2 MB backup import cap, and `safeExternalUrl` enforcement on all `target="_blank" rel="noopener noreferrer"` links.
+  - Updated [vercel.json](../../vercel.json), created [public/_headers](../../public/_headers), and updated [vite.config.js](../../vite.config.js): Enforced `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security`, plus `viteSriPlugin()` injecting `sha384-...` SRI hashes into `dist/index.html`.
+  - Updated [ARCHITECTURE.md](./ARCHITECTURE.md) and [INDEX.md](./INDEX.md).
+
+---
+
 ## [2026-11-18] — Planner Option 3: Dual Goal Modes, Bidirectional Solver & `Cơ bản` | `Chuyên sâu` Versions
 
 - **Request**: Implement Option 3 on `/plan` with 2 distinct goal targets and 2 input versions (`Cơ bản` vs `Chuyên sâu`) to calculate both timeline and monthly saving plan.

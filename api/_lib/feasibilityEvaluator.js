@@ -1,3 +1,10 @@
+function num(v, fallback = 0, min = -1e15, max = 1e15) {
+  if (v === '' || v === null || v === undefined) return fallback;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
 /**
  * Evaluates the Financial Health Feasibility Score (0 to 100)
  * for a user's savings scenario (Server-Side Proprietary Scoring).
@@ -9,8 +16,13 @@ export function evaluatePlanFeasibility({
   strategy = "SPLIT_50_50",
   realYieldRate = 3.4
 }) {
+  const safeSalary = num(monthlySalary, 35000000, 1, 1e12);
+  const safeSavings = num(monthlySavings, 1000000, 0, 1e12);
+  const safeYears = num(yearsToGoal, 10, 0, 100);
+  const safeRealYield = num(realYieldRate, 3.4, -50, 50);
+
   let score = 70;
-  const savingsToIncomeRatio = (monthlySavings / Math.max(1, monthlySalary)) * 100;
+  const savingsToIncomeRatio = (safeSavings / safeSalary) * 100;
   const warnings = [];
   const strengths = [];
 
@@ -25,10 +37,10 @@ export function evaluatePlanFeasibility({
     warnings.push("Tỷ lệ tiết kiệm quá cao (>50% thu nhập), rủi ro gây áp lực căng thẳng tài chính hàng ngày.");
   }
 
-  if (yearsToGoal > 30) {
+  if (safeYears > 30) {
     score -= 20;
     warnings.push("Thời gian chạm mốc quá dài (>30 năm). Khuyên dùng tính năng Tăng Lương/Nhảy Việc để rút ngắn.");
-  } else if (yearsToGoal <= 12) {
+  } else if (safeYears <= 12) {
     score += 15;
     strengths.push("Thời gian chạm mốc rất khả thi (<12 năm). Kế hoạch thực tế và đầy tính động lực.");
   }
@@ -38,7 +50,7 @@ export function evaluatePlanFeasibility({
     strengths.push("Có gói kỳ hạn ngắn (1 tháng/3 tháng) duy trì thanh khoản xoay vòng hàng tháng.");
   }
 
-  if (realYieldRate >= 4.0) {
+  if (safeRealYield >= 4.0) {
     score += 10;
     strengths.push("Lợi suất thực tế sau lạm phát dương cao (>=4.0%/năm), bảo vệ giá trị đồng tiền tốt.");
   }

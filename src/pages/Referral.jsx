@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Copy, ExternalLink, Gift, Pencil, QrCode, Save } from 'lucide-react';
 import { useRates, useToast } from '../state.jsx';
-import { cryptoStorage } from '../utils/cryptoStorage.js';
+import { cryptoStorage, safeExternalUrl, sanitizeReferralCode } from '../utils/cryptoStorage.js';
 import { pct } from '../utils/format.js';
 import { Badge, BankMark, Button, Card, Modal, PageHeader } from '../components/ui.jsx';
 
@@ -27,10 +27,14 @@ export default function Referral() {
   };
 
   const saveCode = (bankId) => {
-    const trimmed = editVal.trim();
+    const clean = sanitizeReferralCode(editVal);
+    if (editVal.trim() && clean.length < 2) {
+      notify('Mã giới thiệu chỉ chấp nhận chữ, số, dấu "-" hoặc "_" (tối thiểu 2 ký tự)');
+      return;
+    }
     const next = { ...customCodes };
-    if (trimmed) {
-      next[bankId] = trimmed;
+    if (clean) {
+      next[bankId] = clean;
     } else {
       delete next[bankId];
     }
@@ -125,7 +129,7 @@ export default function Referral() {
               <div className="flex gap-2 border-t border-white/[0.06] pt-4">
                 <Button
                   as="a"
-                  href={bank.referralUrl}
+                  href={safeExternalUrl(bank.referralUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="primary"

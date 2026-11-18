@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { CheckCircle2 } from 'lucide-react';
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from './data/banksData.js';
 import { getPageTitle, getRoutePath, resolveRouteId } from './tools.js';
-import { cryptoStorage } from './utils/cryptoStorage.js';
+import { clampNum, cryptoStorage, isPlainObject } from './utils/cryptoStorage.js';
 
 /* ── Clean History API Router ───────────────────────────────
    Uses clean URLs (`/`, `/plan`, `/rates`, ...) backed by
@@ -138,7 +138,10 @@ export function AppProvider({ children }) {
     setTimeout(() => setToast((t) => (t && t.id === id ? null : t)), 2400);
   }, []);
 
-  const [customRates, setCustomRates] = useState(() => cryptoStorage.load('CUSTOM_RATES', {}));
+  const [customRates, setCustomRates] = useState(() => {
+    const loaded = cryptoStorage.load('CUSTOM_RATES', {});
+    return isPlainObject(loaded) ? loaded : {};
+  });
   const [serverBanks, setServerBanks] = useState(INITIAL_BANKS_DATA);
   const [updatedAt, setUpdatedAt] = useState(RATES_UPDATED_AT);
 
@@ -160,23 +163,33 @@ export function AppProvider({ children }) {
   }, []);
 
   const rates = useMemo(() => {
+    const safeRates = isPlainObject(customRates) ? customRates : {};
     const persist = (next) => {
-      setCustomRates(next);
-      cryptoStorage.save('CUSTOM_RATES', next);
+      const candidate = isPlainObject(next) ? next : {};
+      cryptoStorage.save('CUSTOM_RATES', candidate);
+      const validated = cryptoStorage.load('CUSTOM_RATES', {});
+      setCustomRates(isPlainObject(validated) ? validated : {});
     };
     const getRate = (bank, tenure) => {
+      if (!bank?.id || !tenure) return 0;
       const key = `${bank.id}_${tenure}`;
-      return customRates[key] !== undefined ? customRates[key] : bank.rates[tenure] || 0;
+      return safeRates[key] !== undefined ? safeRates[key] : bank.rates?.[tenure] || 0;
     };
     return {
       banks: serverBanks,
       updatedAt,
-      customRates,
+      customRates: safeRates,
       getRate,
-      isCustom: (bank, tenure) => customRates[`${bank.id}_${tenure}`] !== undefined,
-      setRate: (bank, tenure, value) => persist({ ...customRates, [`${bank.id}_${tenure}`]: value }),
+      isCustom: (bank, tenure) => Boolean(bank?.id && tenure && safeRates[`${bank.id}_${tenure}`] !== undefined),
+      setRate: (bank, tenure, value) => {
+        if (!bank?.id || !tenure) return;
+        const cleanVal = clampNum(value, NaN, 0.1, 25);
+        if (!Number.isFinite(cleanVal)) return;
+        persist({ ...safeRates, [`${bank.id}_${tenure}`]: Number(cleanVal.toFixed(2)) });
+      },
       resetRate: (bank, tenure) => {
-        const next = { ...customRates };
+        if (!bank?.id || !tenure) return;
+        const next = { ...safeRates };
         delete next[`${bank.id}_${tenure}`];
         persist(next);
       },

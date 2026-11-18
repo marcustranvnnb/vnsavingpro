@@ -52,7 +52,9 @@ flowchart TD
   - `NumberInput` manages `focused` + `draft` state so typing or clearing digits never jumps the cursor or locks on `0`.
   - `@media print` in `src/index.css` expands scrollable tables and hides navigation/action controls for clean PDF printing.
 
-## 5. Build & Deployment (`vite.config.js` & `vercel.json`)
+## 5. Build, Security Hardening & Deployment (`vite.config.js`, `vercel.json`, `public/_headers`)
 
-- **Vite 5** with `@vitejs/plugin-react`, `@tailwindcss/vite`, `build.sourcemap: false`, and manual chunks (`react`, `charts`).
-- **`vercel.json`**: Uses `"framework": "vite"`, excludes `/api/(.*)` from SPA rewrites (`"source": "/((?!api/).*)"`), and deploys serverless functions under `api/`.
+- **Vite 5** with `@vitejs/plugin-react`, `@tailwindcss/vite`, `build.sourcemap: false`, manual chunks (`react`, `charts`), and `viteSriPlugin()` generating `sha384` Subresource Integrity (`integrity` + `crossorigin`) attributes on all emitted `/assets/*.js` and `/assets/*.css` tags in `dist/index.html`.
+- **HTTP Security Headers** (`vercel.json`, `public/_headers`, `vite.config.js`): `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and `Strict-Transport-Security`.
+- **Hardened Client Storage & Self-Healing (`src/utils/cryptoStorage.js` & `src/App.jsx`)**: Strict key allowlist (`CUSTOM_RATES`, `CUSTOM_REFERRAL_CODES`, `PLANNER_STATE`, `USER_FEEDBACK_LOG`), signed cipher envelopes (`v2.<nonce>.<sig>.<cipherB64>`), circular-reference-safe JSON serialization, per-key schema & `Number.isFinite()` validation, XSS tag stripping, foreign-key flooding auto-purge, `safeExternalUrl()` protocol enforcement, and `AppErrorBoundary` recovery UI.
+- **`vercel.json`**: Uses `"framework": "vite"`, excludes `/api/(.*)` from SPA rewrites (`"source": "/((?!api/).*)"`), configures daily 09:00 AM VN cron (`0 2 * * *`), and deploys serverless functions under `api/`.

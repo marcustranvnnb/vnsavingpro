@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-18 21:27 (Planner Option 3: `Cơ bản` | `Chuyên sâu` inputs, Dual Goal Modes `PASSIVE_INCOME` | `TARGET_AMOUNT`, Bidirectional `TIME` ⇄ `SAVING` solver)
-> **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Vercel Serverless API + Daily 9AM Scrapers for All 4 Digital Banks)
+> **Last Synced**: 2026-11-18 22:00 (Security Hardening: Signed Schema Storage, Anti-NaN/Infinity, AppErrorBoundary, CSP Headers, and Build-Time SRI)
+> **Current Architecture Version**: v1.5.2 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---

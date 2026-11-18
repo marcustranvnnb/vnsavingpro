@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Download, MessageSquarePlus, Send, Star } from 'lucide-react';
-import { cryptoStorage } from '../utils/cryptoStorage.js';
+import { cryptoStorage, sanitizeText } from '../utils/cryptoStorage.js';
 import { useToast } from '../state.jsx';
 import { Badge, Button, Card, CardHeader, Chip, cx } from './ui.jsx';
 
@@ -62,11 +62,11 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
 
     const entry = {
       id: `${Date.now()}`,
-      tool: toolId,
-      toolLabel,
-      rating,
-      tags,
-      comment: comment.trim(),
+      tool: sanitizeText(toolId, 32),
+      toolLabel: sanitizeText(toolLabel, 100),
+      rating: Math.min(5, Math.max(1, Math.round(Number(rating) || 1))),
+      tags: tags.map((t) => sanitizeText(t, 60)).filter(Boolean),
+      comment: sanitizeText(comment, 800),
       snapshot: snapshot || null,
       createdAt: new Date().toISOString(),
     };

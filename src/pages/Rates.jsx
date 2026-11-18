@@ -14,6 +14,7 @@ import {
 import { href, useRates, useToast } from '../state.jsx';
 import { TENURE_LABELS } from '../data/banksData.js';
 import { DIGITAL_BANKS } from '../data/bankPackagesData.js';
+import { safeExternalUrl } from '../utils/cryptoStorage.js';
 import { fmt, pct } from '../utils/format.js';
 import {
   Badge,
@@ -159,7 +160,7 @@ function PackageItem({ pkg }) {
             <div className="flex flex-wrap items-center gap-3">
               {pkg.promotionUrl && (
                 <a
-                  href={pkg.promotionUrl}
+                  href={safeExternalUrl(pkg.promotionUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-medium text-emerald-300 hover:text-emerald-200"
@@ -169,7 +170,7 @@ function PackageItem({ pkg }) {
               )}
               {pkg.sourceUrl && (
                 <a
-                  href={pkg.sourceUrl}
+                  href={safeExternalUrl(pkg.sourceUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-indigo-300 hover:text-indigo-200"
@@ -319,7 +320,7 @@ export default function Rates() {
                           <Badge tone="success">CTKM: {pct(bank.promoRates[tenure])}</Badge>
                           {bank.promoUrl && (
                             <a
-                              href={bank.promoUrl}
+                              href={safeExternalUrl(bank.promoUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-0.5 text-[11px] text-emerald-300 hover:underline"
@@ -433,7 +434,7 @@ export default function Rates() {
                     </div>
                   </div>
                   <a
-                    href={b.website}
+                    href={safeExternalUrl(b.website)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs text-zinc-300 ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.08] hover:text-white"

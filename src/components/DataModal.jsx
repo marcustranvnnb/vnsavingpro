@@ -40,18 +40,24 @@ export function DataModal({ open, onClose }) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File sao lưu vượt quá giới hạn 2 MB.');
+      return;
+    }
     try {
       const data = JSON.parse(await file.text());
-      if (typeof data !== 'object' || data === null) throw new Error('invalid');
+      if (typeof data !== 'object' || data === null || Array.isArray(data)) throw new Error('invalid');
       replaceAll(data.customRates && typeof data.customRates === 'object' ? data.customRates : {});
-      cryptoStorage.save('CUSTOM_REFERRAL_CODES', data.customReferralCodes || {});
+      if (data.customReferralCodes && typeof data.customReferralCodes === 'object') {
+        cryptoStorage.save('CUSTOM_REFERRAL_CODES', data.customReferralCodes);
+      }
       if (data.plannerState && typeof data.plannerState === 'object') {
         cryptoStorage.save('PLANNER_STATE', data.plannerState);
       }
       if (Array.isArray(data.feedbackLog)) {
         cryptoStorage.save('USER_FEEDBACK_LOG', data.feedbackLog);
       }
-      notify('Đã khôi phục dữ liệu');
+      notify('Đã kiểm tra an toàn & khôi phục dữ liệu');
       onClose();
     } catch {
       alert('File sao lưu không hợp lệ.');

@@ -1,5 +1,12 @@
 import { TENURE_DAYS_MAP } from '../../src/data/banksData.js';
 
+function num(v, fallback = 0, min = -1e15, max = 1e15) {
+  if (v === '' || v === null || v === undefined) return fallback;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
 /**
  * Single interest calculation supporting Dual Modes
  * Mode 1: ACTUAL_DAYS (Thông tư 14 NHNN 365 days)
@@ -12,8 +19,8 @@ export function calculateInterest({
   payoutMethod = "MATURITY",
   calculationMode = "ACTUAL_DAYS"
 }) {
-  const p = Number(principal) || 0;
-  const r = Number(ratePercent) || 0;
+  const p = num(principal, 0, 0, 1e13);
+  const r = num(ratePercent, 0, 0, 50);
 
   let days = TENURE_DAYS_MAP[tenureCode] || 365;
   let months = 12;
@@ -78,11 +85,12 @@ export function calculateDepositComparison({
   tenureCode = "12M",
   customDays = null
 }) {
-  const p = Math.max(0, Number(principal) || 0);
-  const r = Math.max(0, Number(ratePercent) || 0);
-  const months = parseInt(tenureCode, 10) || 12;
+  const p = num(principal, 0, 0, 1e13);
+  const r = num(ratePercent, 0, 0, 50);
+  const months = Math.max(1, parseInt(tenureCode, 10) || 12);
   const defaultDays = TENURE_DAYS_MAP[tenureCode] || 365;
-  const days = customDays !== null && customDays !== '' && Number(customDays) > 0 ? Number(customDays) : defaultDays;
+  const customD = num(customDays, 0, 0, 36500);
+  const days = customD > 0 ? customD : defaultDays;
 
   const m1Interest = Math.round((p * (r / 100) * days) / 365);
   const m1Monthly = Math.round(m1Interest / months);
@@ -140,13 +148,13 @@ export function calculatePassiveIncomeRoadmap({
 }) {
   const normalizedGoal = goalType === 'TARGET_AMOUNT' ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME';
   const normalizedSolve = solveMode === 'SAVING' ? 'SAVING' : 'TIME';
-  const salary = Math.max(0, Number(currentSalary) || 35000000);
-  const inputMonthlyDeposit = Math.max(0, Number(monthlySavingsAmount) || 0);
-  const p0 = Math.max(0, Number(initialCapital) || 0);
-  const rate = Math.max(0.1, Number(annualInterestRate) || 6.0);
-  const stepUp = Math.min(50, Math.max(0, Number(annualStepUpPct) || 0));
-  const bonus = Math.max(0, Number(annualBonusAmount) || 0);
-  const inflation = Math.min(20, Math.max(0, Number(inflationRatePct) || 0));
+  const salary = num(currentSalary, 35000000, 100000, 1e12);
+  const inputMonthlyDeposit = num(monthlySavingsAmount, 0, 0, 1e12);
+  const p0 = num(initialCapital, 0, 0, 1e13);
+  const rate = num(annualInterestRate, 6.0, 0.1, 30);
+  const stepUp = num(annualStepUpPct, 0, 0, 50);
+  const bonus = num(annualBonusAmount, 0, 0, 1e12);
+  const inflation = num(inflationRatePct, 0, 0, 20);
 
   const monthlyFactor = calculationMode === 'ACTUAL_DAYS' ? 30 / 365 : 1 / 12;
   const i = (rate / 100) * monthlyFactor;
@@ -154,10 +162,10 @@ export function calculatePassiveIncomeRoadmap({
   let nominalRequiredPrincipal;
   let baseMonthlyInterest;
   if (normalizedGoal === 'TARGET_AMOUNT') {
-    nominalRequiredPrincipal = Math.max(1_000_000, Math.round(Number(targetAmount) || 500_000_000));
+    nominalRequiredPrincipal = Math.round(num(targetAmount, 500_000_000, 1_000_000, 1e13));
     baseMonthlyInterest = Math.round(nominalRequiredPrincipal * i);
   } else {
-    baseMonthlyInterest = Math.max(100_000, Math.round(Number(targetMonthlyInterest) || 10_000_000));
+    baseMonthlyInterest = Math.round(num(targetMonthlyInterest, 10_000_000, 100_000, 1e12));
     nominalRequiredPrincipal = Math.round(baseMonthlyInterest / i);
   }
 
@@ -170,7 +178,7 @@ export function calculatePassiveIncomeRoadmap({
   const monthByMonthLog = [];
 
   if (normalizedSolve === 'SAVING') {
-    const safeYears = Math.min(50, Math.max(1, Number(targetYears) || 5));
+    const safeYears = num(targetYears, 5, 1, 50);
     const targetMonths = Math.min(600, Math.max(12, Math.round(safeYears * 12)));
     const inflationMultiplier = Math.pow(1 + inflation / 100, targetMonths / 12);
     requiredPrincipal = Math.round(nominalRequiredPrincipal * inflationMultiplier);
@@ -335,8 +343,8 @@ export function simulateLadderingMatrix({
   totalMonths = 12,
   bankRates = {}
 }) {
-  const mAmount = Number(monthlySavings) || 1000000;
-  const monthsCap = Math.min(60, Math.max(1, Number(totalMonths) || 12));
+  const mAmount = num(monthlySavings, 1000000, 0, 1e12);
+  const monthsCap = Math.round(num(totalMonths, 12, 1, 60));
   const timelineRows = [];
 
   let packagesConfig = [];
@@ -447,9 +455,10 @@ export function calculateCareerGrowthImpact({
   annualInterestRate = 6.9,
   careerOption = "JOB_HOPPING"
 }) {
-  const salary = Number(currentSalary) || 35000000;
-  const rate = Math.max(0.1, Number(annualInterestRate) || 6.9);
-  const targetInterest = Number(targetMonthlyInterest) || 10000000;
+  const salary = num(currentSalary, 35000000, 100000, 1e12);
+  const safeSavingsRate = num(savingsRatePercent, 20, 1, 95);
+  const rate = num(annualInterestRate, 6.9, 0.1, 30);
+  const targetInterest = num(targetMonthlyInterest, 10000000, 100000, 1e12);
   const requiredPrincipal = Math.round((targetInterest * 12 * 100) / rate);
 
   let currentMonthlySalary = salary;
@@ -472,7 +481,7 @@ export function calculateCareerGrowthImpact({
       currentMonthlySalary = currentMonthlySalary * 1.30;
     }
 
-    const currentMonthlySavings = Math.round((currentMonthlySalary * savingsRatePercent) / 100);
+    const currentMonthlySavings = Math.round((currentMonthlySalary * safeSavingsRate) / 100);
     const monthlyInterest = currentBalance * ((rate / 100) / 12);
     currentBalance = currentBalance + monthlyInterest + currentMonthlySavings;
 
@@ -508,19 +517,24 @@ export function calculateInflationImpact({
   targetPassiveIncome = 10000000,
   years = 10
 }) {
-  const realRate = Number((nominalRate - inflationRate).toFixed(2));
-  const fisherRealRate = Number((((1 + nominalRate / 100) / (1 + inflationRate / 100) - 1) * 100).toFixed(2));
-  const futurePurchasingPowerRatio = 1 / Math.pow(1 + inflationRate / 100, years);
-  const equivalentCurrentValue = Math.round(targetPassiveIncome * futurePurchasingPowerRatio);
-  const inflationLossAmount = targetPassiveIncome - equivalentCurrentValue;
+  const safeNominal = num(nominalRate, 6.9, 0, 50);
+  const safeInflation = num(inflationRate, 3.5, 0, 50);
+  const safeTarget = num(targetPassiveIncome, 10000000, 0, 1e13);
+  const safeYears = Math.round(num(years, 10, 1, 100));
+
+  const realRate = Number((safeNominal - safeInflation).toFixed(2));
+  const fisherRealRate = Number((((1 + safeNominal / 100) / (1 + safeInflation / 100) - 1) * 100).toFixed(2));
+  const futurePurchasingPowerRatio = 1 / Math.pow(1 + safeInflation / 100, safeYears);
+  const equivalentCurrentValue = Math.round(safeTarget * futurePurchasingPowerRatio);
+  const inflationLossAmount = safeTarget - equivalentCurrentValue;
 
   return {
-    nominalRate,
-    inflationRate,
+    nominalRate: safeNominal,
+    inflationRate: safeInflation,
     realRate,
     fisherRealRate,
-    years,
-    targetPassiveIncome,
+    years: safeYears,
+    targetPassiveIncome: safeTarget,
     equivalentCurrentValue,
     inflationLossAmount,
     purchasingPowerRetainedPercent: Number((futurePurchasingPowerRatio * 100).toFixed(1))
@@ -538,12 +552,12 @@ export function calculateEarlyWithdrawalComparison({
   daysHeld = 180,
   nonTermRate = 0.5
 }) {
-  const p = Math.max(0, Number(principal) || 0);
-  const r = Math.max(0, Number(ratePercent) || 0);
-  const dTotal = Math.max(1, Number(totalDays) || 365);
-  const w = Math.min(p, Math.max(0, Number(withdrawAmount) || 0));
-  const dHeld = Math.min(dTotal, Math.max(1, Number(daysHeld) || 1));
-  const rNonTerm = Math.max(0, Number(nonTermRate) || 0.5);
+  const p = num(principal, 0, 0, 1e13);
+  const r = num(ratePercent, 6.9, 0, 50);
+  const dTotal = Math.round(num(totalDays, 365, 1, 36500));
+  const w = Math.min(p, num(withdrawAmount, 0, 0, 1e13));
+  const dHeld = Math.min(dTotal, Math.round(num(daysHeld, 1, 1, 36500)));
+  const rNonTerm = num(nonTermRate, 0.5, 0, 20);
 
   const remainingPrincipal = Math.max(0, p - w);
 
