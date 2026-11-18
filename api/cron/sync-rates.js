@@ -3,7 +3,7 @@ import { fetchTnexRates } from '../../scripts/scrape-tnex.js';
 import { fetchTimoRates } from '../../scripts/scrape-timo.js';
 import { fetchLiobankRates } from '../../scripts/scrape-liobank.js';
 import { fetchCakeRates } from '../../scripts/scrape-cake.js';
-import { setLiveRatesSnapshot } from '../_lib/liveRatesCache.js';
+import { setLiveRatesSnapshotAsync } from '../_lib/liveRatesCache.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   });
 
   const updatedAt = cake.updatedDate || liobank.updatedDate || tnex.updatedDate || timo.updatedDate;
-  setLiveRatesSnapshot(updatedBanks, updatedAt, {
+  const savedSnapshot = await setLiveRatesSnapshotAsync(updatedBanks, updatedAt, {
     tnex: { live: tnex.liveFetchSucceeded, parsed: tnex.parsedTenuresCount, note: tnex.note },
     timo: { live: timo.liveFetchSucceeded, parsed: timo.parsedTenuresCount, note: timo.note },
     liobank: {
@@ -62,6 +62,8 @@ export default async function handler(req, res) {
     ok: true,
     updatedAt,
     syncedAt: cake.scrapedAt,
+    supabaseSaved: savedSnapshot.supabaseSaved,
+    storage: savedSnapshot.storage,
     sources: {
       tnex: {
         url: tnex.sourceUrl,

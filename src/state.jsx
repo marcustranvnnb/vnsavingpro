@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { CheckCircle2 } from 'lucide-react';
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from './data/banksData.js';
 import { getPageTitle, getRoutePath, resolveRouteId } from './tools.js';
+import { fetchLiveRatesFromApi } from './utils/apiClient.js';
 import { isAnalyticsAllowed, syncUserPrefCookie } from './utils/cookieManager.js';
 import { clampNum, cryptoStorage, isPlainObject } from './utils/cryptoStorage.js';
 
@@ -146,15 +147,24 @@ export function AppProvider({ children }) {
   });
   const [serverBanks, setServerBanks] = useState(INITIAL_BANKS_DATA);
   const [updatedAt, setUpdatedAt] = useState(RATES_UPDATED_AT);
+  const [ratesSyncMeta, setRatesSyncMeta] = useState({
+    supabaseConnected: false,
+    storage: 'memory',
+    syncMeta: null,
+  });
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/rates')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return;
-        if (Array.isArray(data.banks) && data.banks.length > 0) setServerBanks(data.banks);
-        if (data.updatedAt) setUpdatedAt(data.updatedAt);
+    fetchLiveRatesFromApi()
+      .then((remote) => {
+        if (cancelled || !remote) return;
+        if (Array.isArray(remote.banks) && remote.banks.length > 0) setServerBanks(remote.banks);
+        if (remote.updatedAt) setUpdatedAt(remote.updatedAt);
+        setRatesSyncMeta({
+          supabaseConnected: Boolean(remote.supabaseConnected),
+          storage: remote.storage || 'memory',
+          syncMeta: remote.syncMeta || null,
+        });
       })
       .catch(() => {
         // Fallback silently to bundled INITIAL_BANKS_DATA
@@ -180,6 +190,7 @@ export function AppProvider({ children }) {
     return {
       banks: serverBanks,
       updatedAt,
+      ratesSyncMeta,
       customRates: safeRates,
       getRate,
       isCustom: (bank, tenure) => Boolean(bank?.id && tenure && safeRates[`${bank.id}_${tenure}`] !== undefined),
@@ -200,7 +211,7 @@ export function AppProvider({ children }) {
       best: (tenure) =>
         serverBanks.map((b) => ({ bank: b, rate: getRate(b, tenure) })).sort((a, b) => b.rate - a.rate)[0],
     };
-  }, [customRates, serverBanks, updatedAt]);
+  }, [customRates, serverBanks, updatedAt, ratesSyncMeta]);
 
   return (
     <ToastCtx.Provider value={notify}>

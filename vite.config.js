@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -17,6 +17,7 @@ function vercelApiPlugin() {
     '/api/rates': 'api/rates.js',
     '/api/calculate': 'api/calculate.js',
     '/api/feedback': 'api/feedback.js',
+    '/api/plans': 'api/plans.js',
     '/api/cron/sync-rates': 'api/cron/sync-rates.js',
   };
   const attach = (server) => {
@@ -111,21 +112,30 @@ function viteSriPlugin() {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), vercelApiPlugin(), viteSriPlugin()],
-  server: {
-    port: 3000,
-    open: true,
-  },
-  build: {
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          charts: ['chart.js', 'react-chartjs-2'],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  for (const key of ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'CRON_SECRET']) {
+    if (env[key] && !process.env[key]) {
+      process.env[key] = env[key];
+    }
+  }
+
+  return {
+    plugins: [react(), tailwindcss(), vercelApiPlugin(), viteSriPlugin()],
+    server: {
+      port: 3000,
+      open: true,
+    },
+    build: {
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom'],
+            charts: ['chart.js', 'react-chartjs-2'],
+          },
         },
       },
     },
-  },
+  };
 });

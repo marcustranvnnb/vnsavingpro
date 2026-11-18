@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v1.4 Tier 1 Serverless)
+# VnSavingPro — Architecture & Technical Reference (v1.5.5 Serverless + Supabase Free Tier)
 
 ## 1. High-Level Architecture
 
@@ -6,33 +6,41 @@
 flowchart TD
     Entry["src/main.jsx"] --> App["src/App.jsx (AppProvider + Shell)"]
     App --> State["src/state.jsx (Clean History Router + RatesCtx + ToastCtx)"]
-    State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached 1h)"]
+    State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached + Supabase Snapshot)"]
     App --> Layout["src/components/Layout.jsx (TopNav, MobileTabBar, Footer)"]
-    App --> Modal["src/components/DataModal.jsx (JSON/CSV Backup, Feedback Log)"]
+    App --> Modal["src/components/DataModal.jsx (Supabase Cloud Sync, JSON/CSV Backup)"]
     App --> Cookie["src/components/CookieBanner.jsx + cookieManager.js"]
     App --> Pages["React.lazy() Tool Pages + Home.jsx"]
-    Pages -->|useServerCalc()| ApiClient["src/utils/apiClient.js (50ms debounce + Map cache)"]
+    Pages -->|useServerCalc()| ApiClient["src/utils/apiClient.js (50ms debounce + Map cache + Cloud Plans)"]
     ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Rate-Limited Serverless Handler)"]
     ApiCalc --> ServerLib["api/_lib/{calculator,feasibilityEvaluator}.js (Secret Server-Only)"]
-    Pages -->|FeedbackWidget| ApiFeedback["api/feedback.js + localStorage USER_FEEDBACK_LOG"]
+    Pages -->|FeedbackWidget| ApiFeedback["api/feedback.js -> api/_lib/supabase.js"]
+    ApiRates --> Supabase["Supabase Free Tier Postgres (bank_rate_snapshots, user_feedback, saved_plans)"]
+    ApiFeedback --> Supabase
+    Modal -->|POST/GET /api/plans| ApiPlans["api/plans.js"] --> Supabase
     Pages -->|Google Docs Export| GDocs["src/utils/googleDocsExporter.js (docs.new + .doc)"]
 ```
 
 ## 2. Proprietary Algorithm Protection (`api/_lib/` & `api/calculate.js`)
 
-- **Zero Client Exposure**: `calculator.js` and `feasibilityEvaluator.js` live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
+- **Zero Client Exposure**: `calculator.js`, `feasibilityEvaluator.js`, and `supabase.js` (`SUPABASE_SERVICE_ROLE_KEY`) live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
+- **Supabase Free Tier Persistence (`supabase/schema.sql` + `api/_lib/supabase.js`)**:
+  - Zero-dependency server-side PostgREST client (`sbSelect`, `sbInsert`, `sbUpsert`) using native `fetch` with a 3.5s timeout and automatic fallback to in-memory/bundled defaults when `SUPABASE_URL` / keys are not yet configured.
+  - Tables: `public.bank_rate_snapshots`, `public.user_feedback`, and `public.saved_plans` (protected with RLS policies).
 - **Endpoints**:
-  - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` with `Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+  - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` + `supabaseConnected` status from `getLiveRatesSnapshotAsync()` (60s warm cache over Supabase `bank_rate_snapshots`, fallback to `INITIAL_BANKS_DATA`).
   - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with per-IP in-memory rate limiting (`120 req/min`).
-  - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Records post-result user star ratings, tags, comments, and snapshots; mirrored locally under `USER_FEEDBACK_LOG` via `cryptoStorage` and exportable via JSON/CSV in `DataModal.jsx`.
-  - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Scheduled via `vercel.json` (`0 2 * * *` UTC = 09:00 AM UTC+7) to live-scrape TNEX and TIMO and refresh `api/_lib/liveRatesCache.js`.
+  - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Persists star ratings, tags, comments, and snapshots into Supabase `user_feedback` (with memory fallback), plus local `USER_FEEDBACK_LOG` mirror via `cryptoStorage`.
+  - `GET`/`POST /api/plans` ([api/plans.js](../../api/plans.js)): Saves and loads sanitized financial plans (`plan`, `customRates`, `calc`, `ladder`, `career`, `inflation`, `banks`) using 6–12 character share codes (`saved_plans` table in Supabase + memory fallback).
+  - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Scheduled via `vercel.json` (`0 2 * * *` UTC = 09:00 AM UTC+7) to live-scrape TNEX, TIMO, LioBank, and Cake and persist snapshots via `setLiveRatesSnapshotAsync()`.
 - **Automated Daily 9:00 AM Rate Scrapers (`scripts/` & `.github/workflows/daily-rates-sync.yml`)**:
   - `scripts/scrape-tnex.js` scrapes `https://www.tnex.vn/san-pham/tiet-kiem` (`parseTnexHtml`) and updates `src/data/banksData.js`, `src/data/bankPackagesData.js`, and `src/data/scraped/tnex-latest.json`.
   - `scripts/scrape-timo.js` scrapes `https://timo.vn/tiet-kiem-co-ky-han/` and updates `src/data/banksData.js`, `src/data/bankPackagesData.js`, and `src/data/scraped/timo-latest.json`.
   - `scripts/scrape-liobank.js` scrapes default tariffs from `https://liobank.vn/vn/deposit-tariffs`, dynamically discovers the latest CTKM promo PDF link from LioBank's site (currently `Liobank_The_Le_CTKM_Cong_Lai_suat_Tiet_kiem_11.11.2026.pdf`), parses compressed PDF streams via `node:zlib` (`parseLiobankPromoPdfBuffer`), and updates `banksData.js`, `bankPackagesData.js`, and `src/data/scraped/liobank-latest.json`.
   - `scripts/scrape-cake.js` scrapes both `https://cake.vn/tien-gui/tien-gui-tieu-chuan` (17 standard deposit terms + effective date + `+2.2%` bonus promo) and `https://cake.vn/tien-gui/tien-gui-co-ky-han-tich-luy` (accumulative deposit terms & promos), updating `banksData.js`, `bankPackagesData.js` (`cake-standard`, `cake-accumulate`), and `src/data/scraped/cake-latest.json`.
-  - GitHub Actions runs both daily at `09:00 AM` Vietnam time (`0 2 * * *`) and pushes updates to `main`; `scripts/register-daily-9am-task.ps1` sets up an equivalent Windows Scheduled Task locally.
-- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, and `/api/cron/sync-rates` during `vite dev` and `vite preview` and forwards directly to the Node handlers in `api/`.
+  - `scripts/scrape-all.js` runs all 4 bank scrapers and pushes the combined snapshot into Supabase Postgres (`setLiveRatesSnapshotAsync`) when Supabase env vars are configured.
+  - GitHub Actions runs daily at `09:00 AM` Vietnam time (`0 2 * * *`) and pushes updates to `main`; `scripts/register-daily-9am-task.ps1` sets up an equivalent Windows Scheduled Task locally.
+- **Local Dev/Preview Parity (`vite.config.js`)**: `loadEnv` loads server-only keys into `process.env` and `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, `/api/plans`, and `/api/cron/sync-rates` during `vite dev` and `vite preview`.
 
 ## 3. Routing & State Management (`src/state.jsx` & `src/tools.js`)
 

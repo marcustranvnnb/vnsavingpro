@@ -4,6 +4,19 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-18] — Supabase Free Tier Integration (Postgres Persistence, Cloud Plan Sync & Scraper Push)
+
+- **Request**: Connect and set up VnSavingPro with Supabase Free Tier to elevate persistence beyond ephemeral serverless memory.
+- **Changes Implemented**:
+  - Added [supabase/schema.sql](../../supabase/schema.sql) (`public.bank_rate_snapshots`, `public.user_feedback`, `public.saved_plans` + Row Level Security policies) and [.env.example](../../.env.example).
+  - Created server-only zero-dependency PostgREST helper [api/_lib/supabase.js](../../api/_lib/supabase.js) (`getSupabaseConfig`, `isSupabaseConfigured`, `sbSelect`, `sbInsert`, `sbUpsert`).
+  - Upgraded [api/_lib/liveRatesCache.js](../../api/_lib/liveRatesCache.js), [api/rates.js](../../api/rates.js), [api/cron/sync-rates.js](../../api/cron/sync-rates.js), and [scripts/scrape-all.js](../../scripts/scrape-all.js) to read/write bank rate snapshots to Supabase Postgres with automatic fallback to bundled `INITIAL_BANKS_DATA`.
+  - Upgraded [api/feedback.js](../../api/feedback.js) to persist feedback entries and summaries to `public.user_feedback` in Supabase.
+  - Created [api/plans.js](../../api/plans.js) (`GET`/`POST /api/plans`), updated [vite.config.js](../../vite.config.js) (`loadEnv` + `/api/plans` dev parity), [src/utils/apiClient.js](../../src/utils/apiClient.js) (`fetchLiveRatesFromApi`, `saveCloudPlanToApi`, `fetchCloudPlanFromApi`), [src/state.jsx](../../src/state.jsx) (`ratesSyncMeta`), and [src/components/DataModal.jsx](../../src/components/DataModal.jsx) (Supabase Cloud Sync status badge, save/share 6-character code, and cloud plan restore).
+  - **Live Supabase Provisioning (via Supabase MCP)**: Created Free Tier project **`vnsavingpro`** (`gvgyztwpjvjvztwhwnue`, region `ap-southeast-1` Singapore, org `marcustranvnnb`), applied `create_vnsavingpro_tables` DDL + explicit Data API `GRANT` + RLS policies (verified `0` security advisor lints via `get_advisors`), seeded initial 4 digital banks snapshot in `public.bank_rate_snapshots`, configured `.env.local` (git-ignored), and verified live end-to-end persistence for `/api/rates`, `/api/plans`, and `/api/feedback`.
+
+---
+
 ## [2026-11-18] — Unified UI (`Calculator`, `Ladder`), Hidden Referral, Animations & Skeletons, Cookie Manager & Rate Disclaimer
 
 - **Request**: Temporarily hide `Ưu đãi mở tài khoản`, apply `Planner` UI style & Option 4 breakdown to `Calculator` and `Ladder`, add animations & skeleton loading states, implement Cookie setting banner/modal, and add an official public-rate disclaimer advising users to check bank apps for exact promo details.
