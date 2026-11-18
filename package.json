@@ -16,6 +16,7 @@
     "cf:pages": "vite build && npx wrangler pages deploy dist --project-name=vnsavingpro"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.109.0",
     "chart.js": "^4.4.1",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",

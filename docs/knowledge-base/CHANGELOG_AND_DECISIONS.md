@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Supabase Authentication (Google OAuth + Email/Password) & User Profile (`/auth`, `/profile`)
+
+- **Request**: Implement user authentication (Sign in / Sign up with Google and Email/Password, password reset) and user profile management with saved plans.
+- **Changes Implemented**:
+  - Applied Supabase migration `add_auth_profiles_and_user_plans` (and synced [supabase/schema.sql](../../supabase/schema.sql)): Added `public.profiles`, `public.handle_new_user()` trigger on `auth.users`, `user_id` & `is_shared` columns on `public.saved_plans`, and strict `(select auth.uid())` RLS policies (`0` security advisor lints).
+  - Installed pinned `@supabase/supabase-js` in `package.json`, configured `VITE_SUPABASE_URL` & `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.local`, `.env.example`, and Vercel, and updated CSP `connect-src` in [vercel.json](../../vercel.json), [public/_headers](../../public/_headers), and [vite.config.js](../../vite.config.js).
+  - Created [src/utils/supabaseClient.js](../../src/utils/supabaseClient.js), [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx), [src/components/AuthModal.jsx](../../src/components/AuthModal.jsx), [src/pages/Auth.jsx](../../src/pages/Auth.jsx) (`/auth`), and [src/pages/Profile.jsx](../../src/pages/Profile.jsx) (`/profile`).
+  - Upgraded [api/_lib/supabase.js](../../api/_lib/supabase.js) (`getUserFromBearerToken`, `sbDelete`) and [api/plans.js](../../api/plans.js) (`GET ?mine=1`, owner-scoped `POST` & `DELETE`), plus wired `AuthProvider` and `UserMenu` into [src/App.jsx](../../src/App.jsx), [src/components/Layout.jsx](../../src/components/Layout.jsx), [src/components/DataModal.jsx](../../src/components/DataModal.jsx), and [src/tools.js](../../src/tools.js).
+
+---
+
 ## [2026-11-19] — Updated Website Favicon & Brand Logo Assets
 
 - **Request**: Update the website's favicon and navigation logo with the newly designed VnSavingPro icon.

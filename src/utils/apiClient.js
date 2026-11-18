@@ -87,11 +87,15 @@ export async function fetchLiveRatesFromApi() {
   return res.json();
 }
 
-export async function saveCloudPlanToApi({ title, shareCode, payload }) {
+export async function saveCloudPlanToApi({ title, shareCode, payload, isShared = true, accessToken = null }) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
   const res = await fetch('/api/plans', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, shareCode, payload }),
+    headers,
+    body: JSON.stringify({ title, shareCode, payload, isShared }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json?.ok) {
@@ -100,9 +104,41 @@ export async function saveCloudPlanToApi({ title, shareCode, payload }) {
   return json;
 }
 
-export async function fetchCloudPlanFromApi(code) {
+export async function fetchCloudPlanFromApi(code, accessToken = null) {
   const cleanCode = String(code || '').trim().toUpperCase();
-  const res = await fetch(`/api/plans?code=${encodeURIComponent(cleanCode)}`);
+  const headers = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  const res = await fetch(`/api/plans?code=${encodeURIComponent(cleanCode)}`, { headers });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function fetchMyCloudPlansFromApi(accessToken) {
+  const res = await fetch('/api/plans?mine=1', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function deleteCloudPlanFromApi(code, accessToken) {
+  const cleanCode = String(code || '').trim().toUpperCase();
+  const res = await fetch(`/api/plans?code=${encodeURIComponent(cleanCode)}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
   const json = await res.json().catch(() => ({}));
   if (!res.ok || !json?.ok) {
     throw new Error(json?.error || `HTTP ${res.status}`);

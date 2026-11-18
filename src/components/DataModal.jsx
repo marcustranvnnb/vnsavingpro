@@ -16,7 +16,8 @@ import { Badge, Button, Callout, Modal } from './ui.jsx';
 import { exportFeedbackCSV } from './FeedbackWidget.jsx';
 import { fetchCloudPlanFromApi, saveCloudPlanToApi } from '../utils/apiClient.js';
 import { cryptoStorage, isPlainObject } from '../utils/cryptoStorage.js';
-import { useRates, useToast } from '../state.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { href, useRates, useToast } from '../state.jsx';
 import { APP_VERSION, APP_VERSION_DATE } from '../tools.js';
 
 const CLOUD_CODE_KEY = 'vnsaving_cloud_code';
@@ -43,8 +44,9 @@ function saveCloudCodeLocal(code) {
   }
 }
 
-export function DataModal({ open, onClose }) {
+export function DataModal({ open, onClose, onOpenAuth }) {
   const { customRates, replaceAll, ratesSyncMeta } = useRates();
+  const { user, getAccessToken } = useAuth();
   const notify = useToast();
   const fileRef = useRef(null);
 
@@ -69,6 +71,7 @@ export function DataModal({ open, onClose }) {
       const res = await saveCloudPlanToApi({
         title: 'Kế hoạch VnSavingPro',
         shareCode: cloudCode || undefined,
+        accessToken: getAccessToken(),
         payload: {
           plan: isPlainObject(plannerState) ? plannerState : {},
           customRates: isPlainObject(savedCustomRates) ? savedCustomRates : {},
@@ -112,7 +115,7 @@ export function DataModal({ open, onClose }) {
     setCloudBusy('load');
     setCloudStatus(null);
     try {
-      const res = await fetchCloudPlanFromApi(clean);
+      const res = await fetchCloudPlanFromApi(clean, getAccessToken());
       const payload = res.plan?.payload;
       if (isPlainObject(payload?.customRates)) {
         replaceAll(payload.customRates);
@@ -306,6 +309,33 @@ export function DataModal({ open, onClose }) {
               )}
             </div>
           )}
+
+          <div className="flex items-center justify-between border-t border-white/[0.06] pt-2.5 text-[11px] text-zinc-400">
+            {user ? (
+              <>
+                <span>Đang đăng nhập: {user.email}</span>
+                <a href={href('profile')} onClick={onClose} className="font-medium text-indigo-300 hover:text-indigo-200">
+                  Mở Hồ sơ &amp; Kịch bản →
+                </a>
+              </>
+            ) : (
+              <>
+                <span>Đăng nhập để lưu nhiều kịch bản riêng tư</span>
+                {onOpenAuth && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenAuth();
+                    }}
+                    className="font-medium text-indigo-300 hover:text-indigo-200"
+                  >
+                    Đăng nhập / Google →
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 

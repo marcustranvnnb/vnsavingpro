@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, Cookie, Home, Info, LayoutGrid, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Cookie, Home, Info, LayoutGrid, LogIn, LogOut, ShieldCheck, User } from 'lucide-react';
 import { APP_VERSION, APP_VERSION_DATE, APP_VERSION_LABEL, TOOLS, VERSION_HIGHLIGHTS } from '../tools.js';
-import { href, useRates } from '../state.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { href, navigate, useRates, useToast } from '../state.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
 
 export function VersionBadge({ compact = false }) {
@@ -141,7 +142,78 @@ function MoreMenu({ route }) {
   );
 }
 
-export function TopNav({ route, onOpenData }) {
+function UserMenu({ onOpenAuth }) {
+  const { user, profile, authConfigured, signOut } = useAuth();
+  const notify = useToast();
+  const [open, setOpen] = useState(false);
+
+  if (!authConfigured) return null;
+
+  if (!user) {
+    return (
+      <Button variant="secondary" size="sm" onClick={onOpenAuth} aria-label="Đăng nhập">
+        <LogIn className="size-4" />
+        <span className="hidden sm:inline">Đăng nhập</span>
+      </Button>
+    );
+  }
+
+  const displayName = profile?.full_name || user.email?.split('@')[0] || 'Tài khoản';
+  const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || '';
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-8 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] pl-1.5 pr-2.5 text-xs font-medium text-white transition hover:bg-white/[0.08]"
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="size-5 rounded-lg object-cover" />
+        ) : (
+          <span className="flex size-5 items-center justify-center rounded-lg bg-indigo-500/25 text-[10px] font-semibold text-indigo-200">
+            {initials}
+          </span>
+        )}
+        <span className="hidden max-w-[100px] truncate sm:inline">{displayName}</span>
+        <ChevronDown className={cx('size-3 text-zinc-400 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-2 w-56 animate-pop rounded-2xl border border-white/10 bg-elevated p-1.5 shadow-2xl">
+            <div className="border-b border-white/[0.06] px-3 py-2">
+              <p className="truncate text-xs font-semibold text-white">{displayName}</p>
+              <p className="truncate text-[11px] text-zinc-400">{user.email}</p>
+            </div>
+            <a
+              href={href('profile')}
+              onClick={() => setOpen(false)}
+              className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
+            >
+              <User className="size-3.5 text-indigo-300" /> Hồ sơ &amp; Kịch bản đã lưu
+            </a>
+            <button
+              type="button"
+              onClick={async () => {
+                setOpen(false);
+                await signOut();
+                notify('Đã đăng xuất');
+                navigate(href('home'));
+              }}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-red-300 transition hover:bg-red-500/10"
+            >
+              <LogOut className="size-3.5" /> Đăng xuất
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function TopNav({ route, onOpenData, onOpenAuth }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/75 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
@@ -167,10 +239,11 @@ export function TopNav({ route, onOpenData }) {
         <div className="ml-auto flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onOpenData} aria-label="Dữ liệu của bạn">
             <ShieldCheck className="size-4" />
-            <span className="hidden sm:inline">Dữ liệu của bạn</span>
+            <span className="hidden lg:inline">Dữ liệu</span>
           </Button>
+          <UserMenu onOpenAuth={onOpenAuth} />
           {route !== 'plan' && (
-            <Button as="a" href={href('plan')} variant="primary" size="sm" className="hidden sm:inline-flex">
+            <Button as="a" href={href('plan')} variant="primary" size="sm" className="hidden md:inline-flex">
               Lập kế hoạch
             </Button>
           )}

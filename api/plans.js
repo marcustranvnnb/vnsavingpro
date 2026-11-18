@@ -1,5 +1,5 @@
 import { readJsonBody } from './_lib/http.js';
-import { isSupabaseConfigured, sbSelect, sbUpsert } from './_lib/supabase.js';
+import { getUserFromBearerToken, isSupabaseConfigured, sbDelete, sbSelect, sbUpsert } from './_lib/supabase.js';
 
 const ALLOWED_PAYLOAD_KEYS = new Set([
   'plan',
@@ -59,19 +59,63 @@ function setMemoryPlan(code, record) {
   memoryPlans.set(code, record);
 }
 
+function formatPlanRow(row) {
+  return {
+    shareCode: row.share_code,
+    title: row.title,
+    payload: row.payload,
+    isShared: row.is_shared !== false,
+    userId: row.user_id || null,
+    updatedAt: row.updated_at,
+    createdAt: row.created_at,
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const supabaseConnected = isSupabaseConfigured();
+  const auth = await getUserFromBearerToken(req);
+  const authUser = auth.ok ? auth.user : null;
 
   if (req.method === 'GET') {
-    let rawCode = '';
+    let parsedUrl;
     try {
-      const parsed = new URL(req.url || '/api/plans', 'http://localhost');
-      rawCode = String(parsed.searchParams.get('code') || '').trim().toUpperCase();
+      parsedUrl = new URL(req.url || '/api/plans', 'http://localhost');
     } catch {
-      rawCode = '';
+      parsedUrl = new URL('/api/plans', 'http://localhost');
     }
 
+    const mine = parsedUrl.searchParams.get('mine') === '1';
+    if (mine) {
+      if (!authUser) {
+        return res.status(401).json({ error: 'Vui lòng đăng nhập để xem danh sách kế hoạch cá nhân' });
+      }
+      if (supabaseConnected) {
+        const sbRes = await sbSelect(
+          'saved_plans',
+          `select=share_code,title,payload,is_shared,user_id,updated_at,created_at&user_id=eq.${encodeURIComponent(
+            authUser.id
+          )}&order=updated_at.desc&limit=50`
+        );
+        if (sbRes.ok && Array.isArray(sbRes.data)) {
+          return res.status(200).json({
+            ok: true,
+            plans: sbRes.data.map(formatPlanRow),
+            storage: 'supabase',
+            supabaseConnected: true,
+          });
+        }
+      }
+      const memList = Array.from(memoryPlans.values()).filter((p) => p.userId === authUser.id);
+      return res.status(200).json({
+        ok: true,
+        plans: memList,
+        storage: 'memory',
+        supabaseConnected,
+      });
+    }
+
+    const rawCode = String(parsedUrl.searchParams.get('code') || '').trim().toUpperCase();
     if (!SHARE_CODE_RE.test(rawCode)) {
       return res.status(400).json({ error: 'Mã chia sẻ phải gồm 6-12 ký tự chữ hoặc số' });
     }
@@ -79,19 +123,19 @@ export default async function handler(req, res) {
     if (supabaseConnected) {
       const sbRes = await sbSelect(
         'saved_plans',
-        `select=share_code,title,payload,updated_at,created_at&share_code=eq.${encodeURIComponent(rawCode)}&limit=1`
+        `select=share_code,title,payload,is_shared,user_id,updated_at,created_at&share_code=eq.${encodeURIComponent(
+          rawCode
+        )}&limit=1`
       );
       if (sbRes.ok && Array.isArray(sbRes.data) && sbRes.data.length > 0) {
         const row = sbRes.data[0];
+        const canAccess = row.is_shared !== false || (authUser && row.user_id === authUser.id);
+        if (!canAccess) {
+          return res.status(403).json({ error: 'Kế hoạch này đang ở chế độ riêng tư' });
+        }
         return res.status(200).json({
           ok: true,
-          plan: {
-            shareCode: row.share_code,
-            title: row.title,
-            payload: row.payload,
-            updatedAt: row.updated_at,
-            createdAt: row.created_at,
-          },
+          plan: formatPlanRow(row),
           storage: 'supabase',
           supabaseConnected: true,
         });
@@ -100,6 +144,10 @@ export default async function handler(req, res) {
 
     const mem = memoryPlans.get(rawCode);
     if (mem) {
+      const canAccess = mem.isShared !== false || (authUser && mem.userId === authUser.id);
+      if (!canAccess) {
+        return res.status(403).json({ error: 'Kế hoạch này đang ở chế độ riêng tư' });
+      }
       return res.status(200).json({
         ok: true,
         plan: mem,
@@ -112,6 +160,39 @@ export default async function handler(req, res) {
       error: 'Không tìm thấy kế hoạch với mã này',
       supabaseConnected,
     });
+  }
+
+  if (req.method === 'DELETE') {
+    if (!authUser) {
+      return res.status(401).json({ error: 'Vui lòng đăng nhập để xoá kế hoạch' });
+    }
+    let rawCode = '';
+    try {
+      rawCode = String(new URL(req.url || '/api/plans', 'http://localhost').searchParams.get('code') || '')
+        .trim()
+        .toUpperCase();
+    } catch {
+      rawCode = '';
+    }
+    if (!SHARE_CODE_RE.test(rawCode)) {
+      return res.status(400).json({ error: 'Mã kế hoạch không hợp lệ' });
+    }
+
+    const mem = memoryPlans.get(rawCode);
+    if (mem && mem.userId === authUser.id) {
+      memoryPlans.delete(rawCode);
+    }
+
+    if (supabaseConnected) {
+      const sbRes = await sbDelete(
+        'saved_plans',
+        `share_code=eq.${encodeURIComponent(rawCode)}&user_id=eq.${encodeURIComponent(authUser.id)}`
+      );
+      if (!sbRes.ok) {
+        return res.status(500).json({ error: sbRes.error || 'Không thể xoá kế hoạch' });
+      }
+    }
+    return res.status(200).json({ ok: true, shareCode: rawCode });
   }
 
   if (req.method !== 'POST') {
@@ -133,28 +214,45 @@ export default async function handler(req, res) {
   const requestedCode = String(body?.shareCode || '').trim().toUpperCase();
   const shareCode = SHARE_CODE_RE.test(requestedCode) ? requestedCode : generateShareCode(6);
   const title = sanitizeTitle(body?.title);
+  const isShared = authUser ? body?.isShared !== false : true;
   const nowIso = new Date().toISOString();
+
+  if (supabaseConnected && SHARE_CODE_RE.test(requestedCode)) {
+    const existing = await sbSelect(
+      'saved_plans',
+      `select=share_code,user_id&share_code=eq.${encodeURIComponent(shareCode)}&limit=1`
+    );
+    if (existing.ok && Array.isArray(existing.data) && existing.data.length > 0) {
+      const ownerId = existing.data[0].user_id;
+      if (ownerId && (!authUser || ownerId !== authUser.id)) {
+        return res.status(403).json({ error: 'Bạn không có quyền ghi đè mã kế hoạch của người khác' });
+      }
+    }
+  }
 
   const record = {
     shareCode,
     title,
     payload: sanitizedPayload,
+    isShared,
+    userId: authUser?.id || null,
     updatedAt: nowIso,
   };
   setMemoryPlan(shareCode, record);
 
   let storage = 'memory';
   if (supabaseConnected) {
-    const sbRes = await sbUpsert(
-      'saved_plans',
-      {
-        share_code: shareCode,
-        title,
-        payload: sanitizedPayload,
-        updated_at: nowIso,
-      },
-      'share_code'
-    );
+    const dbRow = {
+      share_code: shareCode,
+      title,
+      payload: sanitizedPayload,
+      is_shared: isShared,
+      updated_at: nowIso,
+    };
+    if (authUser?.id) {
+      dbRow.user_id = authUser.id;
+    }
+    const sbRes = await sbUpsert('saved_plans', dbRow, 'share_code');
     if (sbRes.ok) {
       storage = 'supabase';
     }
@@ -164,6 +262,7 @@ export default async function handler(req, res) {
     ok: true,
     shareCode,
     title,
+    isShared,
     updatedAt: nowIso,
     storage,
     supabaseConnected,

@@ -122,7 +122,24 @@ export const ALL_TOOLS = [
 
 export const TOOLS = ALL_TOOLS.filter((t) => !t.hidden);
 
-export const toolById = (id) => TOOLS.find((t) => t.id === id);
+export const EXTRA_ROUTES = [
+  {
+    id: 'auth',
+    path: '/auth',
+    aliases: ['/login', '/dang-nhap', '/register', '/dang-ky'],
+    pageTitle: 'Đăng nhập & Tài khoản — VnSavingPro',
+  },
+  {
+    id: 'profile',
+    path: '/profile',
+    aliases: ['/ho-so', '/tai-khoan', '/account'],
+    pageTitle: 'Hồ sơ cá nhân — VnSavingPro',
+  },
+];
+
+const ROUTE_LOOKUP = [...TOOLS, ...EXTRA_ROUTES];
+
+export const toolById = (id) => ROUTE_LOOKUP.find((t) => t.id === id);
 
 /** Normalize URL pathname (leading slash, no trailing slash except root `/`). */
 export function normalizePath(p = '/') {
@@ -144,7 +161,7 @@ export function resolveRouteId(pathname = '/') {
   ) {
     return HOME_PAGE.id;
   }
-  const matched = TOOLS.find(
+  const matched = ROUTE_LOOKUP.find(
     (t) =>
       normalizePath(t.path) === normalized ||
       t.aliases?.some((a) => normalizePath(a) === normalized) ||

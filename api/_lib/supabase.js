@@ -105,3 +105,41 @@ export async function sbUpsert(table, rowOrRows, onConflictColumn) {
     body: rowOrRows,
   });
 }
+
+export async function sbDelete(table, queryString = '') {
+  const path = queryString ? `${table}?${queryString}` : table;
+  return sbFetch(path, { method: 'DELETE' });
+}
+
+export async function getUserFromBearerToken(req) {
+  const authHeader = String(req?.headers?.authorization || '').trim();
+  if (!authHeader.toLowerCase().startsWith('bearer ')) {
+    return { ok: false, user: null };
+  }
+  const token = authHeader.slice(7).trim();
+  if (!token || token.length < 20 || !isSupabaseConfigured()) {
+    return { ok: false, user: null };
+  }
+
+  const { url, apiKey } = getSupabaseConfig();
+  try {
+    const res = await fetch(`${url}/auth/v1/user`, {
+      method: 'GET',
+      headers: {
+        apikey: apiKey,
+        Authorization: `Bearer ${token}`,
+      },
+      signal: typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(DEFAULT_TIMEOUT_MS) : undefined,
+    });
+    if (!res.ok) {
+      return { ok: false, user: null };
+    }
+    const user = await res.json();
+    if (!user?.id) {
+      return { ok: false, user: null };
+    }
+    return { ok: true, user };
+  } catch {
+    return { ok: false, user: null };
+  }
+}
