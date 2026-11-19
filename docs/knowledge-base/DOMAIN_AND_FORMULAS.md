@@ -55,13 +55,22 @@ Models time to reach $P_{\text{target}}$ when monthly savings is a fixed percent
 
 ---
 
-## 2. Feasibility Score Engine (`src/utils/feasibilityEvaluator.js`)
+## 2. Feasibility Score & Household Engine (`api/_lib/feasibilityEvaluator.js` & `api/_lib/householdAnalytics.js`)
 
-Starts at baseline `70` (clamped `[10, 100]`):
+Supports 3 household profiles (`INDIVIDUAL`, `COUPLE`, `FAMILY`) across Basic & Advanced modes:
+- **Emergency Fund Target**: `4` months of total expenses (`INDIVIDUAL`), `6` months (`COUPLE`), `min(12, 6 + round(dependentsCount * 1.5))` months (`FAMILY`), or user custom months (`3–18`). Supports **Parallel Tracking** (`prioritizeEmergencyFund = false`) and **Fund-First Priority** (`prioritizeEmergencyFund = true`: fills emergency shortfall first at liquid `1M–3M` rate before compounding remaining capital & deposits toward primary goal, using binary search in `SAVING` solve mode).
+- **2-Earner Split**: `PROPORTIONAL` (by income ratio), `SPLIT_50_50`, or `CUSTOM` (`earner1SharePct`).
+- **Breadwinner Stress-Test**: Simulates `ifEarner1Stops` & `ifEarner2Stops` monthly expense gap/surplus and capital/emergency-fund runway months.
+
+Feasibility starts at baseline `70` (clamped `[10, 100]`):
 - **Savings-to-Income Ratio (`monthlySavings / monthlySalary`)**:
   - `< 5%`: `-15` pts (warning: too low)
   - `15% – 35%`: `+15` pts (strength: ideal balance)
   - `> 50%`: `-10` pts (warning: high financial stress risk)
+- **Household Cashflow & Emergency Adjustments**:
+  - Negative `freeCashFlow`: `-15` pts; `expenseCoveragePct >= 100%`: `+5` pts.
+  - Emergency Fund coverage `>= 100%`: `+8` pts; `< 50%` without fund-first: `-8` pts.
+  - Family breadwinner concentration `>= 75%` with dependents: warning alert.
 - **Timeline (`yearsToGoal`)**:
   - `> 30` years: `-20` pts
   - `<= 12` years: `+15` pts

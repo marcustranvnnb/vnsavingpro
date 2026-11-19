@@ -10,10 +10,12 @@ import {
   MoneyField,
   PageHeader,
   Progress,
+  Segmented,
   SliderField,
   Table,
   cx,
 } from '../components/ui.jsx';
+import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 
@@ -68,13 +70,20 @@ export default function Career() {
       ? Number(saved.customRate)
       : getRate(initialBank, initialTenure) || 6.9;
 
-  const [salary, setSalary] = useState(() => Number(saved.salary) || 30_000_000);
+  const [householdMode, setHouseholdMode] = useState(() =>
+    ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode) ? saved.householdMode : 'INDIVIDUAL'
+  );
+  const [salary, setSalary] = useState(() => Number(saved.salaryFullTime) || Number(saved.salary) || 25_000_000);
+  const [partnerSalary, setPartnerSalary] = useState(() => Number(saved.partnerSalaryFullTime) || 20_000_000);
+  const [partnerGrowthMode, setPartnerGrowthMode] = useState('SAME');
   const [savingsRate, setSavingsRate] = useState(20);
   const [targetIncome, setTargetIncome] = useState(() => Number(saved.target) || 10_000_000);
   const [bankId, setBankId] = useState(initialBankId);
   const [tenure, setTenure] = useState(initialTenure);
   const [annualRate, setAnnualRate] = useState(initialRate);
   const [selected, setSelected] = useState('JOB_HOPPING');
+  const hasPartner = householdMode === 'COUPLE' || householdMode === 'FAMILY';
+  const combinedSalary = salary + (hasPartner ? partnerSalary : 0);
 
   const handleBankChange = (nextBankId) => {
     setBankId(nextBankId);
@@ -91,11 +100,13 @@ export default function Career() {
   const careerPayload = useMemo(
     () => ({
       currentSalary: salary,
+      partnerSalary: hasPartner ? partnerSalary : 0,
+      partnerGrowthMode,
       savingsRatePercent: savingsRate,
       targetMonthlyInterest: targetIncome,
       annualInterestRate: annualRate,
     }),
-    [salary, savingsRate, targetIncome, annualRate]
+    [salary, hasPartner, partnerSalary, partnerGrowthMode, savingsRate, targetIncome, annualRate]
   );
 
   const { data: careerBundle, loading } = useServerCalc('career', careerPayload, INITIAL_CAREER_DATA);
@@ -123,8 +134,13 @@ export default function Career() {
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* Controls */}
         <Card className="space-y-6 p-5 sm:p-6">
+          <div className="space-y-2">
+            <span className="block text-xs font-medium uppercase tracking-wider text-zinc-500">Hồ sơ tài chính</span>
+            <HouseholdModeSwitch value={householdMode} onChange={setHouseholdMode} compact />
+          </div>
+
           <MoneyField
-            label="Mức lương hiện tại / tháng"
+            label={hasPartner ? 'Lương Người 1 (Bạn) / tháng' : 'Mức lương hiện tại / tháng'}
             value={salary}
             onChange={setSalary}
             min={5_000_000}
@@ -134,9 +150,36 @@ export default function Career() {
             presets={presets([15_000_000, 25_000_000, 35_000_000, 50_000_000])}
           />
 
+          {hasPartner && (
+            <div className="space-y-4 rounded-xl border border-sky-400/20 bg-sky-500/[0.04] p-3.5">
+              <MoneyField
+                label="Lương Người 2 (Bạn đời) / tháng"
+                value={partnerSalary}
+                onChange={setPartnerSalary}
+                min={0}
+                max={150_000_000}
+                step={1_000_000}
+                inputMax={1_000_000_000}
+                presets={presets([0, 15_000_000, 25_000_000, 40_000_000])}
+              />
+              <div className="space-y-1.5">
+                <span className="block text-[11px] font-medium text-zinc-300">Kịch bản tăng lương áp dụng cho</span>
+                <Segmented
+                  size="sm"
+                  value={partnerGrowthMode}
+                  onChange={setPartnerGrowthMode}
+                  options={[
+                    { value: 'SAME', label: 'Cả 2 cùng tăng' },
+                    { value: 'STATIC', label: 'Chỉ Người 1 tăng' },
+                  ]}
+                />
+              </div>
+            </div>
+          )}
+
           <SliderField
             label="Tỷ lệ trích lương tiết kiệm"
-            display={`${savingsRate}% (${compact((salary * savingsRate) / 100)}/tháng)`}
+            display={`${savingsRate}% (${compact((combinedSalary * savingsRate) / 100)}/tháng)`}
             value={savingsRate}
             onChange={setSavingsRate}
             min={5}

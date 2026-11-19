@@ -17,7 +17,8 @@ export function evaluatePlanFeasibility({
   realYieldRate = 3.4,
   incomeMin = null,
   incomeMax = null,
-  hasExtraIncome = false
+  hasExtraIncome = false,
+  householdAnalysis = null,
 }) {
   const safeSalary = num(monthlySalary, 35000000, 1, 1e12);
   const safeSavings = num(monthlySavings, 1000000, 0, 1e12);
@@ -73,6 +74,44 @@ export function evaluatePlanFeasibility({
   if (safeRealYield >= 4.0) {
     score += 10;
     strengths.push("Lợi suất thực tế sau lạm phát dương cao (>=4.0%/năm), bảo vệ giá trị đồng tiền tốt.");
+  }
+
+  if (householdAnalysis) {
+    if (householdAnalysis.freeCashFlow < 0) {
+      score -= 15;
+      warnings.push(
+        `Dòng tiền hộ âm (${householdAnalysis.freeCashFlow.toLocaleString('vi-VN')} ₫/tháng) sau khi trừ chi phí sinh hoạt & khoản tiết kiệm. Cần giảm mức gửi hoặc rà soát chi tiêu.`
+      );
+    } else if (householdAnalysis.expenseCoveragePct >= 100) {
+      score += 5;
+      strengths.push(
+        `Khi đạt mục tiêu, tiền lãi thụ động bao phủ ${householdAnalysis.expenseCoveragePct}% chi phí sinh hoạt hàng tháng của ${householdAnalysis.modeLabel.toLowerCase()}.`
+      );
+    }
+
+    if (householdAnalysis.emergencyFundTarget > 0) {
+      if (householdAnalysis.emergencyFundCoveragePct >= 100) {
+        score += 8;
+        strengths.push(
+          `Quỹ dự phòng khẩn cấp (${householdAnalysis.targetEmergencyMonths} tháng chi phí) đã được vốn hiện có bảo chứng đủ 100%.`
+        );
+      } else if (householdAnalysis.emergencyFundCoveragePct < 50 && !householdAnalysis.prioritizeEmergencyFund) {
+        score -= 8;
+        warnings.push(
+          `Quỹ dự phòng khẩn cấp mới đạt ${householdAnalysis.emergencyFundCoveragePct}% (${householdAnalysis.targetEmergencyMonths} tháng chi tiêu). Khuyên giữ riêng sổ ngắn hạn 1M–3M hoặc bật chế độ Lấp quỹ trước.`
+        );
+      }
+    }
+
+    if (
+      householdAnalysis.mode === 'FAMILY' &&
+      householdAnalysis.dependentsCount > 0 &&
+      householdAnalysis.contributionSplit?.breadwinnerConcentrationPct >= 75
+    ) {
+      warnings.push(
+        `Rủi ro tập trung thu nhập: 1 người đang gánh ${householdAnalysis.contributionSplit.breadwinnerConcentrationPct}% tổng thu nhập gia đình có ${householdAnalysis.dependentsCount} người phụ thuộc — nên ưu tiên quỹ khẩn cấp >= 9 tháng.`
+      );
+    }
   }
 
   const finalScore = Math.max(10, Math.min(100, score));

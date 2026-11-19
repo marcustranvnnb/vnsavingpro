@@ -338,6 +338,9 @@ export function calculatePassiveIncomeRoadmap({
   annualStepUpPct = 0,
   annualBonusAmount = 0,
   inflationRatePct = 0,
+  prioritizeEmergencyFund = false,
+  emergencyFundTarget = 0,
+  emergencyFundRate = 4.75,
 }) {
   const normalizedGoal = goalType === 'TARGET_AMOUNT' ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME';
   const normalizedSolve = solveMode === 'SAVING' ? 'SAVING' : 'TIME';
@@ -350,6 +353,9 @@ export function calculatePassiveIncomeRoadmap({
   const stepUp = num(annualStepUpPct, 0, 0, 50);
   const bonus = num(annualBonusAmount, 0, 0, 1e12);
   const inflation = num(inflationRatePct, 0, 0, 20);
+  const efEnabled = Boolean(prioritizeEmergencyFund);
+  const efTarget = efEnabled ? num(emergencyFundTarget, 0, 0, 1e13) : 0;
+  const efMonthlyRate = num(emergencyFundRate, 4.75, 0.1, 20) / 100 / 12;
 
   const monthlyFactor = calculationMode === 'ACTUAL_DAYS' ? 30 / 365 : 1 / 12;
   const i = (rate / 100) * monthlyFactor;
@@ -365,24 +371,28 @@ export function calculatePassiveIncomeRoadmap({
   }
 
   let monthsNeeded = 0;
-  let currentBalance = p0;
-  let depositedSoFar = p0;
+  let emergencyFundMonths = 0;
+  let efBalAtGoalStart = Math.min(p0, efTarget);
+  let goalStartCapital = efEnabled ? Math.max(0, p0 - efTarget) : p0;
+  let currentBalance = goalStartCapital;
+  let depositedSoFar = goalStartCapital;
+  let efDepositedTotal = Math.min(p0, efTarget);
   let requiredPrincipal = nominalRequiredPrincipal;
   let requiredMonthlyDeposit = inputMonthlyDeposit;
-  let isAlreadyReached = p0 >= nominalRequiredPrincipal;
+  let isAlreadyReached = goalStartCapital >= nominalRequiredPrincipal && (!efEnabled || p0 >= efTarget);
   const monthByMonthLog = [];
   const contributions = [];
   let nextPkgId = 1;
   let rolloverCursor = 0;
 
-  if (p0 > 0) {
+  if (goalStartCapital > 0) {
     contributions.push({
       id: nextPkgId,
       code: `Sổ #${nextPkgId}`,
       type: 'INITIAL',
       openMonth: 0,
       cohortYear: 0,
-      amount: p0,
+      amount: goalStartCapital,
     });
     nextPkgId++;
   }
@@ -429,19 +439,103 @@ export function calculatePassiveIncomeRoadmap({
     }
   };
 
+  // Helper simulating T months under fund-first split
+  const simulateFixedHorizon = (depositBase, totalMonths) => {
+    let efBal = p0;
+    let efDone = !efEnabled || p0 >= efTarget;
+    let gBal = efDone ? Math.max(0, p0 - efTarget) : 0;
+    let efM = 0;
+    for (let m = 1; m <= totalMonths; m++) {
+      const yearIdx = Math.floor((m - 1) / 12);
+      const dep = Math.round(depositBase * Math.pow(1 + stepUp / 100, yearIdx));
+      const bon = m % 12 === 0 ? bonus : 0;
+      if (!efDone) {
+        efBal = efBal * (1 + efMonthlyRate) + dep + bon;
+        efM = m;
+        if (efBal >= efTarget) {
+          efDone = true;
+          gBal = Math.max(0, efBal - efTarget);
+        }
+      } else {
+        gBal = gBal * (1 + i) + dep + bon;
+      }
+    }
+    return { gBal, efDone, efM };
+  };
+
   if (normalizedSolve === 'SAVING') {
     const safeYears = num(targetYears, 5, 1, 50);
     const targetMonths = Math.min(600, Math.max(12, Math.round(safeYears * 12)));
     const inflationMultiplier = Math.pow(1 + inflation / 100, targetMonths / 12);
     requiredPrincipal = Math.round(nominalRequiredPrincipal * inflationMultiplier);
-    isAlreadyReached = p0 >= requiredPrincipal;
+    isAlreadyReached = goalStartCapital >= requiredPrincipal && (!efEnabled || p0 >= efTarget);
 
     if (isAlreadyReached) {
       requiredMonthlyDeposit = 0;
       monthsNeeded = 0;
       pushLogRow(0);
+    } else if (efEnabled && efTarget > p0) {
+      // Binary search exact monthly deposit so both EF & Primary Goal finish by targetMonths
+      const zeroCheck = simulateFixedHorizon(0, targetMonths);
+      if (zeroCheck.efDone && zeroCheck.gBal >= requiredPrincipal) {
+        requiredMonthlyDeposit = 0;
+      } else {
+        let lo = 0;
+        let hi = Math.max(1_000_000, Math.ceil((requiredPrincipal + efTarget) / Math.max(1, targetMonths)) * 2);
+        while (!simulateFixedHorizon(hi, targetMonths).efDone || simulateFixedHorizon(hi, targetMonths).gBal < requiredPrincipal) {
+          hi *= 2;
+          if (hi > 1e12) break;
+        }
+        for (let iter = 0; iter < 40; iter++) {
+          const mid = Math.floor((lo + hi) / 2);
+          const sim = simulateFixedHorizon(mid, targetMonths);
+          if (sim.efDone && sim.gBal >= requiredPrincipal) {
+            hi = mid;
+          } else {
+            lo = mid + 1;
+          }
+        }
+        requiredMonthlyDeposit = hi;
+      }
+
+      pushLogRow(0);
+      let efBal = p0;
+      let efDone = false;
+      for (let m = 1; m <= targetMonths; m++) {
+        const yearIdx = Math.floor((m - 1) / 12);
+        const depositThisMonth = Math.round(requiredMonthlyDeposit * Math.pow(1 + stepUp / 100, yearIdx));
+        const bonusThisMonth = m % 12 === 0 ? bonus : 0;
+        if (!efDone) {
+          efBal = efBal * (1 + efMonthlyRate) + depositThisMonth + bonusThisMonth;
+          efDepositedTotal += depositThisMonth + bonusThisMonth;
+          emergencyFundMonths = m;
+          if (efBal >= efTarget) {
+            efDone = true;
+            const surplus = Math.max(0, Math.round(efBal - efTarget));
+            currentBalance = surplus;
+            depositedSoFar = surplus;
+            if (surplus > 0) {
+              contributions.push({
+                id: nextPkgId,
+                code: `Sổ #${nextPkgId}`,
+                type: 'INITIAL',
+                openMonth: m,
+                cohortYear: Math.floor((m - 1) / 12) + 1,
+                amount: surplus,
+              });
+              nextPkgId++;
+            }
+          }
+        } else {
+          currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
+          depositedSoFar += depositThisMonth + bonusThisMonth;
+          recordMonthDeposits(m, depositThisMonth, bonusThisMonth);
+        }
+        pushLogRow(m);
+      }
+      monthsNeeded = targetMonths;
     } else {
-      let baseBalance = p0;
+      let baseBalance = goalStartCapital;
       let unitFactor = 0;
       for (let m = 1; m <= targetMonths; m++) {
         const yearIdx = Math.floor((m - 1) / 12);
@@ -472,10 +566,12 @@ export function calculatePassiveIncomeRoadmap({
     if (isAlreadyReached) {
       monthsNeeded = 0;
       pushLogRow(0);
-    } else if (inputMonthlyDeposit <= 0 && bonus <= 0 && p0 <= 0) {
+    } else if (inputMonthlyDeposit <= 0 && bonus <= 0 && goalStartCapital <= 0 && p0 <= 0) {
       monthsNeeded = 999;
     } else {
       pushLogRow(0);
+      let efBal = p0;
+      let efDone = !efEnabled || p0 >= efTarget;
 
       while (monthsNeeded < 720) {
         monthsNeeded++;
@@ -483,15 +579,43 @@ export function calculatePassiveIncomeRoadmap({
         const depositThisMonth = Math.round(inputMonthlyDeposit * Math.pow(1 + stepUp / 100, yearIdx));
         const bonusThisMonth = monthsNeeded % 12 === 0 ? bonus : 0;
         const targetAtMonth = Math.round(nominalRequiredPrincipal * Math.pow(1 + inflation / 100, monthsNeeded / 12));
-
-        currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
-        depositedSoFar += depositThisMonth + bonusThisMonth;
         requiredPrincipal = targetAtMonth;
-        recordMonthDeposits(monthsNeeded, depositThisMonth, bonusThisMonth);
-        pushLogRow(monthsNeeded);
 
-        if (currentBalance >= targetAtMonth) {
-          break;
+        if (!efDone) {
+          efBal = efBal * (1 + efMonthlyRate) + depositThisMonth + bonusThisMonth;
+          efDepositedTotal += depositThisMonth + bonusThisMonth;
+          emergencyFundMonths = monthsNeeded;
+          if (efBal >= efTarget) {
+            efDone = true;
+            efBalAtGoalStart = efTarget;
+            const surplus = Math.max(0, Math.round(efBal - efTarget));
+            currentBalance = surplus;
+            depositedSoFar = surplus;
+            if (surplus > 0) {
+              contributions.push({
+                id: nextPkgId,
+                code: `Sổ #${nextPkgId}`,
+                type: 'INITIAL',
+                openMonth: monthsNeeded,
+                cohortYear: yearIdx + 1,
+                amount: surplus,
+              });
+              nextPkgId++;
+            }
+          }
+          pushLogRow(monthsNeeded);
+          if (efDone && currentBalance >= targetAtMonth) {
+            break;
+          }
+        } else {
+          currentBalance = currentBalance * (1 + i) + depositThisMonth + bonusThisMonth;
+          depositedSoFar += depositThisMonth + bonusThisMonth;
+          recordMonthDeposits(monthsNeeded, depositThisMonth, bonusThisMonth);
+          pushLogRow(monthsNeeded);
+
+          if (currentBalance >= targetAtMonth) {
+            break;
+          }
         }
       }
     }
@@ -503,7 +627,7 @@ export function calculatePassiveIncomeRoadmap({
     const finalMonth = monthByMonthLog[monthByMonthLog.length - 1].month;
     const isGoalReached = isAlreadyReached || currentBalance >= requiredPrincipal;
     const stageMonthsSet = new Set();
-    if (p0 > 0) stageMonthsSet.add(0);
+    if (goalStartCapital > 0) stageMonthsSet.add(0);
 
     if (finalMonth < 12) {
       for (const m of [1, 3, 6, 9]) {
@@ -553,6 +677,7 @@ export function calculatePassiveIncomeRoadmap({
   const totalCompoundInterest = Math.round(Math.max(0, finalBalance - totalDeposited));
   const compoundSharePct = finalBalance > 0 ? Number(((totalCompoundInterest / finalBalance) * 100).toFixed(1)) : 0;
   const savingsRatePercent = salary > 0 ? Number(((requiredMonthlyDeposit / salary) * 100).toFixed(1)) : 0;
+  const goalOnlyMonths = Math.max(0, monthsNeeded - emergencyFundMonths);
 
   return {
     goalType: normalizedGoal,
@@ -571,6 +696,10 @@ export function calculatePassiveIncomeRoadmap({
     annualStepUpPct: stepUp,
     annualBonusAmount: bonus,
     inflationRatePct: inflation,
+    prioritizeEmergencyFund: efEnabled && efTarget > 0,
+    emergencyFundReserved: Math.round(efTarget),
+    emergencyFundMonths,
+    goalOnlyMonths,
     monthsNeeded,
     yearsNeeded,
     fullYears,
@@ -798,18 +927,23 @@ export function simulateLadderingMatrix({
  */
 export function calculateCareerGrowthImpact({
   currentSalary = 35000000,
+  partnerSalary = 0,
+  partnerGrowthMode = "SAME",
   savingsRatePercent = 20,
   targetMonthlyInterest = 10000000,
   annualInterestRate = 6.9,
   careerOption = "JOB_HOPPING"
 }) {
-  const salary = num(currentSalary, 35000000, 100000, 1e12);
+  const salary1 = num(currentSalary, 35000000, 100000, 1e12);
+  const salary2 = num(partnerSalary, 0, 0, 1e12);
+  const growBoth = partnerGrowthMode !== "STATIC";
   const safeSavingsRate = num(savingsRatePercent, 20, 1, 95);
   const rate = num(annualInterestRate, 6.9, 0.1, 30);
   const targetInterest = num(targetMonthlyInterest, 10000000, 100000, 1e12);
   const requiredPrincipal = Math.round((targetInterest * 12 * 100) / rate);
 
-  let currentMonthlySalary = salary;
+  let s1 = salary1;
+  let s2 = salary2;
   let currentBalance = 0;
   let monthsCount = 0;
   const annualLog = [];
@@ -819,24 +953,30 @@ export function calculateCareerGrowthImpact({
 
     if (monthsCount > 1 && monthsCount % 12 === 1) {
       if (careerOption === "FIXED_RAISE") {
-        currentMonthlySalary += 2000000;
+        s1 += 2000000;
+        if (growBoth && s2 > 0) s2 += 2000000;
       } else if (careerOption === "PERCENT_RAISE") {
-        currentMonthlySalary = currentMonthlySalary * 1.10;
+        s1 = s1 * 1.10;
+        if (growBoth && s2 > 0) s2 = s2 * 1.10;
       }
     }
 
     if (careerOption === "JOB_HOPPING" && monthsCount > 1 && monthsCount % 24 === 1) {
-      currentMonthlySalary = currentMonthlySalary * 1.30;
+      s1 = s1 * 1.30;
+      if (growBoth && s2 > 0) s2 = s2 * 1.30;
     }
 
-    const currentMonthlySavings = Math.round((currentMonthlySalary * safeSavingsRate) / 100);
+    const totalMonthlySalary = s1 + s2;
+    const currentMonthlySavings = Math.round((totalMonthlySalary * safeSavingsRate) / 100);
     const monthlyInterest = currentBalance * ((rate / 100) / 12);
     currentBalance = currentBalance + monthlyInterest + currentMonthlySavings;
 
     if (monthsCount % 12 === 0 || currentBalance >= requiredPrincipal) {
       annualLog.push({
         year: Math.ceil(monthsCount / 12),
-        monthlySalary: Math.round(currentMonthlySalary),
+        monthlySalary: Math.round(totalMonthlySalary),
+        earner1Salary: Math.round(s1),
+        earner2Salary: Math.round(s2),
         monthlySavings: Math.round(currentMonthlySavings),
         totalBalance: Math.round(currentBalance),
         monthlyPassiveYield: Math.round((currentBalance * (rate / 100)) / 12)
@@ -851,7 +991,7 @@ export function calculateCareerGrowthImpact({
     requiredPrincipal,
     monthsToGoal: monthsCount,
     yearsToGoal,
-    finalMonthlySalary: Math.round(currentMonthlySalary),
+    finalMonthlySalary: Math.round(s1 + s2),
     annualLog
   };
 }

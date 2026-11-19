@@ -309,6 +309,23 @@ export function validateBySchema(key, raw) {
         annualStepUpPct: clampNum(raw.annualStepUpPct, 0, 0, 50),
         annualBonusAmount: clampNum(raw.annualBonusAmount, 0, 0, 5_000_000_000),
         inflationRatePct: clampNum(raw.inflationRatePct, 0, 0, 20),
+        householdMode: ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(raw.householdMode)
+          ? raw.householdMode
+          : 'INDIVIDUAL',
+        dependentsCount: Math.round(clampNum(raw.dependentsCount, 0, 0, 10)),
+        partnerSalaryFullTime: clampNum(raw.partnerSalaryFullTime, 0, 0, 10_000_000_000),
+        partnerFreelanceMin: clampNum(raw.partnerFreelanceMin, 0, 0, 10_000_000_000),
+        partnerFreelanceMax: clampNum(raw.partnerFreelanceMax, 0, 0, 10_000_000_000),
+        partnerInvestMin: clampNum(raw.partnerInvestMin, 0, 0, 10_000_000_000),
+        partnerInvestMax: clampNum(raw.partnerInvestMax, 0, 0, 10_000_000_000),
+        monthlyFixedExpense: clampNum(raw.monthlyFixedExpense, 12_000_000, 0, 10_000_000_000),
+        monthlyDependentsCost: clampNum(raw.monthlyDependentsCost, 0, 0, 10_000_000_000),
+        contributionRule: ['PROPORTIONAL', 'SPLIT_50_50', 'CUSTOM'].includes(raw.contributionRule)
+          ? raw.contributionRule
+          : 'PROPORTIONAL',
+        earner1SharePct: Math.round(clampNum(raw.earner1SharePct, 50, 0, 100)),
+        prioritizeEmergencyFund: Boolean(raw.prioritizeEmergencyFund),
+        emergencyFundMonths: Math.round(clampNum(raw.emergencyFundMonths, 0, 0, 18)),
       };
     }
 

@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Deep Individual / Couple / Family Planning (`Cá nhân` | `Cặp đôi` | `Gia đình`)
+
+- **Request**: Expand financial calculations to support Individual, Couple, and Family modes across Planner, Ladder, Career, Profile, and exports, covering both Basic and Pro details, per-earner contribution splits, stress tests, and Parallel + Fund-First Emergency Fund modes.
+- **Changes Implemented**:
+  - **Database & Profile**: Applied Supabase migration `add_household_profile_pref` (`profiles.default_household_mode`), synced [supabase/schema.sql](../../supabase/schema.sql), [AuthContext.jsx](../../src/contexts/AuthContext.jsx), [Profile.jsx](../../src/pages/Profile.jsx), and extended `PLANNER_STATE` validation in [cryptoStorage.js](../../src/utils/cryptoStorage.js).
+  - **Server-Only Financial Engine**: Created [householdAnalytics.js](../../api/_lib/householdAnalytics.js) (`computeHouseholdAnalysis`, Emergency Fund fill simulator, 2-earner contribution split, breadwinner stress test); extended [calculator.js](../../api/_lib/calculator.js) (`prioritizeEmergencyFund` Fund-First two-phase simulation for `TIME` & binary-searched `SAVING` + dual-earner `calculateCareerGrowthImpact`), [feasibilityEvaluator.js](../../api/_lib/feasibilityEvaluator.js), and [api/calculate.js](../../api/calculate.js).
+  - **Frontend Experience**: Created [HouseholdModeSwitch.jsx](../../src/components/HouseholdModeSwitch.jsx) & [HouseholdInsightsCard.jsx](../../src/components/HouseholdInsightsCard.jsx), and integrated across [Planner.jsx](../../src/pages/Planner.jsx) (both Basic & Advanced inputs, 2-earner inputs, dependents, split rule, Fund-First toggle), [Ladder.jsx](../../src/pages/Ladder.jsx) (household liquidity coverage & partner split), [Career.jsx](../../src/pages/Career.jsx) (dual-earner salary & growth toggle), and [googleDocsExporter.js](../../src/utils/googleDocsExporter.js).
+
+---
+
 ## [2026-11-19] — Live Google OAuth Enabled & Verified via Supabase Management API
 
 - **Request**: Configure Google OAuth Client ID & Secret, Redirect URLs, and Vietnamese Auth email templates on live Supabase project `gvgyztwpjvjvztwhwnue`.

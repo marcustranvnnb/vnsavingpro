@@ -38,6 +38,7 @@ export default function Profile() {
   const [fullName, setFullName] = useState('');
   const [defaultBankId, setDefaultBankId] = useState('cake');
   const [preferredGoalType, setPreferredGoalType] = useState('PASSIVE_INCOME');
+  const [defaultHouseholdMode, setDefaultHouseholdMode] = useState('INDIVIDUAL');
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [newPassword, setNewPassword] = useState('');
@@ -54,6 +55,7 @@ export default function Profile() {
       setFullName(profile.full_name || '');
       setDefaultBankId(profile.default_bank_id || 'cake');
       setPreferredGoalType(profile.preferred_goal_type || 'PASSIVE_INCOME');
+      setDefaultHouseholdMode(profile.default_household_mode || 'INDIVIDUAL');
     } else if (user) {
       setFullName(user.user_metadata?.full_name || user.email?.split('@')[0] || '');
     }
@@ -124,6 +126,7 @@ export default function Profile() {
         full_name: fullName,
         default_bank_id: defaultBankId,
         preferred_goal_type: preferredGoalType,
+        default_household_mode: defaultHouseholdMode,
       });
       notify('Đã cập nhật hồ sơ cá nhân');
     } catch (err) {
@@ -302,6 +305,19 @@ export default function Profile() {
                 >
                   <option value="PASSIVE_INCOME">Thu nhập thụ động hàng tháng</option>
                   <option value="TARGET_AMOUNT">Số tiền mục tiêu cụ thể</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-300">Chế độ tài chính mặc định</label>
+                <select
+                  value={defaultHouseholdMode}
+                  onChange={(e) => setDefaultHouseholdMode(e.target.value)}
+                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+                >
+                  <option value="INDIVIDUAL">Cá nhân</option>
+                  <option value="COUPLE">Cặp đôi (2 người có thu nhập)</option>
+                  <option value="FAMILY">Gia đình (Có người phụ thuộc)</option>
                 </select>
               </div>
 

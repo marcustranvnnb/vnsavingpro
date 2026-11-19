@@ -32,6 +32,7 @@ export function buildPlanReportHTML({
   annualStepUpPct = 0,
   annualBonusAmount = 0,
   inflationRatePct = 0,
+  householdAnalysis = null,
   roadmap,
   feasibility,
   scenarios = [],
@@ -114,6 +115,41 @@ export function buildPlanReportHTML({
     </tr>`
       : '';
 
+  const householdHtmlSection = householdAnalysis
+    ? `
+  <h2 style="color:#18181b;border-bottom:2px solid #e4e4e7;padding-bottom:4px;">2B. Phân tích Hồ sơ ${esc(householdAnalysis.modeLabel)} &amp; Quỹ Dự Phòng</h2>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:14px;">
+    <tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Tổng thu nhập / Chi phí sinh hoạt / Dư tự do</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(vnd(householdAnalysis.totalIncomeAvg))} / ${esc(vnd(householdAnalysis.totalMonthlyExpense))} / ${esc(vnd(householdAnalysis.freeCashFlow))}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#f4f4f5;"><strong>Quỹ dự phòng khẩn cấp (${esc(householdAnalysis.targetEmergencyMonths)} tháng chi phí)</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">Mục tiêu ${esc(vnd(householdAnalysis.emergencyFundTarget))} · Hiện có đạt ${esc(pct(householdAnalysis.emergencyFundCoveragePct, 1))} (${householdAnalysis.prioritizeEmergencyFund ? 'Lấp quỹ trước' : 'Theo dõi song song'})</td>
+    </tr>
+    ${
+      householdAnalysis.hasPartner
+        ? `<tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#eef2ff;"><strong>Chia đóng góp hàng tháng (Người 1 / Người 2)</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${esc(pct(householdAnalysis.contributionSplit.earner1Pct, 1))} (${esc(vnd(householdAnalysis.contributionSplit.earner1Contribution))}) / ${esc(pct(householdAnalysis.contributionSplit.earner2Pct, 1))} (${esc(vnd(householdAnalysis.contributionSplit.earner2Contribution))})</td>
+    </tr>`
+        : ''
+    }
+    ${
+      householdAnalysis.stressTest?.ifEarner1Stops
+        ? `<tr>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;background:#fef3c7;"><strong>Stress-test rủi ro (${esc(householdAnalysis.stressTest.ifEarner1Stops.label)})</strong></td>
+      <td style="padding:8px 10px;border:1px solid #d4d4d8;text-align:right;">${
+        householdAnalysis.stressTest.ifEarner1Stops.canCoverExpenses
+          ? `Vẫn đủ trang trải chi phí (dư ${esc(vnd(householdAnalysis.stressTest.ifEarner1Stops.monthlySurplus))}/tháng)`
+          : `Thiếu hụt ${esc(vnd(householdAnalysis.stressTest.ifEarner1Stops.monthlyGap))}/tháng — Quỹ khẩn cấp chịu được ${esc(householdAnalysis.stressTest.ifEarner1Stops.runwayMonthsWithTarget || 0)} tháng`
+      }</td>
+    </tr>`
+        : ''
+    }
+  </table>`
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -190,6 +226,7 @@ export function buildPlanReportHTML({
     </tr>
   </table>
 
+  ${householdHtmlSection}
   ${strengthsHtml || warningsHtml ? `<h3>Nhận xét kế hoạch</h3><ul>${strengthsHtml}${warningsHtml}</ul>` : ''}
   ${scenariosHtml ? `<h3>${isSavingSolver ? 'Kịch bản giảm số tiền cần gửi/tháng' : 'Kịch bản rút ngắn thời gian'}</h3><ul>${scenariosHtml}</ul>` : ''}
 
@@ -231,6 +268,7 @@ export function buildPlanReportText(data) {
     bankName,
     tenureLabel,
     rate,
+    householdAnalysis = null,
     roadmap,
     feasibility,
   } = data;
@@ -272,6 +310,19 @@ export function buildPlanReportText(data) {
     `- Tổng vốn mục tiêu: ${vnd(roadmap?.requiredPrincipal || 0)}`,
     `- Lãi kép đóng góp: +${vnd(roadmap?.totalCompoundInterest || 0)} (${pct(roadmap?.compoundSharePct || 0, 1)})`,
     `- Độ khả thi: ${feasibility?.score || 0}/100 (${feasibility?.ratingLabel || ''})`,
+    ...(householdAnalysis
+      ? [
+          '',
+          `2B. PHÂN TÍCH HỒ SƠ ${householdAnalysis.modeLabel.toUpperCase()}`,
+          `- Chi phí sinh hoạt hàng tháng: ${vnd(householdAnalysis.totalMonthlyExpense)} · Dòng tiền dư tự do: ${vnd(householdAnalysis.freeCashFlow)}`,
+          `- Quỹ khẩn cấp (${householdAnalysis.targetEmergencyMonths} tháng): ${vnd(householdAnalysis.emergencyFundTarget)} (Vốn hiện có đạt ${pct(householdAnalysis.emergencyFundCoveragePct, 1)})`,
+          ...(householdAnalysis.hasPartner
+            ? [
+                `- Chia đóng góp hàng tháng: Người 1 ${pct(householdAnalysis.contributionSplit.earner1Pct, 1)} (${vnd(householdAnalysis.contributionSplit.earner1Contribution)}) · Người 2 ${pct(householdAnalysis.contributionSplit.earner2Pct, 1)} (${vnd(householdAnalysis.contributionSplit.earner2Contribution)})`,
+              ]
+            : []),
+        ]
+      : []),
     '',
     '3. LỘ TRÌNH THEO NĂM',
     ...yearlyRows.map((r) => {

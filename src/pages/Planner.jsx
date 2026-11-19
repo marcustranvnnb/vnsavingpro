@@ -24,12 +24,15 @@ import {
   Printer,
 } from 'lucide-react';
 import { href, useRates, useToast } from '../state.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { copyReportForGoogleDocs, downloadGoogleDocsFile } from '../utils/googleDocsExporter.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { compact, chip, duration, fmt, pct, vnd } from '../utils/format.js';
 import { TENURE_LABELS } from '../data/banksData.js';
+import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
+import { HouseholdInsightsCard } from '../components/HouseholdInsightsCard.jsx';
 import {
   Badge,
   BankMark,
@@ -543,6 +546,10 @@ const INITIAL_PLANNER_DATA = {
     annualBonusAmount: 0,
     inflationRatePct: 0,
     isAlreadyReached: false,
+    prioritizeEmergencyFund: false,
+    emergencyFundReserved: 0,
+    emergencyFundMonths: 0,
+    goalOnlyMonths: 0,
     tenureMonths: 12,
     monthByMonthLog: [],
     stageSnapshots: [],
@@ -553,15 +560,25 @@ const INITIAL_PLANNER_DATA = {
     strengths: [],
     warnings: [],
   },
+  householdAnalysis: null,
   scenarios: [],
   bankRuns: [],
 };
 
 export default function Planner({ params = {} }) {
   const { banks, getRate, best } = useRates();
+  const { profile } = useAuth();
   const notify = useToast();
   const saved = useMemo(() => loadSavedPlannerState(), []);
 
+  const [householdMode, setHouseholdMode] = useState(() => {
+    if (['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(params.hh)) return params.hh;
+    if (['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode)) return saved.householdMode;
+    return 'INDIVIDUAL';
+  });
+  const [dependentsCount, setDependentsCount] = useState(() =>
+    Math.min(10, Math.max(0, Number(params.deps) || Number(saved.dependentsCount) || 0))
+  );
   const [inputMode, setInputMode] = useState(() =>
     params.mode === 'advanced' || params.mode === 'basic' ? params.mode : saved.inputMode || 'basic'
   );
@@ -605,16 +622,89 @@ export default function Planner({ params = {} }) {
   const [investIncomeMax, setInvestIncomeMax] = useState(
     () => Number(params.invMax) || Number(saved.investIncomeMax) || 0
   );
+  const [partnerSalaryFullTime, setPartnerSalaryFullTime] = useState(() =>
+    params.pSalary !== undefined
+      ? Number(params.pSalary)
+      : saved.partnerSalaryFullTime !== undefined
+        ? Number(saved.partnerSalaryFullTime)
+        : 0
+  );
+  const [partnerFreelanceMin, setPartnerFreelanceMin] = useState(() => Number(saved.partnerFreelanceMin) || 0);
+  const [partnerFreelanceMax, setPartnerFreelanceMax] = useState(() => Number(saved.partnerFreelanceMax) || 0);
+  const [partnerInvestMin, setPartnerInvestMin] = useState(() => Number(saved.partnerInvestMin) || 0);
+  const [partnerInvestMax, setPartnerInvestMax] = useState(() => Number(saved.partnerInvestMax) || 0);
+  const [monthlyFixedExpense, setMonthlyFixedExpense] = useState(() =>
+    params.expense !== undefined
+      ? Number(params.expense)
+      : saved.monthlyFixedExpense !== undefined
+        ? Number(saved.monthlyFixedExpense)
+        : 12_000_000
+  );
+  const [monthlyDependentsCost, setMonthlyDependentsCost] = useState(() =>
+    params.depCost !== undefined
+      ? Number(params.depCost)
+      : saved.monthlyDependentsCost !== undefined
+        ? Number(saved.monthlyDependentsCost)
+        : 0
+  );
+  const [contributionRule, setContributionRule] = useState(() =>
+    ['PROPORTIONAL', 'SPLIT_50_50', 'CUSTOM'].includes(params.split)
+      ? params.split
+      : saved.contributionRule || 'PROPORTIONAL'
+  );
+  const [earner1SharePct, setEarner1SharePct] = useState(() =>
+    saved.earner1SharePct !== undefined ? Number(saved.earner1SharePct) : 50
+  );
+  const [prioritizeEmergencyFund, setPrioritizeEmergencyFund] = useState(() =>
+    params.efFirst !== undefined ? params.efFirst === '1' : Boolean(saved.prioritizeEmergencyFund)
+  );
+  const [emergencyFundMonths, setEmergencyFundMonths] = useState(() =>
+    saved.emergencyFundMonths !== undefined ? Number(saved.emergencyFundMonths) : 0
+  );
 
+  // Sync default household mode from logged-in profile if user has no URL/saved override
+  useEffect(() => {
+    if (!params.hh && !saved.householdMode && profile?.default_household_mode) {
+      setHouseholdMode(profile.default_household_mode);
+    }
+  }, [params.hh, profile?.default_household_mode, saved.householdMode]);
+
+  const handleHouseholdChange = (nextMode) => {
+    setHouseholdMode(nextMode);
+    if (nextMode === 'COUPLE' || nextMode === 'FAMILY') {
+      if (partnerSalaryFullTime === 0) setPartnerSalaryFullTime(20_000_000);
+      if (monthlyFixedExpense === 12_000_000) setMonthlyFixedExpense(18_000_000);
+      if (nextMode === 'FAMILY') {
+        if (dependentsCount === 0) setDependentsCount(1);
+        if (monthlyDependentsCost === 0) setMonthlyDependentsCost(6_000_000);
+      }
+    } else if (nextMode === 'INDIVIDUAL' && monthlyFixedExpense === 18_000_000) {
+      setMonthlyFixedExpense(12_000_000);
+    }
+  };
+
+  const hasPartner = householdMode === 'COUPLE' || householdMode === 'FAMILY';
   const freeLow = Math.min(freelanceIncomeMin, freelanceIncomeMax);
   const freeHigh = Math.max(freelanceIncomeMin, freelanceIncomeMax);
   const invLow = Math.min(investIncomeMin, investIncomeMax);
   const invHigh = Math.max(investIncomeMin, investIncomeMax);
-  const totalIncomeMin = salaryFullTime + freeLow + invLow;
-  const totalIncomeMax = salaryFullTime + freeHigh + invHigh;
+  const e1IncomeMin = salaryFullTime + freeLow + invLow;
+  const e1IncomeMax = salaryFullTime + freeHigh + invHigh;
+  const e1IncomeAvg = Math.round((e1IncomeMin + e1IncomeMax) / 2);
+
+  const pFreeLow = hasPartner ? Math.min(partnerFreelanceMin, partnerFreelanceMax) : 0;
+  const pFreeHigh = hasPartner ? Math.max(partnerFreelanceMin, partnerFreelanceMax) : 0;
+  const pInvLow = hasPartner ? Math.min(partnerInvestMin, partnerInvestMax) : 0;
+  const pInvHigh = hasPartner ? Math.max(partnerInvestMin, partnerInvestMax) : 0;
+  const e2IncomeMin = hasPartner ? partnerSalaryFullTime + pFreeLow + pInvLow : 0;
+  const e2IncomeMax = hasPartner ? partnerSalaryFullTime + pFreeHigh + pInvHigh : 0;
+  const e2IncomeAvg = Math.round((e2IncomeMin + e2IncomeMax) / 2);
+
+  const totalIncomeMin = e1IncomeMin + e2IncomeMin;
+  const totalIncomeMax = e1IncomeMax + e2IncomeMax;
   const totalIncomeAvg = Math.round((totalIncomeMin + totalIncomeMax) / 2);
   const salary = totalIncomeAvg;
-  const hasExtraIncome = freeHigh > 0 || invHigh > 0;
+  const hasExtraIncome = freeHigh > 0 || invHigh > 0 || pFreeHigh > 0 || pInvHigh > 0;
   const [bankId, setBankId] = useState(() => params.bank || saved.bankId || 'cake');
   const [tenure, setTenure] = useState(() => params.tenure || saved.tenure || '12M');
   const [customRate, setCustomRate] = useState(() => params.rate ?? saved.customRate ?? '');
@@ -671,6 +761,19 @@ export default function Planner({ params = {} }) {
       annualStepUpPct,
       annualBonusAmount,
       inflationRatePct,
+      householdMode,
+      dependentsCount,
+      partnerSalaryFullTime,
+      partnerFreelanceMin,
+      partnerFreelanceMax,
+      partnerInvestMin,
+      partnerInvestMax,
+      monthlyFixedExpense,
+      monthlyDependentsCost,
+      contributionRule,
+      earner1SharePct,
+      prioritizeEmergencyFund,
+      emergencyFundMonths,
     });
   }, [
     inputMode,
@@ -694,6 +797,19 @@ export default function Planner({ params = {} }) {
     annualStepUpPct,
     annualBonusAmount,
     inflationRatePct,
+    householdMode,
+    dependentsCount,
+    partnerSalaryFullTime,
+    partnerFreelanceMin,
+    partnerFreelanceMax,
+    partnerInvestMin,
+    partnerInvestMax,
+    monthlyFixedExpense,
+    monthlyDependentsCost,
+    contributionRule,
+    earner1SharePct,
+    prioritizeEmergencyFund,
+    emergencyFundMonths,
   ]);
 
   useEffect(() => {
@@ -714,6 +830,7 @@ export default function Planner({ params = {} }) {
       const [bestTenure, bestRate] = TENURE_OPTIONS.map((t) => [t, getRate(b, t)]).sort((x, y) => y[1] - x[1])[0];
       return { bankId: b.id, bestTenure, bestRate };
     });
+    const top1MRate = getRate(bank, '1M') || 4.75;
     return {
       goalType,
       targetMonthlyInterest: target,
@@ -732,6 +849,21 @@ export default function Planner({ params = {} }) {
       annualStepUpPct: effectiveStepUp,
       annualBonusAmount: effectiveBonus,
       inflationRatePct: effectiveInflation,
+      householdMode,
+      dependentsCount,
+      earner1Income: e1IncomeAvg,
+      earner1IncomeMin: e1IncomeMin,
+      earner1IncomeMax: e1IncomeMax,
+      earner2Income: e2IncomeAvg,
+      earner2IncomeMin: e2IncomeMin,
+      earner2IncomeMax: e2IncomeMax,
+      monthlyFixedExpense,
+      monthlyDependentsCost,
+      contributionRule,
+      earner1SharePct,
+      prioritizeEmergencyFund,
+      emergencyFundMonths,
+      emergencyFundRate: top1MRate,
       topForTenure: top ? { bankName: top.bank.name, rate: top.rate, rateLabel: pct(top.rate) } : null,
       bankComparisons,
     };
@@ -752,6 +884,21 @@ export default function Planner({ params = {} }) {
     effectiveStepUp,
     effectiveBonus,
     effectiveInflation,
+    householdMode,
+    dependentsCount,
+    e1IncomeAvg,
+    e1IncomeMin,
+    e1IncomeMax,
+    e2IncomeAvg,
+    e2IncomeMin,
+    e2IncomeMax,
+    monthlyFixedExpense,
+    monthlyDependentsCost,
+    contributionRule,
+    earner1SharePct,
+    prioritizeEmergencyFund,
+    emergencyFundMonths,
+    bank,
     tenure,
     banks,
     getRate,
@@ -759,7 +906,7 @@ export default function Planner({ params = {} }) {
   ]);
 
   const { data: bundle, loading, initialized } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA);
-  const { roadmap, feasibility, scenarios } = bundle;
+  const { roadmap, feasibility, householdAnalysis, scenarios } = bundle;
   const bankRuns = useMemo(
     () =>
       (bundle.bankRuns || []).map((item) => ({
@@ -798,6 +945,7 @@ export default function Planner({ params = {} }) {
 
   const sharePlan = () => {
     const query = {
+      hh: householdMode,
       mode: inputMode,
       goal: goalType,
       target,
@@ -807,10 +955,16 @@ export default function Planner({ params = {} }) {
       capital,
       saving,
       salary: salaryFullTime,
+      expense: monthlyFixedExpense,
+      split: contributionRule,
       bank: bankId,
       tenure,
       calcMode,
     };
+    if (hasPartner && partnerSalaryFullTime > 0) query.pSalary = partnerSalaryFullTime;
+    if (householdMode === 'FAMILY' && dependentsCount > 0) query.deps = dependentsCount;
+    if (householdMode === 'FAMILY' && monthlyDependentsCost > 0) query.depCost = monthlyDependentsCost;
+    if (prioritizeEmergencyFund) query.efFirst = '1';
     if (freeLow > 0) query.freeMin = freeLow;
     if (freeHigh > 0) query.freeMax = freeHigh;
     if (invLow > 0) query.invMin = invLow;
@@ -849,6 +1003,7 @@ export default function Planner({ params = {} }) {
     annualStepUpPct: effectiveStepUp,
     annualBonusAmount: effectiveBonus,
     inflationRatePct: effectiveInflation,
+    householdAnalysis,
     roadmap,
     feasibility,
     scenarios,
@@ -910,9 +1065,15 @@ export default function Planner({ params = {} }) {
             </div>
             <p className="text-[11px] leading-relaxed text-zinc-500">
               {inputMode === 'basic'
-                ? 'Phiên bản Cơ bản (Nhanh): chỉ 4 thông số cốt lõi, tính thuần theo lãi suất ngân hàng.'
-                : 'Phiên bản Chuyên sâu (Thực tế): thêm tăng mức gửi/năm, thưởng Tết, bù trượt giá lạm phát & chuẩn TT14.'}
+                ? 'Phiên bản Cơ bản (Nhanh): thông số cốt lõi, tính thuần theo lãi suất ngân hàng.'
+                : 'Phiên bản Chuyên sâu (Thực tế): thu nhập đa nguồn, phân chia 2 người, tăng gửi/năm, thưởng & lạm phát.'}
             </p>
+            <div className="pt-2">
+              <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+                0. Hồ sơ tài chính
+              </span>
+              <HouseholdModeSwitch value={householdMode} onChange={handleHouseholdChange} />
+            </div>
           </div>
 
           {/* Step 1: Dual Goal Selection */}
@@ -1016,19 +1177,19 @@ export default function Planner({ params = {} }) {
             )}
           </div>
 
-          {/* Step 3: Monthly Income Breakdown (Both Basic & Advanced) */}
+          {/* Step 3: Monthly Household Income & Expense Breakdown */}
           <div className="space-y-4 border-t border-white/[0.06] pt-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-                3. Thu nhập hàng tháng
+                3. Thu nhập &amp; Chi phí ({hasPartner ? '2 người' : 'Cá nhân'})
               </span>
               <Badge tone="neutral" className="tabular-nums">
-                Tổng: {totalIncomeMin === totalIncomeMax ? compact(totalIncomeAvg) : `${compact(totalIncomeMin)}–${compact(totalIncomeMax)}`}
+                Thu: {totalIncomeMin === totalIncomeMax ? compact(totalIncomeAvg) : `${compact(totalIncomeMin)}–${compact(totalIncomeMax)}`}
               </Badge>
             </div>
 
             <MoneyField
-              label="Thu nhập từ công việc chính (Full-time)"
+              label={hasPartner ? 'Người 1 — Thu nhập công việc chính' : 'Thu nhập từ công việc chính (Full-time)'}
               value={salaryFullTime}
               onChange={setSalaryFullTime}
               min={0}
@@ -1038,30 +1199,134 @@ export default function Planner({ params = {} }) {
               presets={presets([10_000_000, 15_000_000, 25_000_000, 40_000_000, 60_000_000])}
             />
 
-            <IncomeRangeField
-              label="Công việc phụ (Freelance / Part-time)"
-              sublabel="Khoảng thu nhập / tháng"
-              minVal={freelanceIncomeMin}
-              maxVal={freelanceIncomeMax}
-              onMin={setFreelanceIncomeMin}
-              onMax={setFreelanceIncomeMax}
-              quickValues={[0, 2_000_000, 5_000_000, 10_000_000, 20_000_000]}
+            {inputMode === 'advanced' && (
+              <>
+                <IncomeRangeField
+                  label="Người 1 — Công việc phụ (Freelance / Part-time)"
+                  sublabel="Khoảng thu nhập / tháng"
+                  minVal={freelanceIncomeMin}
+                  maxVal={freelanceIncomeMax}
+                  onMin={setFreelanceIncomeMin}
+                  onMax={setFreelanceIncomeMax}
+                  quickValues={[0, 2_000_000, 5_000_000, 10_000_000, 20_000_000]}
+                />
+                <IncomeRangeField
+                  label="Người 1 — Thu nhập từ đầu tư"
+                  sublabel="Khoảng thu nhập / tháng"
+                  minVal={investIncomeMin}
+                  maxVal={investIncomeMax}
+                  onMin={setInvestIncomeMin}
+                  onMax={setInvestIncomeMax}
+                  quickValues={[0, 1_000_000, 3_000_000, 5_000_000, 15_000_000]}
+                />
+              </>
+            )}
+
+            {hasPartner && (
+              <div className="space-y-3 rounded-xl border border-sky-400/20 bg-sky-500/[0.04] p-3">
+                <MoneyField
+                  label="Người 2 (Bạn đời) — Thu nhập chính / tháng"
+                  value={partnerSalaryFullTime}
+                  onChange={setPartnerSalaryFullTime}
+                  min={0}
+                  max={200_000_000}
+                  step={1_000_000}
+                  inputMax={10_000_000_000}
+                  presets={presets([0, 12_000_000, 20_000_000, 30_000_000, 50_000_000])}
+                />
+
+                {inputMode === 'advanced' && (
+                  <>
+                    <IncomeRangeField
+                      label="Người 2 — Công việc phụ (Freelance)"
+                      sublabel="Khoảng thu nhập / tháng"
+                      minVal={partnerFreelanceMin}
+                      maxVal={partnerFreelanceMax}
+                      onMin={setPartnerFreelanceMin}
+                      onMax={setPartnerFreelanceMax}
+                      quickValues={[0, 2_000_000, 5_000_000, 10_000_000]}
+                    />
+                    <IncomeRangeField
+                      label="Người 2 — Thu nhập từ đầu tư"
+                      sublabel="Khoảng thu nhập / tháng"
+                      minVal={partnerInvestMin}
+                      maxVal={partnerInvestMax}
+                      onMin={setPartnerInvestMin}
+                      onMax={setPartnerInvestMax}
+                      quickValues={[0, 1_000_000, 3_000_000, 5_000_000]}
+                    />
+                  </>
+                )}
+
+                <div className="space-y-2 border-t border-white/[0.06] pt-2.5">
+                  <span className="block text-[11px] font-medium text-zinc-300">Cách chia khoản gửi hàng tháng</span>
+                  <Segmented
+                    size="sm"
+                    value={contributionRule}
+                    onChange={setContributionRule}
+                    options={[
+                      { value: 'PROPORTIONAL', label: 'Theo thu nhập' },
+                      { value: 'SPLIT_50_50', label: '50 / 50' },
+                      { value: 'CUSTOM', label: 'Tự chỉnh %' },
+                    ]}
+                  />
+                  {contributionRule === 'CUSTOM' && (
+                    <SliderField
+                      label="Tỷ lệ Người 1 đóng góp"
+                      display={`${earner1SharePct}% / ${100 - earner1SharePct}%`}
+                      value={earner1SharePct}
+                      onChange={setEarner1SharePct}
+                      min={0}
+                      max={100}
+                      step={5}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            <MoneyField
+              label={hasPartner ? 'Chi phí sinh hoạt cố định của hộ / tháng' : 'Chi phí sinh hoạt cố định / tháng'}
+              value={monthlyFixedExpense}
+              onChange={setMonthlyFixedExpense}
+              min={0}
+              max={200_000_000}
+              step={1_000_000}
+              inputMax={10_000_000_000}
+              presets={presets(hasPartner ? [12_000_000, 18_000_000, 25_000_000, 35_000_000] : [8_000_000, 12_000_000, 18_000_000, 25_000_000])}
             />
 
-            <IncomeRangeField
-              label="Thu nhập từ các khoản đầu tư"
-              sublabel="Khoảng thu nhập / tháng"
-              minVal={investIncomeMin}
-              maxVal={investIncomeMax}
-              onMin={setInvestIncomeMin}
-              onMax={setInvestIncomeMax}
-              quickValues={[0, 1_000_000, 3_000_000, 5_000_000, 15_000_000]}
-            />
+            {householdMode === 'FAMILY' && (
+              <div className="space-y-3 rounded-xl border border-amber-400/20 bg-amber-500/[0.04] p-3">
+                <div>
+                  <span className="mb-1.5 block text-xs font-medium text-zinc-200">Số người phụ thuộc (con nhỏ / bố mẹ)</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[0, 1, 2, 3, 4].map((n) => (
+                      <Chip key={n} active={dependentsCount === n} onClick={() => setDependentsCount(n)}>
+                        {n === 0 ? 'Chưa có' : `${n} người`}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+                <MoneyField
+                  label="Chi phí cho người phụ thuộc / tháng"
+                  value={monthlyDependentsCost}
+                  onChange={setMonthlyDependentsCost}
+                  min={0}
+                  max={100_000_000}
+                  step={1_000_000}
+                  inputMax={10_000_000_000}
+                  presets={presets([0, 4_000_000, 8_000_000, 15_000_000, 25_000_000])}
+                />
+              </div>
+            )}
 
-            {/* Total monthly income summary card */}
-            <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3.5">
+            {/* Total monthly income & Emergency Fund Mode summary card */}
+            <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3.5 space-y-2.5">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs font-medium text-indigo-200">Tổng thu nhập hàng tháng</span>
+                <span className="text-xs font-medium text-indigo-200">
+                  {hasPartner ? 'Tổng thu nhập hộ / tháng' : 'Tổng thu nhập hàng tháng'}
+                </span>
                 <span className="text-base font-semibold tabular-nums text-white">
                   {totalIncomeMin === totalIncomeMax
                     ? vnd(totalIncomeAvg)
@@ -1069,18 +1334,57 @@ export default function Planner({ params = {} }) {
                 </span>
               </div>
               {totalIncomeMin !== totalIncomeMax && (
-                <div className="mt-1 text-[11px] tabular-nums text-zinc-400">
+                <div className="text-[11px] tabular-nums text-zinc-400">
                   Thấp nhất: {vnd(totalIncomeMin)} · Cao nhất: {vnd(totalIncomeMax)} · TB: {vnd(totalIncomeAvg)}
                 </div>
               )}
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-2 text-[11px] text-zinc-400 tabular-nums">
-                <span>Tỷ lệ tiết kiệm: <strong className="text-emerald-300">{pct(roadmap.savingsRatePercent, 1)}</strong></span>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-2 text-[11px] text-zinc-400 tabular-nums">
                 <span>
-                  Chi tiêu còn:{' '}
-                  <strong className="text-zinc-200">
-                    {compact(Math.max(0, totalIncomeAvg - (roadmap.requiredMonthlyDeposit || saving)))}
+                  Tỷ lệ gửi: <strong className="text-emerald-300">{pct(roadmap.savingsRatePercent, 1)}</strong>
+                </span>
+                <span>
+                  Dư tự do:{' '}
+                  <strong className={householdAnalysis?.freeCashFlow < 0 ? 'text-red-300' : 'text-zinc-200'}>
+                    {compact(
+                      householdAnalysis?.freeCashFlow ??
+                        totalIncomeAvg - monthlyFixedExpense - (householdMode === 'FAMILY' ? monthlyDependentsCost : 0) - (roadmap.requiredMonthlyDeposit || saving)
+                    )}
                   </strong>
                 </span>
+              </div>
+
+              <div className="space-y-2 border-t border-white/[0.06] pt-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-medium text-zinc-300">Xử lý Quỹ dự phòng khẩn cấp</span>
+                </div>
+                <Segmented
+                  size="sm"
+                  value={prioritizeEmergencyFund ? 'FUND_FIRST' : 'PARALLEL'}
+                  onChange={(v) => setPrioritizeEmergencyFund(v === 'FUND_FIRST')}
+                  options={[
+                    { value: 'PARALLEL', label: 'Theo dõi song song' },
+                    { value: 'FUND_FIRST', label: 'Lấp quỹ trước' },
+                  ]}
+                />
+                {inputMode === 'advanced' && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[11px] text-zinc-500">Số tháng dự phòng:</span>
+                    {[
+                      { v: 0, l: 'Khuyến nghị' },
+                      { v: 6, l: '6T' },
+                      { v: 9, l: '9T' },
+                      { v: 12, l: '12T' },
+                    ].map((opt) => (
+                      <Chip
+                        key={opt.v}
+                        active={emergencyFundMonths === opt.v}
+                        onClick={() => setEmergencyFundMonths(opt.v)}
+                      >
+                        {opt.l}
+                      </Chip>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1254,6 +1558,12 @@ export default function Planner({ params = {} }) {
                 <Badge tone="brand">
                   {usingCustom ? 'Lãi suất tự nhập' : `${bank.name} · ${TENURE_LABELS[tenure]}`} · {pct(rate)}
                 </Badge>
+                {householdAnalysis && <Badge tone="neutral">{householdAnalysis.modeLabel}</Badge>}
+                {roadmap.prioritizeEmergencyFund && (
+                  <Badge tone="warning">
+                    Lấp quỹ DP trước ({roadmap.emergencyFundMonths}T)
+                  </Badge>
+                )}
                 {effectiveStepUp > 0 && <Badge tone="success">Tăng gửi +{pct(effectiveStepUp, 0)}/năm</Badge>}
                 {effectiveBonus > 0 && <Badge tone="success">+{compact(effectiveBonus)} thưởng/năm</Badge>}
                 {effectiveInflation > 0 && <Badge tone="warning">Đã bù lạm phát {pct(effectiveInflation, 1)}/năm</Badge>}
@@ -1380,6 +1690,9 @@ export default function Planner({ params = {} }) {
               </ul>
             </Card>
           )}
+
+          {/* Household Analysis, Emergency Fund & Stress-Test */}
+          {householdAnalysis && <HouseholdInsightsCard analysis={householdAnalysis} roadmap={roadmap} />}
 
           {/* Chart / bank comparison */}
           <Card className="p-5 sm:p-6">

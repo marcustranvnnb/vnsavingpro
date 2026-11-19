@@ -7,6 +7,7 @@ import {
   simulateLadderingMatrix,
 } from './_lib/calculator.js';
 import { evaluatePlanFeasibility } from './_lib/feasibilityEvaluator.js';
+import { computeHouseholdAnalysis, getRecommendedEmergencyMonths } from './_lib/householdAnalytics.js';
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 
@@ -70,6 +71,16 @@ export default async function handler(req, res) {
     }
 
     case 'planner_bundle': {
+      const hhMode = payload.householdMode || 'INDIVIDUAL';
+      const hhDeps = Number(payload.dependentsCount) || 0;
+      const hhFixedExp = Number(payload.monthlyFixedExpense) || 0;
+      const hhDepCost = hhMode === 'FAMILY' ? Number(payload.monthlyDependentsCost) || 0 : 0;
+      const recMonths = getRecommendedEmergencyMonths(hhMode, hhDeps);
+      const overrideMonths = Number(payload.emergencyFundMonths) || 0;
+      const targetEfMonths = overrideMonths >= 3 ? overrideMonths : recMonths;
+      const efTarget = Math.round((hhFixedExp + hhDepCost) * targetEfMonths);
+      const prioritizeEf = Boolean(payload.prioritizeEmergencyFund);
+
       const baseArgs = {
         goalType: payload.goalType || 'PASSIVE_INCOME',
         targetMonthlyInterest: payload.targetMonthlyInterest,
@@ -85,9 +96,37 @@ export default async function handler(req, res) {
         annualStepUpPct: payload.annualStepUpPct ?? 0,
         annualBonusAmount: payload.annualBonusAmount ?? 0,
         inflationRatePct: payload.inflationRatePct ?? 0,
+        prioritizeEmergencyFund: prioritizeEf,
+        emergencyFundTarget: prioritizeEf ? efTarget : 0,
+        emergencyFundRate: Number(payload.emergencyFundRate) || 4.75,
       };
 
       const roadmap = calculatePassiveIncomeRoadmap(baseArgs);
+
+      const householdAnalysis = {
+        ...computeHouseholdAnalysis({
+          householdMode: hhMode,
+          dependentsCount: hhDeps,
+          earner1Income: payload.earner1Income ?? payload.currentSalary,
+          earner1IncomeMin: payload.earner1IncomeMin,
+          earner1IncomeMax: payload.earner1IncomeMax,
+          earner2Income: payload.earner2Income ?? 0,
+          earner2IncomeMin: payload.earner2IncomeMin,
+          earner2IncomeMax: payload.earner2IncomeMax,
+          monthlyFixedExpense: hhFixedExp,
+          monthlyDependentsCost: hhDepCost,
+          contributionRule: payload.contributionRule || 'PROPORTIONAL',
+          earner1SharePct: payload.earner1SharePct ?? 50,
+          initialCapital: payload.initialCapital,
+          monthlySavings: roadmap.requiredMonthlyDeposit,
+          passiveIncomeAtGoal: roadmap.finalMonthlyPassiveIncome || roadmap.baseMonthlyInterest,
+          emergencyFundMonthsOverride: overrideMonths,
+          emergencyFundRate: Number(payload.emergencyFundRate) || 4.75,
+          annualStepUpPct: baseArgs.annualStepUpPct,
+          annualBonusAmount: baseArgs.annualBonusAmount,
+        }),
+        prioritizeEmergencyFund: prioritizeEf,
+      };
 
       const feasibility = evaluatePlanFeasibility({
         monthlySalary: baseArgs.currentSalary,
@@ -97,6 +136,7 @@ export default async function handler(req, res) {
         incomeMin: payload.totalIncomeMin ?? null,
         incomeMax: payload.totalIncomeMax ?? null,
         hasExtraIncome: Boolean(payload.hasExtraIncome),
+        householdAnalysis,
       });
 
       const saving = Number(baseArgs.monthlySavingsAmount) || 0;
@@ -193,6 +233,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         roadmap,
         feasibility,
+        householdAnalysis,
         scenarios,
         bankRuns,
       });
@@ -236,6 +277,8 @@ export default async function handler(req, res) {
       for (const opt of options) {
         results[opt] = calculateCareerGrowthImpact({
           currentSalary: payload.currentSalary,
+          partnerSalary: payload.partnerSalary ?? 0,
+          partnerGrowthMode: payload.partnerGrowthMode || 'SAME',
           savingsRatePercent: payload.savingsRatePercent,
           targetMonthlyInterest: payload.targetMonthlyInterest,
           annualInterestRate: payload.annualInterestRate,

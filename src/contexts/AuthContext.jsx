@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, updated_at, created_at')
+      .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -79,7 +79,7 @@ export function AuthProvider({ children }) {
         },
         { onConflict: 'id' }
       )
-      .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, updated_at, created_at')
+      .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
       .single();
 
     if (created) {
@@ -249,11 +249,16 @@ export function AuthProvider({ children }) {
           payload.preferred_goal_type =
             patch.preferred_goal_type === 'TARGET_AMOUNT' ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME';
         }
+        if (patch.default_household_mode !== undefined) {
+          payload.default_household_mode = ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(patch.default_household_mode)
+            ? patch.default_household_mode
+            : 'INDIVIDUAL';
+        }
         const { data, error } = await supabase
           .from('profiles')
           .update(payload)
           .eq('id', user.id)
-          .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, updated_at, created_at')
+          .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
           .single();
 
         if (error) throw new Error(normalizeAuthError(error));

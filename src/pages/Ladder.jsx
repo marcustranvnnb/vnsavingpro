@@ -1,18 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDown,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   Coins,
   Layers,
   Package,
   PiggyBank,
+  ShieldAlert,
   SlidersHorizontal,
+  Users,
   Wallet,
 } from 'lucide-react';
 import { useRates } from '../state.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
+import { HOUSEHOLD_MODES, HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
   Badge,
@@ -403,6 +407,15 @@ export default function Ladder() {
   const saved = useMemo(() => loadSavedPlannerState(), []);
 
   const [monthlySavings, setMonthlySavings] = useState(() => Number(saved.saving) || 5_000_000);
+  const [householdMode, setHouseholdMode] = useState(() =>
+    ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode) ? saved.householdMode : 'INDIVIDUAL'
+  );
+  const [dependentsCount] = useState(() => Number(saved.dependentsCount) || 0);
+  const [monthlyExpense, setMonthlyExpense] = useState(() => {
+    const fixed = Number(saved.monthlyFixedExpense) || (saved.householdMode === 'COUPLE' || saved.householdMode === 'FAMILY' ? 18_000_000 : 12_000_000);
+    const dep = saved.householdMode === 'FAMILY' ? Number(saved.monthlyDependentsCost) || 0 : 0;
+    return fixed + dep;
+  });
   const [totalMonths, setTotalMonths] = useState(12);
   const [bankId, setBankId] = useState(() => saved.bankId || 'cake');
   const [strategy, setStrategy] = useState('SPLIT_50_50');
@@ -456,6 +469,32 @@ export default function Ladder() {
       : activeStrategy.split;
   const principalRatio = result.finalPortfolioValue > 0 ? (totalDeposited / result.finalPortfolioValue) * 100 : 0;
 
+  const hhMeta = HOUSEHOLD_MODES.find((m) => m.id === householdMode) || HOUSEHOLD_MODES[0];
+  const hasPartner = householdMode === 'COUPLE' || householdMode === 'FAMILY';
+  const recMonths =
+    householdMode === 'FAMILY'
+      ? Math.min(12, 6 + Math.round(dependentsCount * 1.5))
+      : householdMode === 'COUPLE'
+        ? 6
+        : 4;
+  const recommendedLiquidTarget = monthlyExpense * recMonths;
+  const liquidCohortsValue = (lastRow?.cohorts || [])
+    .filter((c) => c.term === '1M' || c.term === '3M')
+    .reduce((sum, c) => sum + (Number(c.totalValue) || 0), 0);
+  const liquidCoveragePct =
+    recommendedLiquidTarget > 0 ? Math.min(100, Number(((liquidCohortsValue / recommendedLiquidTarget) * 100).toFixed(1))) : 100;
+
+  const e1SharePct = (() => {
+    if (!hasPartner) return 100;
+    if (saved.contributionRule === 'SPLIT_50_50') return 50;
+    if (saved.contributionRule === 'CUSTOM') return Number(saved.earner1SharePct) || 50;
+    const e1 = Number(saved.salaryFullTime) || 25_000_000;
+    const e2 = Number(saved.partnerSalaryFullTime) || 20_000_000;
+    return e1 + e2 > 0 ? Number(((e1 / (e1 + e2)) * 100).toFixed(1)) : 50;
+  })();
+  const e1MonthlyLadder = Math.round((monthlySavings * e1SharePct) / 100);
+  const e2MonthlyLadder = Math.max(0, monthlySavings - e1MonthlyLadder);
+
   return (
     <>
       <PageHeader
@@ -493,6 +532,12 @@ export default function Ladder() {
                 ? 'Phiên bản Cơ bản (Nhanh): chọn mức gửi hàng tháng và 1 trong 3 công thức bậc thang chuẩn.'
                 : 'Phiên bản Chuyên sâu (Thực tế): kéo dài mô phỏng tới 60 tháng & tự tuỳ chỉnh tỷ lệ 2 kỳ hạn.'}
             </p>
+            <div className="pt-2">
+              <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+                Hồ sơ thanh khoản
+              </span>
+              <HouseholdModeSwitch value={householdMode} onChange={setHouseholdMode} compact />
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -508,6 +553,17 @@ export default function Ladder() {
               step={500_000}
               inputMax={500_000_000}
               presets={presets([1_000_000, 3_000_000, 5_000_000, 10_000_000, 20_000_000])}
+            />
+
+            <MoneyField
+              label="Chi tiêu sinh hoạt / tháng (đo quỹ dự phòng)"
+              value={monthlyExpense}
+              onChange={setMonthlyExpense}
+              min={0}
+              max={150_000_000}
+              step={1_000_000}
+              inputMax={500_000_000}
+              presets={presets([10_000_000, 15_000_000, 20_000_000, 30_000_000])}
             />
 
             {inputMode === 'advanced' && (
@@ -696,6 +752,43 @@ export default function Ladder() {
                   className="card-interactive"
                 />
               </div>
+
+              {/* Household Emergency Liquidity Card */}
+              <Card className="p-5 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-white">
+                    {liquidCoveragePct >= 100 ? (
+                      <CheckCircle2 className="size-4 text-emerald-400" />
+                    ) : (
+                      <ShieldAlert className="size-4 text-amber-400" />
+                    )}
+                    Thanh khoản dự phòng ({hhMeta.label} · {recMonths} tháng chi phí)
+                  </span>
+                  <Badge tone={liquidCoveragePct >= 100 ? 'success' : 'warning'}>
+                    Lớp 1T–3T đạt {pct(liquidCoveragePct, 0)}
+                  </Badge>
+                </div>
+
+                <div className="mt-3">
+                  <div className="mb-1.5 flex justify-between text-xs tabular-nums text-zinc-400">
+                    <span>Sổ linh hoạt (1T–3T) cuối kỳ: {vnd(liquidCohortsValue)}</span>
+                    <span>Mục tiêu dự phòng {recMonths}T: {vnd(recommendedLiquidTarget)}</span>
+                  </div>
+                  <Progress value={liquidCoveragePct} />
+                </div>
+
+                {hasPartner && (
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3.5 py-2.5 text-xs tabular-nums text-zinc-300 ring-1 ring-inset ring-white/[0.06]">
+                    <span className="flex items-center gap-1.5 text-zinc-400">
+                      <Users className="size-3.5 text-indigo-300" /> Góp bậc thang mỗi tháng:
+                    </span>
+                    <span>
+                      Người 1: <strong className="text-white">{vnd(e1MonthlyLadder)}</strong> ({pct(e1SharePct, 0)}) · Người 2:{' '}
+                      <strong className="text-white">{vnd(e2MonthlyLadder)}</strong> ({pct(100 - e1SharePct, 0)})
+                    </span>
+                  </div>
+                )}
+              </Card>
 
               {/* Option 4 Ladder Stage Shelf & Expandable Matrix */}
               <LadderPackageExplorer rows={result.timelineRows} splitLabel={splitLabel} />

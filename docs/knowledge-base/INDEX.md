@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-19 09:52 (Live Google OAuth Enabled & Verified on Supabase Auth + Redirect URLs & Vietnamese Email Templates Configured)
+> **Last Synced**: 2026-11-19 16:14 (Deep Individual / Couple / Family Financial Planning Across Planner, Ladder, Career & Profile)
 > **Current Architecture Version**: v1.5.5 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
@@ -40,10 +40,10 @@
 ## File Registry (v1.5.5 Tier 1 Serverless + Supabase Postgres + Daily Scrapers)
 
 - **Database & Schema (`supabase/`)**: `supabase/schema.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `usage_quotas`, `quota_alerts_log` + RLS policies), `supabase/email-templates/`, `.env.example`
-- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,http,liveRatesCache,supabase,resend,quotaGuard}.js`
+- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,supabase,resend,quotaGuard}.js`
 - **Automated Scrapers & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
 - **Root & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/index.css`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation}.jsx` (`Referral.jsx` hidden)
-- **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner}.jsx`
+- **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
 - **Data**: `src/data/{banksData,bankPackagesData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
 - **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`

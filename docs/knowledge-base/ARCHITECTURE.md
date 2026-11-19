@@ -23,7 +23,7 @@ flowchart TD
 
 ## 2. Proprietary Algorithm Protection (`api/_lib/` & `api/calculate.js`)
 
-- **Zero Client Exposure**: `calculator.js`, `feasibilityEvaluator.js`, and `supabase.js` (`SUPABASE_SERVICE_ROLE_KEY`) live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
+- **Zero Client Exposure**: `calculator.js`, `feasibilityEvaluator.js`, `householdAnalytics.js`, and `supabase.js` (`SUPABASE_SERVICE_ROLE_KEY`) live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
 - **Supabase Free Tier Persistence (`supabase/schema.sql` + `api/_lib/supabase.js`)**:
   - Zero-dependency server-side PostgREST client (`sbSelect`, `sbInsert`, `sbUpsert`) using native `fetch` with a 3.5s timeout and automatic fallback to in-memory/bundled defaults when `SUPABASE_URL` / keys are not yet configured.
   - Tables: `public.bank_rate_snapshots`, `public.user_feedback`, and `public.saved_plans` (protected with RLS policies).

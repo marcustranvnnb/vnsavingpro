@@ -325,3 +325,8 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_free_tier_usage_snapshot() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_free_tier_usage_snapshot() TO service_role;
+
+-- Household Profile Mode preference
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS default_household_mode TEXT NOT NULL DEFAULT 'INDIVIDUAL'
+  CHECK (default_household_mode IN ('INDIVIDUAL', 'COUPLE', 'FAMILY'));
