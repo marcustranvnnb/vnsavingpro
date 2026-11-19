@@ -1,10 +1,29 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { isBrowserAuthConfigured, supabase } from '../utils/supabaseClient.js';
+import {
+  isBrowserAuthConfigured,
+  supabase,
+  supabaseBrowserKey,
+  supabaseBrowserUrl,
+} from '../utils/supabaseClient.js';
 import { sanitizeText } from '../utils/cryptoStorage.js';
 
 const AuthCtx = createContext(null);
+const RETURN_PATH_KEY = 'vnsaving_auth_return_to';
 
 export const useAuth = () => useContext(AuthCtx);
+
+export function consumeAuthReturnPath() {
+  try {
+    const raw = window.sessionStorage?.getItem(RETURN_PATH_KEY) || '';
+    window.sessionStorage?.removeItem(RETURN_PATH_KEY);
+    if (raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth')) {
+      return raw;
+    }
+  } catch {
+    // Ignore sessionStorage restrictions
+  }
+  return '';
+}
 
 function normalizeAuthError(err) {
   const msg = String(err?.message || '').toLowerCase();
@@ -13,7 +32,10 @@ function normalizeAuthError(err) {
   if (msg.includes('user already registered')) return 'Email này đã được đăng ký. Hãy chuyển sang tab Đăng nhập.';
   if (msg.includes('password should be at least')) return 'Mật khẩu cần tối thiểu 6 ký tự.';
   if (msg.includes('rate limit')) return 'Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.';
-  if (msg.includes('provider is not enabled')) return 'Đăng nhập Google chưa được bật trên Supabase Dashboard.';
+  if (msg.includes('provider is not enabled') || msg.includes('unsupported provider')) {
+    return 'Đăng nhập Google chưa được bật trên Supabase Dashboard (Authentication → Providers → Google).';
+  }
+  if (msg.includes('access_denied')) return 'Bạn đã huỷ đăng nhập với Google.';
   return err?.message || 'Đã có lỗi xảy ra khi xác thực.';
 }
 
@@ -22,6 +44,7 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [authLoading, setAuthLoading] = useState(Boolean(supabase));
   const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(null);
 
   const loadOrCreateProfile = useCallback(async (user) => {
     if (!supabase || !user?.id) {
@@ -112,11 +135,31 @@ export function AuthProvider({ children }) {
     };
   }, [loadOrCreateProfile]);
 
+  useEffect(() => {
+    if (!isBrowserAuthConfigured()) return undefined;
+    let active = true;
+    fetch(`${supabaseBrowserUrl}/auth/v1/settings`, {
+      headers: { apikey: supabaseBrowserKey },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((settings) => {
+        if (!active || !settings?.external) return;
+        setGoogleEnabled(Boolean(settings.external.google));
+      })
+      .catch(() => {
+        // Ignore network failure while probing provider status
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const value = useMemo(() => {
     const user = session?.user || null;
 
     return {
       authConfigured: isBrowserAuthConfigured(),
+      googleEnabled,
       authLoading,
       session,
       user,
@@ -128,10 +171,22 @@ export function AuthProvider({ children }) {
 
       signInWithGoogle: async (redirectTo) => {
         if (!supabase) throw new Error('Supabase Auth chưa được cấu hình.');
+        try {
+          const currentPath = `${window.location.pathname}${window.location.search}`;
+          if (currentPath && !currentPath.startsWith('/auth')) {
+            window.sessionStorage?.setItem(RETURN_PATH_KEY, currentPath);
+          }
+        } catch {
+          // Ignore sessionStorage restrictions
+        }
+        const callbackUrl = redirectTo || `${window.location.origin}/auth`;
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: redirectTo || `${window.location.origin}${window.location.pathname}`,
+            redirectTo: callbackUrl,
+            queryParams: {
+              prompt: 'select_account',
+            },
           },
         });
         if (error) throw new Error(normalizeAuthError(error));
@@ -213,7 +268,7 @@ export function AuthProvider({ children }) {
         setProfile(null);
       },
     };
-  }, [authLoading, loadOrCreateProfile, passwordRecoveryMode, profile, session]);
+  }, [authLoading, googleEnabled, loadOrCreateProfile, passwordRecoveryMode, profile, session]);
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-19 09:12 (Free-Tier Quota Guardian: 80%/90%/95%/100% Resend Alerts + POC Validation Phase Lock)
+> **Last Synced**: 2026-11-19 09:33 (Google OAuth PKCE Hardening, Live Provider Probe & Dedicated /auth Callback)
 > **Current Architecture Version**: v1.5.5 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 

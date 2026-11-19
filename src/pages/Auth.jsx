@@ -1,17 +1,33 @@
-import React, { useEffect } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import React, { useEffect, useMemo } from 'react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 import { AuthForm } from '../components/AuthModal.jsx';
 import { Card, PageHeader } from '../components/ui.jsx';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import { consumeAuthReturnPath, useAuth } from '../contexts/AuthContext.jsx';
 import { href, navigate } from '../state.jsx';
 
+function readOAuthCallbackError(params) {
+  let err = params?.error || '';
+  let desc = params?.error_description || '';
+  if (!err && typeof window !== 'undefined' && window.location.hash) {
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    err = hashParams.get('error') || '';
+    desc = hashParams.get('error_description') || desc;
+  }
+  if (!err && !desc) return '';
+  if (err === 'access_denied') return 'Bạn đã huỷ đăng nhập với Google.';
+  return desc || 'Đăng nhập Google không thành công. Vui lòng thử lại.';
+}
+
 export default function Auth({ params }) {
-  const { user, passwordRecoveryMode } = useAuth();
+  const { user, authLoading, passwordRecoveryMode } = useAuth();
   const modeParam = params?.mode === 'reset' ? 'update_password' : params?.mode === 'signup' ? 'signup' : 'signin';
+  const hasOAuthCode = Boolean(params?.code);
+  const oauthError = useMemo(() => readOAuthCallbackError(params), [params]);
 
   useEffect(() => {
     if (user && !passwordRecoveryMode && modeParam !== 'update_password') {
-      navigate(href('profile'), { replace: true });
+      const returnPath = consumeAuthReturnPath();
+      navigate(returnPath || href('profile'), { replace: true });
     }
   }, [modeParam, passwordRecoveryMode, user]);
 
@@ -24,12 +40,22 @@ export default function Auth({ params }) {
         description="Lưu trữ các kịch bản tài chính cá nhân, đồng bộ lãi suất tự chỉnh và truy cập mọi nơi."
       />
       <Card className="p-6">
-        <AuthForm
-          initialMode={modeParam}
-          onSuccess={() => {
-            navigate(href('profile'), { replace: true });
-          }}
-        />
+        {(hasOAuthCode || authLoading) && !oauthError && !user ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+            <Loader2 className="size-6 animate-spin text-indigo-400" />
+            <p className="text-sm font-medium text-white">Đang hoàn tất xác thực Google...</p>
+            <p className="text-xs text-zinc-400">Hệ thống đang đồng bộ hồ sơ cá nhân của bạn.</p>
+          </div>
+        ) : (
+          <AuthForm
+            initialMode={modeParam}
+            externalError={oauthError}
+            onSuccess={() => {
+              const returnPath = consumeAuthReturnPath();
+              navigate(returnPath || href('profile'), { replace: true });
+            }}
+          />
+        )}
       </Card>
     </div>
   );

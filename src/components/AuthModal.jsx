@@ -27,9 +27,10 @@ function GoogleIcon() {
   );
 }
 
-export function AuthForm({ initialMode = 'signin', onSuccess }) {
+export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess }) {
   const {
     authConfigured,
+    googleEnabled,
     passwordRecoveryMode,
     signInWithGoogle,
     signInWithEmail,
@@ -46,7 +47,15 @@ export function AuthForm({ initialMode = 'signin', onSuccess }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState(null);
+  const [feedback, setFeedback] = useState(() =>
+    externalError ? { tone: 'error', text: externalError } : null
+  );
+
+  useEffect(() => {
+    if (externalError) {
+      setFeedback({ tone: 'error', text: externalError });
+    }
+  }, [externalError]);
 
   useEffect(() => {
     if (passwordRecoveryMode) {
@@ -163,8 +172,13 @@ export function AuthForm({ initialMode = 'signin', onSuccess }) {
             disabled={busy}
           >
             <GoogleIcon />
-            Tiếp tục với Google
+            {mode === 'signup' ? 'Đăng ký nhanh với Google' : 'Tiếp tục với Google'}
           </Button>
+          {googleEnabled === false && (
+            <p className="text-center text-[11px] leading-relaxed text-amber-300/90">
+              Google OAuth đang chờ kích hoạt (chưa bật Google provider &amp; Client ID/Secret trên Supabase Dashboard).
+            </p>
+          )}
 
           <div className="relative flex items-center py-0.5">
             <div className="flex-1 border-t border-white/[0.08]" />

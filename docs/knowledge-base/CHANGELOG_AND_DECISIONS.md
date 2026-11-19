@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Google OAuth PKCE Hardening & Live Auth Audit
+
+- **Request**: Inspect and harden Google Sign-In / Sign-Up OAuth setup.
+- **Findings & Changes Implemented**:
+  - Audited live `https://gvgyztwpjvjvztwhwnue.supabase.co/auth/v1/settings`: verified `external.email: true`, `disable_signup: false`, while `external.google` is `false` (awaiting Google Client ID/Secret on Supabase Dashboard).
+  - Upgraded [src/utils/supabaseClient.js](../../src/utils/supabaseClient.js) to `flowType: 'pkce'`.
+  - Upgraded [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx): added live `googleEnabled` probe (`/auth/v1/settings`), dedicated `${origin}/auth` callback redirect with `prompt: 'select_account'`, and `sessionStorage` return-path restoration (`consumeAuthReturnPath`).
+  - Upgraded [src/components/AuthModal.jsx](../../src/components/AuthModal.jsx) & [src/pages/Auth.jsx](../../src/pages/Auth.jsx): dynamic sign-in/sign-up Google CTA label, live activation notice when `googleEnabled === false`, PKCE `?code=` exchange spinner, and OAuth callback error handling.
+
+---
+
 ## [2026-11-19] — Free-Tier Audit Verification, 80%/90%/95% Resend Alerts & POC Validation Phase Lock
 
 - **Request**: Verify all packages & infrastructure stay strictly on Free Tier, alert owner email (`tranlinhmarcus2406@gmail.com`) via Resend at 80%, 90%, 95%, and 100% quota thresholds, and show a respectful POC Validation Phase screen when any quota hits its cap.
