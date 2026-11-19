@@ -4,6 +4,15 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Live Google OAuth Enabled & Verified via Supabase Management API
+
+- **Request**: Configure Google OAuth Client ID & Secret, Redirect URLs, and Vietnamese Auth email templates on live Supabase project `gvgyztwpjvjvztwhwnue`.
+- **Changes & Verification**:
+  - Updated Supabase project Auth config via `PATCH /v1/projects/gvgyztwpjvjvztwhwnue/config/auth`: enabled `external_google_enabled: true`, configured `site_url` (`https://vnsavingpro.vercel.app`) & `uri_allow_list` (`https://vnsavingpro.vercel.app/**,http://localhost:3000/**`), and applied Vietnamese confirmation & password recovery email subjects/HTML templates ([confirm-signup.html](../../supabase/email-templates/confirm-signup.html), [reset-password.html](../../supabase/email-templates/reset-password.html)).
+  - Verified live `/auth/v1/settings` (`external.google === true`) and `GET /auth/v1/authorize?provider=google&redirect_to=https://vnsavingpro.vercel.app/auth` returns HTTP `302` redirecting to `https://accounts.google.com/o/oauth2/v2/auth`.
+
+---
+
 ## [2026-11-19] — Google OAuth PKCE Hardening & Live Auth Audit
 
 - **Request**: Inspect and harden Google Sign-In / Sign-Up OAuth setup.
