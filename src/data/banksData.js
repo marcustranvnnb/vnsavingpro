@@ -1,4 +1,4 @@
-export const RATES_UPDATED_AT = "18/11/2026";
+export const RATES_UPDATED_AT = "19/11/2026";
 
 export const INITIAL_BANKS_DATA = [
   {

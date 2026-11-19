@@ -24,7 +24,7 @@ export const DIGITAL_BANKS = {
         type: 'term',
         description: 'Gửi tiết kiệm kỳ hạn cố định, lãi suất cạnh tranh',
         sourceUrl: 'https://cake.vn/tien-gui/tien-gui-tieu-chuan',
-        lastUpdated: '18/11/2026',
+        lastUpdated: '19/11/2026',
         rates: [
           { term: '1 tháng', termMonths: 1, endRate: 4.75, startRate: 4.70, monthlyRate: null, quarterlyRate: null },
           { term: '2 tháng', termMonths: 2, endRate: 4.75, startRate: 4.70, monthlyRate: null, quarterlyRate: null },
@@ -63,7 +63,7 @@ export const DIGITAL_BANKS = {
         type: 'accumulate',
         description: 'Gửi góp nhiều lần, tích lũy dần từng bước',
         sourceUrl: 'https://cake.vn/tien-gui/tien-gui-co-ky-han-tich-luy',
-        lastUpdated: '18/11/2026',
+        lastUpdated: '19/11/2026',
         rates: [
           { term: '6 tháng', termMonths: 6, endRate: 4.50, listedRate: 4.50, note: 'Lãi suất cơ bản' },
           { term: '9 tháng', termMonths: 9, endRate: 6.70, listedRate: 6.70, note: 'Đã gồm ưu đãi tích lũy (cơ bản 4.50%)' },
@@ -177,7 +177,7 @@ export const DIGITAL_BANKS = {
         description: 'Gửi cố định kỳ hạn qua Liobank, mặc định 6.2% · CTKM đến 8.2%/năm',
         sourceUrl: 'https://liobank.vn/vn/deposit',
         ratesSourceUrl: 'https://liobank.vn/vn/deposit-tariffs',
-        lastUpdated: '18/11/2026',
+        lastUpdated: '19/11/2026',
         rates: [
           { term: '1 tháng', termMonths: 1, endRate: 4.75 },
           { term: '2 tháng', termMonths: 2, endRate: 4.75 },
@@ -237,7 +237,7 @@ export const DIGITAL_BANKS = {
         type: 'mixed',
         description: 'Gửi tiết kiệm trực tuyến từ 100K, lãi suất đến 8.6%/năm',
         sourceUrl: 'https://www.tnex.vn/san-pham/tiet-kiem',
-        lastUpdated: '18/11/2026',
+        lastUpdated: '19/11/2026',
         rates: [
           { term: 'Không kỳ hạn (Flex)', termMonths: 0, endRate: 0.50, note: 'Theo trần không kỳ hạn NHNN' },
           { term: '1 tháng', termMonths: 1, endRate: 4.75, note: 'Từ 1 đến dưới 6 tháng' },
@@ -288,7 +288,7 @@ export const DIGITAL_BANKS = {
         type: 'term',
         description: 'Tiết kiệm kỳ hạn, chia nhỏ sổ thông minh, ưu đãi đến 8.2%/năm',
         sourceUrl: 'https://timo.vn/tiet-kiem-co-ky-han/',
-        lastUpdated: '18/11/2026',
+        lastUpdated: '19/11/2026',
         rates: [
           { term: '1 tháng', termMonths: 1, endRate: 4.75, note: 'Trần lãi suất <6 tháng NHNN' },
           { term: '3 tháng', termMonths: 3, endRate: 4.75, note: 'Trần lãi suất <6 tháng NHNN' },
