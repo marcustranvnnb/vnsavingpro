@@ -1,29 +1,43 @@
 import React from 'react';
 import { Home, User, Users } from 'lucide-react';
+import { useI18n } from '../i18n/index.jsx';
 import { cx } from './ui.jsx';
 
 export const HOUSEHOLD_MODES = [
   {
     id: 'INDIVIDUAL',
     label: 'Cá nhân',
+    labelEn: 'Individual',
+    labelJa: '個人',
     shortDesc: '1 nguồn thu · Dự phòng 4T',
+    shortDescEn: '1 earner · 4M EF',
+    shortDescJa: '1人収入 · 緊急資金4ヶ月',
     icon: User,
   },
   {
     id: 'COUPLE',
     label: 'Cặp đôi',
+    labelEn: 'Couple',
+    labelJa: 'カップル',
     shortDesc: '2 thu nhập · Dự phòng 6T',
+    shortDescEn: '2 earners · 6M EF',
+    shortDescJa: '2人収入 · 緊急資金6ヶ月',
     icon: Users,
   },
   {
     id: 'FAMILY',
     label: 'Gia đình',
+    labelEn: 'Family',
+    labelJa: '家族',
     shortDesc: 'Có phụ thuộc · Dự phòng 6–12T',
+    shortDescEn: 'Dependents · 6–12M EF',
+    shortDescJa: '扶養あり · 緊急資金6〜12ヶ月',
     icon: Home,
   },
 ];
 
 export function HouseholdModeSwitch({ value, onChange, compact = false }) {
+  const { tx } = useI18n();
   return (
     <div className={cx('grid grid-cols-3 gap-1.5 rounded-xl bg-white/[0.03] p-1 ring-1 ring-inset ring-white/[0.07]')}>
       {HOUSEHOLD_MODES.map((m) => {
@@ -44,9 +58,13 @@ export function HouseholdModeSwitch({ value, onChange, compact = false }) {
           >
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <Icon className={cx('size-3.5 shrink-0', active ? 'text-indigo-300' : 'text-zinc-500')} />
-              <span>{m.label}</span>
+              <span>{tx(m.label, m.labelEn, m.labelJa)}</span>
             </span>
-            {!compact && <span className="mt-0.5 hidden text-[10px] text-zinc-500 sm:block">{m.shortDesc}</span>}
+            {!compact && (
+              <span className="mt-0.5 hidden text-[10px] text-zinc-500 sm:block">
+                {tx(m.shortDesc, m.shortDescEn, m.shortDescJa)}
+              </span>
+            )}
           </button>
         );
       })}

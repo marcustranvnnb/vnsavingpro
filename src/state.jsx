@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from './data/banksData.js';
-import { getPageTitle, getRoutePath, resolveRouteId } from './tools.js';
+import { getLocalizedPageTitle, getRoutePath, resolveRouteId } from './tools.js';
+import { useI18n } from './i18n/index.jsx';
 import { fetchLiveRatesFromApi } from './utils/apiClient.js';
 import { isAnalyticsAllowed, syncUserPrefCookie } from './utils/cookieManager.js';
 import { clampNum, cryptoStorage, isPlainObject } from './utils/cryptoStorage.js';
@@ -39,9 +40,10 @@ export function navigate(to, { replace = false } = {}) {
 
 export function useRoute() {
   const [state, setState] = useState(readLocation);
+  const { lang } = useI18n();
 
   useEffect(() => {
-    const title = getPageTitle(state.route);
+    const title = getLocalizedPageTitle(state.route, lang);
     document.title = title;
     syncUserPrefCookie({ lastRoute: state.route });
     if (isAnalyticsAllowed() && typeof window !== 'undefined' && Array.isArray(window.dataLayer)) {
@@ -50,9 +52,10 @@ export function useRoute() {
         page_path: `${window.location.pathname}${window.location.search}`,
         page_title: title,
         route_id: state.route,
+        lang,
       });
     }
-  }, [state.route]);
+  }, [state.route, lang]);
 
   useEffect(() => {
     const onChange = () => {

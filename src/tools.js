@@ -8,6 +8,15 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v1.7.0.0',
+    date: '19/11/2026',
+    title: 'Đa ngôn ngữ Việt · Anh · Nhật (VI · EN · JA)',
+    items: [
+      'Bổ sung chuyển đổi nhanh 3 ngôn ngữ Tiếng Việt, English và 日本語 trên thanh điều hướng, chân trang và menu di động.',
+      'Bản địa hoá đồng bộ từ giao diện, định dạng số/tiền tệ (tỷ/triệu · B/M/K · 億/万), kỳ hạn, điểm khả thi phía Server API cho tới báo cáo Google Docs & CSV.',
+    ],
+  },
+  {
     version: 'v1.6.0.0',
     date: '19/11/2026',
     title: 'Làm mới Trang chủ, tối ưu Responsive Mobile/Tablet/PC & Chuẩn phiên bản 4 số',
@@ -203,4 +212,240 @@ export function getRoutePath(routeId) {
 export function getPageTitle(routeId) {
   if (!routeId || routeId === HOME_PAGE.id) return HOME_PAGE.pageTitle;
   return toolById(routeId)?.pageTitle || HOME_PAGE.pageTitle;
+}
+
+const TOOL_I18N = {
+  plan: {
+    en: {
+      label: 'Passive Income',
+      short: 'Plan',
+      pageTitle: 'Passive Income & Household Roadmap — VnSavingPro',
+      desc: 'Plan monthly passive income or target capital for Individuals, Couples & Families with Emergency Fund & Stress-tests.',
+    },
+    ja: {
+      label: '不労所得プラン',
+      short: 'プラン',
+      pageTitle: '不労所得・世帯別ロードマップ — VnSavingPro',
+      desc: '個人・カップル・家族向けに目標金額や毎月の不労所得、緊急資金、ストレステストを一括設計します。',
+    },
+  },
+  rates: {
+    en: {
+      label: 'Bank Rates',
+      short: 'Rates',
+      pageTitle: 'Vietnam Digital Bank Savings Rates — VnSavingPro',
+      desc: 'Daily auto-synced interest rates across TNEX, LioBank, Cake and Timo for every tenure.',
+    },
+    ja: {
+      label: '金利比較',
+      short: '金利',
+      pageTitle: 'ベトナム主要ネット銀行の金利比較 — VnSavingPro',
+      desc: 'TNEX・LioBank・Cake・Timoの最新定期預金金利を期間別に毎日自動同期して比較できます。',
+    },
+  },
+  calculator: {
+    en: {
+      label: 'Interest Calculator',
+      short: 'Calculator',
+      pageTitle: 'Savings Interest Calculator (SBV Circ. 14) — VnSavingPro',
+      desc: 'Compare 3 calculation methods: Actual Days/365, Nominal Months/12, and Monthly Compounding.',
+    },
+    ja: {
+      label: '利息計算',
+      short: '利息計算',
+      pageTitle: '預金利息シミュレーター（中銀通達14号準拠） — VnSavingPro',
+      desc: '実日数/365日・月割り・毎月複利の3通りの計算方法と一部解約メリットを比較します。',
+    },
+  },
+  ladder: {
+    en: {
+      label: 'Savings Ladder',
+      short: 'Ladder',
+      pageTitle: 'Savings Ladder Simulator — VnSavingPro',
+      desc: 'Split monthly deposits across tenures, track 1M–3M Emergency Fund liquidity, and split 2-earner contributions.',
+    },
+    ja: {
+      label: 'ラダー貯蓄',
+      short: 'ラダー',
+      pageTitle: '階段式定期預金（ラダー）シミュレーション — VnSavingPro',
+      desc: '毎月の積立を短期・長期に分散し、緊急資金カバー率や2人の拠出配分を最適化します。',
+    },
+  },
+  career: {
+    en: {
+      label: 'Salary Growth',
+      short: 'Career',
+      pageTitle: 'Career Raise & Financial Freedom — VnSavingPro',
+      desc: 'Simulate how annual raises or job hopping accelerate financial freedom for 1 or 2 earners.',
+    },
+    ja: {
+      label: 'キャリア収入',
+      short: '昇給',
+      pageTitle: '昇給・転職ロードマップ — VnSavingPro',
+      desc: '1人または2人分の昇給・転職シナリオが資産目標達成をどれだけ早めるか試算します。',
+    },
+  },
+  inflation: {
+    en: {
+      label: 'Inflation & Power',
+      short: 'Inflation',
+      pageTitle: 'Inflation & Real Purchasing Power — VnSavingPro',
+      desc: 'Calculate Fisher real yield after inflation and future purchasing power of passive income.',
+    },
+    ja: {
+      label: 'インフレ実質値',
+      short: 'インフレ',
+      pageTitle: 'インフレ率と実質購買力 — VnSavingPro',
+      desc: 'フィッシャー方程式による実質利回りと将来の不労所得の購買力目減りを試算します。',
+    },
+  },
+};
+
+const EXTRA_TITLE_I18N = {
+  home: {
+    en: 'VnSavingPro — Vietnam Digital Bank Passive Income Planner & Rate Comparator',
+    ja: 'VnSavingPro — ベトナム定期預金・不労所得ロードマップ設計',
+  },
+  auth: {
+    en: 'Sign In & Account — VnSavingPro',
+    ja: 'ログイン・新規登録 — VnSavingPro',
+  },
+  profile: {
+    en: 'Profile & Saved Plans — VnSavingPro',
+    ja: 'プロフィール・保存済みプラン — VnSavingPro',
+  },
+};
+
+export function getLocalizedTools(lang = 'vi') {
+  if (lang !== 'en' && lang !== 'ja') return TOOLS;
+  return TOOLS.map((t) => {
+    const tr = TOOL_I18N[t.id]?.[lang];
+    return tr ? { ...t, ...tr } : t;
+  });
+}
+
+export function getLocalizedPageTitle(routeId, lang = 'vi') {
+  if (lang === 'en' || lang === 'ja') {
+    if (!routeId || routeId === HOME_PAGE.id) return EXTRA_TITLE_I18N.home[lang];
+    if (TOOL_I18N[routeId]?.[lang]?.pageTitle) return TOOL_I18N[routeId][lang].pageTitle;
+    if (EXTRA_TITLE_I18N[routeId]?.[lang]) return EXTRA_TITLE_I18N[routeId][lang];
+  }
+  return getPageTitle(routeId);
+}
+
+export function getLocalizedVersionLabel(lang = 'vi') {
+  if (lang === 'en') return 'Multilingual (VI · EN · JA) · Household Planning · Daily Sync';
+  if (lang === 'ja') return '多言語対応（VI · EN · JA）・世帯別設計・毎日金利自動同期';
+  return APP_VERSION_LABEL;
+}
+
+const HIGHLIGHTS_I18N = {
+  'v1.7.0.0': {
+    en: {
+      title: 'Full 3-Language Support (Vietnamese · English · Japanese)',
+      items: [
+        'Added instant VI / EN / JA language switcher across navigation, footer, and mobile tool drawer.',
+        'End-to-end localization spanning number/tenure formatting, server API calculations, feasibility scoring, and Google Docs / CSV exports.',
+      ],
+    },
+    ja: {
+      title: '3言語フル対応（ベトナム語・英語・日本語）',
+      items: [
+        'ヘッダー・フッター・モバイルメニューに VI / EN / JA の即時切り替え機能を追加しました。',
+        'UI・通貨/期間フォーマット（億/万・ヶ月）・サーバー計算・診断コメント・エクスポート帳票まで全面多言語化しました。',
+      ],
+    },
+  },
+  'v1.6.0.0': {
+    en: {
+      title: 'Refreshed Homepage, Responsive Mobile/Tablet/PC UX & 4-Part Versioning',
+      items: [
+        'Updated Homepage with compact Individual/Couple/Family switch in Quick Estimate, 3 household cards, and Google/Cloud sync guide.',
+        'Polished responsive layout across Mobile, Tablet, and Desktop (touch targets, horizontal-scroll safe tables, non-overlapping sticky bars).',
+        'Adopted 4-part versioning (v1.6.0.0+) auto-incremented on every update.',
+      ],
+    },
+    ja: {
+      title: 'トップページ刷新・マルチデバイス対応・4桁バージョン管理導入',
+      items: [
+        'トップページに「個人・カップル・家族」別クイック試算とGoogle/Cloud連携案内を追加しました。',
+        'スマホ・タブレット・PC向けにタッチ操作性・テーブル表示・下部バーの重なりを最適化しました。',
+        'アップデートごとに自動更新される4桁バージョン管理（v1.6.0.0〜）を導入しました。',
+      ],
+    },
+  },
+  'v1.5.5': {
+    en: {
+      title: 'Individual / Couple / Family Planning, Google OAuth & Supabase Cloud',
+      items: [
+        'Supports Individual, Couple, and Family profiles with Fund-First Emergency Fund mode, 2-earner contribution splits, and stress tests.',
+        'Google OAuth / Email Sign-In, Personal Profile, and multi-scenario Cloud persistence on Supabase.',
+        'Free-Tier Quota Guardian and automated Resend email alerts.',
+      ],
+    },
+    ja: {
+      title: '個人/カップル/家族モード・Google認証・Supabaseクラウド保存',
+      items: [
+        '個人・カップル・家族の3モデルに対応し、緊急資金優先積立や2人の負担比率、収入停止ストレステストを実装しました。',
+        'Google OAuth / メール認証、プロフィール設定、複数プランのクラウド保存に対応しました。',
+        '無料枠クォータ監視とResend自動通知アラートを導入しました。',
+      ],
+    },
+  },
+  'v1.5.2': {
+    en: {
+      title: 'Automated Daily Rate Sync for 4 Digital Banks (09:00 AM UTC+7)',
+      items: [
+        'Dedicated scrapers for Cake by VPBank, LioBank (with dynamic CTKM promo PDF parsing), Timo, and TNEX.',
+        'Displays live web app version & changelog in navigation and footer.',
+      ],
+    },
+    ja: {
+      title: 'ベトナム主要4ネット銀行の金利毎日自動同期（09:00 AM）',
+      items: [
+        'Cake by VPBank、LioBank（優遇PDF自動解析）、Timo、TNEX専用スクレイパーを毎日自動実行します。',
+        'ナビゲーションとフッターから最新バージョンと更新履歴を直接確認できます。',
+      ],
+    },
+  },
+  'v1.4.0': {
+    en: {
+      title: 'Basic/Pro Modes, Google Docs Export & Feedback Backup',
+      items: [
+        'Split planner inputs into Basic (fast) and Pro (inflation, step-up deposits, multi-source income).',
+        'Direct Google Docs / .DOC report export and local JSON/CSV feedback backup.',
+      ],
+    },
+    ja: {
+      title: '基本/詳細モード・Googleドキュメント出力・フィードバック保存',
+      items: [
+        '入力画面を基本モード（簡易）と詳細モード（インフレ・昇給・副収入）に分割しました。',
+        'Googleドキュメント / .DOC形式でのレポート出力とJSON/CSVバックアップを追加しました。',
+      ],
+    },
+  },
+  'v1.3.0': {
+    en: {
+      title: 'Tier 1 Serverless Architecture & Proprietary Algorithm Protection',
+      items: [
+        'Moved compounding, Feasibility Score, and bank optimization math exclusively to Vercel Serverless API (/api/calculate).',
+        'Automatic live rate delivery via /api/rates with 24h cache.',
+      ],
+    },
+    ja: {
+      title: 'サーバーレス構成（Tier 1）＆独自計算ロジックのサーバー保護',
+      items: [
+        '複利・達成可能性スコア・銀行最適化ロジックをすべてVercelサーバーレスAPI（/api/calculate）へ移行しました。',
+        '/api/rates経由で最新金利と24時間キャッシュを自動配信します。',
+      ],
+    },
+  },
+};
+
+export function getLocalizedVersionHighlights(lang = 'vi') {
+  if (lang !== 'en' && lang !== 'ja') return VERSION_HIGHLIGHTS;
+  return VERSION_HIGHLIGHTS.map((r) => {
+    const tr = HIGHLIGHTS_I18N[r.version]?.[lang];
+    return tr ? { ...r, title: tr.title, items: tr.items } : r;
+  });
 }

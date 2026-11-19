@@ -2,6 +2,7 @@ import React, { Component, Suspense, lazy, useEffect, useState } from 'react';
 import { RotateCcw, ShieldAlert } from 'lucide-react';
 import { AppProvider, href, navigate, useRoute } from './state.jsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { I18nProvider, LANG_STORAGE_KEY } from './i18n/index.jsx';
 import { cryptoStorage } from './utils/cryptoStorage.js';
 import { TopNav, MobileTabBar, Footer } from './components/Layout.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
@@ -122,23 +123,46 @@ class AppErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      let lang = 'vi';
+      try {
+        const stored = window.localStorage?.getItem(LANG_STORAGE_KEY);
+        if (stored === 'en' || stored === 'ja') lang = stored;
+      } catch {
+        // Ignore
+      }
+      const errTitle =
+        lang === 'en'
+          ? 'Invalid Browser Storage Detected'
+          : lang === 'ja'
+            ? 'ブラウザ保存データの異常を検知しました'
+            : 'Phát hiện dữ liệu trình duyệt không hợp lệ';
+      const errDesc =
+        lang === 'en'
+          ? 'Security protection blocked corrupted or malformed local data. Click below to reset temporary storage and reload safely.'
+          : lang === 'ja'
+            ? 'セキュリティ保護により破損データをブロックしました。下のボタンを押して初期化し、安全に再読み込みしてください。'
+            : 'Hệ thống bảo vệ đã chặn dữ liệu bị hỏng hoặc sai định dạng để bảo vệ thiết bị của bạn. Nhấn nút dưới đây để dọn sạch bộ nhớ tạm và khôi phục ngay lập tức.';
+      const errBtn =
+        lang === 'en'
+          ? 'Reset Default Data & Reload'
+          : lang === 'ja'
+            ? 'デフォルト設定にリセットして再読み込み'
+            : 'Khôi phục dữ liệu mặc định & Tải lại';
+
       return (
         <div className="flex min-h-dvh items-center justify-center bg-canvas px-4 text-zinc-200">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-surface p-6 text-center shadow-2xl">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/25">
               <ShieldAlert className="size-6" />
             </div>
-            <h1 className="text-lg font-semibold text-white">Phát hiện dữ liệu trình duyệt không hợp lệ</h1>
-            <p className="mt-2 text-xs leading-relaxed text-zinc-400">
-              Hệ thống bảo vệ đã chặn dữ liệu bị hỏng hoặc sai định dạng để bảo vệ thiết bị của bạn. Nhấn nút dưới đây để
-              dọn sạch bộ nhớ tạm và khôi phục ngay lập tức.
-            </p>
+            <h1 className="text-lg font-semibold text-white">{errTitle}</h1>
+            <p className="mt-2 text-xs leading-relaxed text-zinc-400">{errDesc}</p>
             <button
               type="button"
               onClick={this.handleRecover}
               className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 text-sm font-medium text-white transition hover:bg-indigo-400"
             >
-              <RotateCcw className="size-4" /> Khôi phục dữ liệu mặc định &amp; Tải lại
+              <RotateCcw className="size-4" /> {errBtn}
             </button>
           </div>
         </div>
@@ -151,11 +175,13 @@ class AppErrorBoundary extends Component {
 export default function App() {
   return (
     <AppErrorBoundary>
-      <AppProvider>
-        <AuthProvider>
-          <Shell />
-        </AuthProvider>
-      </AppProvider>
+      <I18nProvider>
+        <AppProvider>
+          <AuthProvider>
+            <Shell />
+          </AuthProvider>
+        </AppProvider>
+      </I18nProvider>
     </AppErrorBoundary>
   );
 }

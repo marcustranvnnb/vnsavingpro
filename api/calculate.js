@@ -52,6 +52,8 @@ export default async function handler(req, res) {
   }
 
   const { action, payload = {} } = body || {};
+  const lang = payload.lang === 'en' || payload.lang === 'ja' ? payload.lang : 'vi';
+  const lx = (vi, en, ja) => (lang === 'en' ? en : lang === 'ja' ? ja : vi);
   res.setHeader('Cache-Control', 'no-store');
 
   switch (action) {
@@ -61,6 +63,7 @@ export default async function handler(req, res) {
         monthlySavingsAmount: payload.monthlySavingsAmount,
         initialCapital: payload.initialCapital ?? 0,
         annualInterestRate: payload.annualInterestRate,
+        lang,
       });
       return res.status(200).json({
         timeText: r.timeText,
@@ -99,6 +102,7 @@ export default async function handler(req, res) {
         prioritizeEmergencyFund: prioritizeEf,
         emergencyFundTarget: prioritizeEf ? efTarget : 0,
         emergencyFundRate: Number(payload.emergencyFundRate) || 4.75,
+        lang,
       };
 
       const roadmap = calculatePassiveIncomeRoadmap(baseArgs);
@@ -124,6 +128,7 @@ export default async function handler(req, res) {
           emergencyFundRate: Number(payload.emergencyFundRate) || 4.75,
           annualStepUpPct: baseArgs.annualStepUpPct,
           annualBonusAmount: baseArgs.annualBonusAmount,
+          lang,
         }),
         prioritizeEmergencyFund: prioritizeEf,
       };
@@ -137,6 +142,7 @@ export default async function handler(req, res) {
         incomeMax: payload.totalIncomeMax ?? null,
         hasExtraIncome: Boolean(payload.hasExtraIncome),
         householdAnalysis,
+        lang,
       });
 
       const saving = Number(baseArgs.monthlySavingsAmount) || 0;
@@ -148,21 +154,35 @@ export default async function handler(req, res) {
       if (roadmap.solveMode === 'SAVING') {
         const s1 = calculatePassiveIncomeRoadmap({ ...baseArgs, targetYears: Math.min(50, years + 2) });
         const s2 = calculatePassiveIncomeRoadmap({ ...baseArgs, initialCapital: capital + 50_000_000 });
+        const stepUpTarget = Math.max(10, Number(baseArgs.annualStepUpPct || 0) + 5);
         const s3 =
           payload.topForTenure && payload.topForTenure.rate > rate
             ? calculatePassiveIncomeRoadmap({ ...baseArgs, annualInterestRate: payload.topForTenure.rate })
             : calculatePassiveIncomeRoadmap({
                 ...baseArgs,
-                annualStepUpPct: Math.max(10, Number(baseArgs.annualStepUpPct || 0) + 5),
+                annualStepUpPct: stepUpTarget,
               });
         const s3Title =
           payload.topForTenure && payload.topForTenure.rate > rate
-            ? `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`
-            : `Tăng mức gửi +${Math.max(10, Number(baseArgs.annualStepUpPct || 0) + 5)}%/năm`;
+            ? lx(
+                `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`,
+                `Switch to ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`,
+                `${payload.topForTenure.bankName} (${payload.topForTenure.rateLabel}) に変更`
+              )
+            : lx(
+                `Tăng mức gửi +${stepUpTarget}%/năm`,
+                `Increase deposits +${stepUpTarget}%/yr`,
+                `毎年 +${stepUpTarget}% 増額積立`
+              );
 
+        const extYears = Math.min(50, years + 2);
         scenarios = [
           {
-            title: `Kéo dài thời hạn lên ${Math.min(50, years + 2)} năm`,
+            title: lx(
+              `Kéo dài thời hạn lên ${extYears} năm`,
+              `Extend horizon to ${extYears} years`,
+              `目標期間を${extYears}年に延長`
+            ),
             r: {
               monthsNeeded: s1.monthsNeeded,
               timeText: s1.timeText,
@@ -171,7 +191,7 @@ export default async function handler(req, res) {
             },
           },
           {
-            title: 'Thêm 50 triệu vốn ban đầu',
+            title: lx('Thêm 50 triệu vốn ban đầu', 'Add 50M VND initial capital', '初期元本を5,000万VND追加'),
             r: {
               monthsNeeded: s2.monthsNeeded,
               timeText: s2.timeText,
@@ -196,18 +216,28 @@ export default async function handler(req, res) {
         let s3Title;
         if (payload.topForTenure && payload.topForTenure.rate > rate) {
           s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, annualInterestRate: payload.topForTenure.rate });
-          s3Title = `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`;
+          s3Title = lx(
+            `Chuyển sang ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`,
+            `Switch to ${payload.topForTenure.bankName} ${payload.topForTenure.rateLabel}`,
+            `${payload.topForTenure.bankName} (${payload.topForTenure.rateLabel}) に変更`
+          );
         } else if (Number(baseArgs.annualStepUpPct || 0) === 0) {
           s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, annualStepUpPct: 10 });
-          s3Title = 'Tăng mức gửi +10% mỗi năm';
+          s3Title = lx('Tăng mức gửi +10% mỗi năm', 'Increase deposits +10% annually', '毎年 +10% 増額積立');
         } else {
           s3 = calculatePassiveIncomeRoadmap({ ...baseArgs, initialCapital: capital + 50_000_000 });
-          s3Title = 'Thêm 50 triệu vốn ban đầu';
+          s3Title = lx('Thêm 50 triệu vốn ban đầu', 'Add 50M VND initial capital', '初期元本を5,000万VND追加');
         }
 
         scenarios = [
-          { title: 'Tiết kiệm thêm 1 triệu/tháng', r: { monthsNeeded: s1.monthsNeeded, timeText: s1.timeText } },
-          { title: 'Tiết kiệm thêm 3 triệu/tháng', r: { monthsNeeded: s2.monthsNeeded, timeText: s2.timeText } },
+          {
+            title: lx('Tiết kiệm thêm 1 triệu/tháng', 'Save +1M VND more / month', '毎月さらに100万VND積立'),
+            r: { monthsNeeded: s1.monthsNeeded, timeText: s1.timeText },
+          },
+          {
+            title: lx('Tiết kiệm thêm 3 triệu/tháng', 'Save +3M VND more / month', '毎月さらに300万VND積立'),
+            r: { monthsNeeded: s2.monthsNeeded, timeText: s2.timeText },
+          },
           { title: s3Title, r: { monthsNeeded: s3.monthsNeeded, timeText: s3.timeText } },
         ];
       }
@@ -267,6 +297,7 @@ export default async function handler(req, res) {
         customAllocations: payload.customAllocations,
         totalMonths: payload.totalMonths,
         bankRates: payload.bankRates,
+        lang,
       });
       return res.status(200).json(result);
     }

@@ -11,8 +11,8 @@ import {
   Shield,
   Sparkles,
 } from 'lucide-react';
+import { getBankCopy, useI18n } from '../i18n/index.jsx';
 import { href, useRates, useToast } from '../state.jsx';
-import { TENURE_LABELS } from '../data/banksData.js';
 import { DIGITAL_BANKS } from '../data/bankPackagesData.js';
 import { safeExternalUrl } from '../utils/cryptoStorage.js';
 import { fmt, pct } from '../utils/format.js';
@@ -35,25 +35,28 @@ const TENURES = ['1W', '2W', '3W', '1M', '3M', '6M', '9M', '12M', '18M', '24M', 
 const KEY_TENURES = ['1M', '3M', '6M', '9M', '12M', '18M', '24M'];
 
 const PAYOUT_LABELS = {
-  MATURITY: 'Cuối kỳ',
-  UPFRONT: 'Đầu kỳ',
-  MONTHLY: 'Hàng tháng',
-  QUARTERLY: 'Hàng quý',
-  FLEXIBLE: 'Linh hoạt',
-  ACCUMULATIVE: 'Tích luỹ',
+  MATURITY: { vi: 'Cuối kỳ', en: 'At Maturity', ja: '満期一括' },
+  UPFRONT: { vi: 'Đầu kỳ', en: 'Upfront', ja: '前払い' },
+  MONTHLY: { vi: 'Hàng tháng', en: 'Monthly', ja: '毎月利払' },
+  QUARTERLY: { vi: 'Hàng quý', en: 'Quarterly', ja: '四半期毎' },
+  FLEXIBLE: { vi: 'Linh hoạt', en: 'Flexible', ja: '柔軟' },
+  ACCUMULATIVE: { vi: 'Tích luỹ', en: 'Accumulative', ja: '積立' },
 };
 
 const TYPE_LABELS = {
-  term: 'Có kỳ hạn',
-  demand: 'Không kỳ hạn',
-  'auto-savings': 'Tự động sinh lời',
-  'goal-savings': 'Theo mục tiêu',
-  accumulate: 'Tích luỹ góp thêm',
-  mixed: 'Linh hoạt + Kỳ hạn',
+  term: { vi: 'Có kỳ hạn', en: 'Fixed Term', ja: '定期預金' },
+  demand: { vi: 'Không kỳ hạn', en: 'Demand', ja: '普通預金' },
+  'auto-savings': { vi: 'Tự động sinh lời', en: 'Auto Savings', ja: '自動運用' },
+  'goal-savings': { vi: 'Theo mục tiêu', en: 'Goal Based', ja: '目的別貯蓄' },
+  accumulate: { vi: 'Tích luỹ góp thêm', en: 'Accumulative', ja: '積立追加可' },
+  mixed: { vi: 'Linh hoạt + Kỳ hạn', en: 'Flexible + Term', ja: '混合プラン' },
 };
 
 function PackageItem({ pkg }) {
   const [open, setOpen] = useState(false);
+  const { lang, tx } = useI18n();
+  const typeEntry = TYPE_LABELS[pkg.type];
+  const typeLabel = typeEntry ? typeEntry[lang] : pkg.type;
 
   return (
     <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] transition-colors hover:border-white/[0.12]">
@@ -65,14 +68,14 @@ function PackageItem({ pkg }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-white">{pkg.name}</span>
-            <Badge tone="neutral">{TYPE_LABELS[pkg.type] || pkg.type}</Badge>
+            <Badge tone="neutral">{typeLabel}</Badge>
           </div>
           <p className="mt-1 line-clamp-2 text-xs text-zinc-500 sm:truncate">{pkg.description}</p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {pkg.bestRate && (
             <Badge tone="success">
-              Đến {pct(pkg.bestRate)}/năm
+              {tx(`Đến ${pct(pkg.bestRate, 2, lang)}/năm`, `Up to ${pct(pkg.bestRate, 2, lang)}/yr`, `最大 ${pct(pkg.bestRate, 2, lang)}/年`)}
             </Badge>
           )}
           {open ? <ChevronUp className="size-4 text-zinc-500" /> : <ChevronDown className="size-4 text-zinc-500" />}
@@ -86,18 +89,25 @@ function PackageItem({ pkg }) {
               <table className="w-full text-left text-xs">
                 <thead className="bg-white/[0.03] text-zinc-500">
                   <tr>
-                    <th className="px-3 py-2 font-medium">Kỳ hạn</th>
-                    <th className="px-3 py-2 text-right font-medium">Lãi suất (%/năm)</th>
-                    <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Chi tiết</th>
+                    <th className="px-3 py-2 font-medium">{tx('Kỳ hạn', 'Tenure', '預入期間')}</th>
+                    <th className="px-3 py-2 text-right font-medium">{tx('Lãi suất (%/năm)', 'Rate (% p.a.)', '金利 (年率%)')}</th>
+                    <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">
+                      {tx('Chi tiết', 'Details', '備考')}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04] tabular-nums">
                   {pkg.rates.map((r, idx) => (
                     <tr key={idx}>
                       <td className="px-3 py-2 font-medium text-zinc-200">{r.term}</td>
-                      <td className="px-3 py-2 text-right font-semibold text-emerald-300">{pct(r.endRate)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-emerald-300">{pct(r.endRate, 2, lang)}</td>
                       <td className="hidden px-3 py-2 text-right text-zinc-500 sm:table-cell">
-                        {r.note || (r.startRate ? `Trả trước: ${pct(r.startRate)}` : r.monthlyRate ? `Hàng tháng: ${pct(r.monthlyRate)}` : '—')}
+                        {r.note ||
+                          (r.startRate
+                            ? `${tx('Trả trước:', 'Upfront:', '前払：')} ${pct(r.startRate, 2, lang)}`
+                            : r.monthlyRate
+                              ? `${tx('Hàng tháng:', 'Monthly:', '毎月：')} ${pct(r.monthlyRate, 2, lang)}`
+                              : '—')}
                       </td>
                     </tr>
                   ))}
@@ -110,7 +120,7 @@ function PackageItem({ pkg }) {
             {pkg.features?.length > 0 && (
               <div>
                 <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-emerald-300">
-                  <CheckCircle2 className="size-3.5" /> Ưu điểm nổi bật
+                  <CheckCircle2 className="size-3.5" /> {tx('Ưu điểm nổi bật', 'Key Highlights', '主な特徴')}
                 </div>
                 <ul className="space-y-1.5 text-xs text-zinc-400">
                   {pkg.features.map((f, i) => (
@@ -125,7 +135,7 @@ function PackageItem({ pkg }) {
             {pkg.conditions?.length > 0 && (
               <div>
                 <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-amber-300">
-                  <Shield className="size-3.5" /> Điều kiện & rút trước hạn
+                  <Shield className="size-3.5" /> {tx('Điều kiện & rút trước hạn', 'Conditions & Early Withdrawal', '条件・中途解約')}
                 </div>
                 <ul className="space-y-1.5 text-xs text-zinc-400">
                   {pkg.conditions.map((c, i) => (
@@ -137,7 +147,10 @@ function PackageItem({ pkg }) {
                   {pkg.minDeposit && (
                     <li className="flex gap-2">
                       <span className="text-amber-400">•</span>
-                      <span>Tối thiểu: <strong className="text-zinc-200">{fmt(pkg.minDeposit)} ₫</strong></span>
+                      <span>
+                        {tx('Tối thiểu:', 'Minimum:', '最低預入額：')}{' '}
+                        <strong className="text-zinc-200">{fmt(pkg.minDeposit, lang)} ₫</strong>
+                      </span>
                     </li>
                   )}
                   {pkg.earlyWithdrawal && (
@@ -153,10 +166,8 @@ function PackageItem({ pkg }) {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-3 text-xs text-zinc-500">
             <div className="flex flex-wrap items-center gap-2">
-              <span>Cập nhật: {pkg.lastUpdated}</span>
-              {pkg.promotion && (
-                <Badge tone="success">{pkg.promotion}</Badge>
-              )}
+              <span>{tx('Cập nhật:', 'Updated:', '更新日：')} {pkg.lastUpdated}</span>
+              {pkg.promotion && <Badge tone="success">{pkg.promotion}</Badge>}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {pkg.promotionUrl && (
@@ -166,7 +177,7 @@ function PackageItem({ pkg }) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-medium text-emerald-300 hover:text-emerald-200"
                 >
-                  Thể lệ CTKM (PDF) <ExternalLink className="size-3" />
+                  {tx('Thể lệ CTKM (PDF)', 'Promo Terms (PDF)', 'キャンペーン規約 (PDF)')} <ExternalLink className="size-3" />
                 </a>
               )}
               {pkg.sourceUrl && (
@@ -176,7 +187,7 @@ function PackageItem({ pkg }) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-indigo-300 hover:text-indigo-200"
                 >
-                  Nguồn chính thức <ExternalLink className="size-3" />
+                  {tx('Nguồn chính thức', 'Official Source', '公式ページ')} <ExternalLink className="size-3" />
                 </a>
               )}
             </div>
@@ -189,6 +200,7 @@ function PackageItem({ pkg }) {
 
 export default function Rates() {
   const { banks, updatedAt, getRate, isCustom, setRate, resetRate } = useRates();
+  const { lang, tx, formatTenure } = useI18n();
   const notify = useToast();
 
   const [tenure, setTenure] = useState('12M');
@@ -218,14 +230,20 @@ export default function Rates() {
     const val = Number(editValue);
     if (!val || val <= 0) return;
     setRate(editTarget.bank, editTarget.tenure, val);
-    notify(`Đã lưu lãi suất ${editTarget.bank.name} (${TENURE_LABELS[editTarget.tenure]})`);
+    notify(
+      tx(
+        `Đã lưu lãi suất ${editTarget.bank.name} (${formatTenure(editTarget.tenure)})`,
+        `Saved ${editTarget.bank.name} (${formatTenure(editTarget.tenure)}) custom rate`,
+        `${editTarget.bank.name} (${formatTenure(editTarget.tenure)}) のカスタム金利を保存しました`
+      )
+    );
     setEditTarget(null);
   };
 
   const resetEdit = () => {
     if (!editTarget) return;
     resetRate(editTarget.bank, editTarget.tenure);
-    notify(`Đã khôi phục lãi suất mặc định`);
+    notify(tx('Đã khôi phục lãi suất mặc định', 'Restored default bank rate', '公式基準金利に戻しました'));
     setEditTarget(null);
   };
 
@@ -233,16 +251,20 @@ export default function Rates() {
     <>
       <PageHeader
         icon={BarChart3}
-        eyebrow={`Dữ liệu lãi suất ${updatedAt}`}
-        title="So sánh lãi suất ngân hàng số"
-        description="Bảng lãi suất niêm yết của Cake, Timo, LioBank và TNEX. Nhấn vào bất kỳ mức lãi suất nào để cập nhật theo chương trình ưu đãi riêng của bạn."
+        eyebrow={tx(`Dữ liệu lãi suất ${updatedAt}`, `Live Bank Rates · ${updatedAt}`, `最新金利データ · ${updatedAt}`)}
+        title={tx('So sánh lãi suất ngân hàng số', 'Compare Digital Bank Interest Rates', 'ネット銀行 定期預金金利比較')}
+        description={tx(
+          'Bảng lãi suất niêm yết của Cake, Timo, LioBank và TNEX. Nhấn vào bất kỳ mức lãi suất nào để cập nhật theo chương trình ưu đãi riêng của bạn.',
+          'Official deposit tariffs from Cake, Timo, LioBank, and TNEX. Tap any rate cell to enter your personal promo or tier rate.',
+          'Cake・Timo・LioBank・TNEXの公式金利一覧です。各セルをクリックすると独自の優遇金利へ上書き設定できます。'
+        )}
         actions={
           <Segmented
             value={section}
             onChange={setSection}
             options={[
-              { value: 'matrix', label: 'Bảng so sánh' },
-              { value: 'packages', label: 'Chi tiết gói gửi' },
+              { value: 'matrix', label: tx('Bảng so sánh', 'Comparison Matrix', '金利比較表') },
+              { value: 'packages', label: tx('Chi tiết gói gửi', 'Product Packages', '商品詳細・特典') },
             ]}
           />
         }
@@ -253,8 +275,12 @@ export default function Rates() {
           {/* Tenure selector pills */}
           <Card className="p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs font-medium text-zinc-400">Chọn kỳ hạn để xếp hạng</span>
-              <span className="text-xs text-zinc-500">Đơn vị: %/năm</span>
+              <span className="text-xs font-medium text-zinc-400">
+                {tx('Chọn kỳ hạn để xếp hạng', 'Select tenure to rank', 'ランキングする預入期間を選択')}
+              </span>
+              <span className="text-xs text-zinc-500">
+                {tx('Đơn vị: %/năm', 'Unit: % p.a.', '単位：年利 %')}
+              </span>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {TENURES.map((t) => {
@@ -271,7 +297,7 @@ export default function Rates() {
                         : 'bg-white/[0.03] text-zinc-400 ring-1 ring-inset ring-white/[0.07] hover:bg-white/[0.06] hover:text-white'
                     )}
                   >
-                    {TENURE_LABELS[t]}
+                    {formatTenure(t)}
                   </button>
                 );
               })}
@@ -280,104 +306,115 @@ export default function Rates() {
 
           {/* Ranked cards for selected tenure */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {sorted.map(({ bank, rate, custom }, idx) => (
-              <Card
-                key={bank.id}
-                className={cx(
-                  'flex flex-col justify-between p-5 transition-colors',
-                  idx === 0 && 'border-emerald-500/30 bg-gradient-to-b from-emerald-500/[0.06] to-surface'
-                )}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <BankMark bank={bank} />
-                      <div>
-                        <div className="text-sm font-semibold text-white">{bank.name}</div>
-                        <div className="text-xs text-zinc-500">{bank.fullName.replace(/^Ngân hàng số\s*/i, '')}</div>
-                      </div>
-                    </div>
-                    {idx === 0 && (
-                      <Badge tone="success">
-                        <Sparkles className="size-3" /> Cao nhất
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="mt-5 flex items-baseline justify-between">
-                    <div>
-                      <div className="text-xs text-zinc-500">Kỳ hạn {TENURE_LABELS[tenure]}</div>
-                      <div
-                        className={cx(
-                          'mt-1 text-3xl font-semibold tracking-tight tabular-nums',
-                          idx === 0 ? 'text-emerald-300' : 'text-white'
-                        )}
-                      >
-                        {pct(rate)}
-                        <span className="ml-1 text-xs font-normal text-zinc-500">/năm</span>
-                      </div>
-                      {bank.promoRates?.[tenure] > rate && (
-                        <div className="mt-1.5 flex items-center gap-1.5">
-                          <Badge tone="success">CTKM: {pct(bank.promoRates[tenure])}</Badge>
-                          {bank.promoUrl && (
-                            <a
-                              href={safeExternalUrl(bank.promoUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-0.5 text-[11px] text-emerald-300 hover:underline"
-                            >
-                              PDF <ExternalLink className="size-2.5" />
-                            </a>
-                          )}
+            {sorted.map(({ bank, rate, custom }, idx) => {
+              const copy = getBankCopy(bank, lang);
+              return (
+                <Card
+                  key={bank.id}
+                  className={cx(
+                    'flex flex-col justify-between p-5 transition-colors',
+                    idx === 0 && 'border-emerald-500/30 bg-gradient-to-b from-emerald-500/[0.06] to-surface'
+                  )}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <BankMark bank={bank} />
+                        <div>
+                          <div className="text-sm font-semibold text-white">{bank.name}</div>
+                          <div className="text-xs text-zinc-500">
+                            {copy.fullName.replace(/^Ngân hàng số\s*/i, '').replace(/Digital Bank\s*/i, '')}
+                          </div>
                         </div>
+                      </div>
+                      {idx === 0 && (
+                        <Badge tone="success">
+                          <Sparkles className="size-3" /> {tx('Cao nhất', 'Best', '最高')}
+                        </Badge>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => openEditor(bank, tenure)}
-                      className="inline-flex items-center gap-1 rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.08] hover:text-white"
-                    >
-                      <Pencil className="size-3" /> {custom ? 'Đã sửa' : 'Sửa'}
-                    </button>
-                  </div>
 
-                  <p className="mt-4 text-xs leading-relaxed text-zinc-400">{bank.notes}</p>
-                  {bank.rateTierNote && (
-                    <p className="mt-1.5 text-[11px] text-indigo-300/80">• {bank.rateTierNote}</p>
-                  )}
-                </div>
+                    <div className="mt-5 flex items-baseline justify-between">
+                      <div>
+                        <div className="text-xs text-zinc-500">
+                          {tx('Kỳ hạn', 'Tenure:', '期間：')} {formatTenure(tenure)}
+                        </div>
+                        <div
+                          className={cx(
+                            'mt-1 text-3xl font-semibold tracking-tight tabular-nums',
+                            idx === 0 ? 'text-emerald-300' : 'text-white'
+                          )}
+                        >
+                          {pct(rate, 2, lang)}
+                          <span className="ml-1 text-xs font-normal text-zinc-500">{tx('/năm', '/yr', '/年')}</span>
+                        </div>
+                        {bank.promoRates?.[tenure] > rate && (
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <Badge tone="success">
+                              {tx('CTKM:', 'Promo:', '特典：')} {pct(bank.promoRates[tenure], 2, lang)}
+                            </Badge>
+                            {bank.promoUrl && (
+                              <a
+                                href={safeExternalUrl(bank.promoUrl)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-0.5 text-[11px] text-emerald-300 hover:underline"
+                              >
+                                PDF <ExternalLink className="size-2.5" />
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => openEditor(bank, tenure)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.08] hover:text-white"
+                      >
+                        <Pencil className="size-3" />{' '}
+                        {custom ? tx('Đã sửa', 'Custom', '変更済') : tx('Sửa', 'Edit', '編集')}
+                      </button>
+                    </div>
 
-                <div className="mt-4 space-y-3 border-t border-white/[0.06] pt-3">
-                  <div className="flex flex-wrap gap-1">
-                    {bank.partialWithdrawal && (
-                      <Badge tone="brand">Rút gốc từng phần</Badge>
+                    <p className="mt-4 text-xs leading-relaxed text-zinc-400">{copy.notes}</p>
+                    {copy.rateTierNote && (
+                      <p className="mt-1.5 text-[11px] text-indigo-300/80">• {copy.rateTierNote}</p>
                     )}
-                    {bank.payoutMethods.map((m) => (
-                      <Badge key={m} tone="neutral">
-                        {PAYOUT_LABELS[m] || m}
-                      </Badge>
-                    ))}
                   </div>
-                  <a
-                    href={href('plan', { bank: bank.id, tenure })}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-indigo-300 transition-colors hover:text-indigo-200"
-                  >
-                    Lập kế hoạch với lãi suất này <ArrowRight className="size-3" />
-                  </a>
-                </div>
-              </Card>
-            ))}
+
+                  <div className="mt-4 space-y-3 border-t border-white/[0.06] pt-3">
+                    <div className="flex flex-wrap gap-1">
+                      {bank.partialWithdrawal && (
+                        <Badge tone="brand">{tx('Rút gốc từng phần', 'Partial withdrawal', '一部解約可')}</Badge>
+                      )}
+                      {bank.payoutMethods.map((m) => (
+                        <Badge key={m} tone="neutral">
+                          {PAYOUT_LABELS[m]?.[lang] || m}
+                        </Badge>
+                      ))}
+                    </div>
+                    <a
+                      href={href('plan', { bank: bank.id, tenure })}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-300 transition-colors hover:text-indigo-200"
+                    >
+                      {tx('Lập kế hoạch với lãi suất này', 'Plan with this rate', 'この金利で試算する')}{' '}
+                      <ArrowRight className="size-3" />
+                    </a>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
 
           {/* Full cross-tenure matrix */}
           <Card className="p-5 sm:p-6">
             <CardHeader
-              title="Ma trận toàn bộ kỳ hạn"
-              description="Nhấn vào một ô bất kỳ để chỉnh lãi suất tương ứng."
+              title={tx('Ma trận toàn bộ kỳ hạn', 'Full Cross-Tenure Matrix', '全期間 金利マトリクス')}
+              description={tx('Nhấn vào một ô bất kỳ để chỉnh lãi suất tương ứng.', 'Click any cell to customize that bank & tenure rate.', 'セルをクリックすると各銀行・期間の金利を個別に設定できます。')}
             />
             <Table
               className="mt-5"
-              head={['Ngân hàng', ...KEY_TENURES.map((t) => TENURE_LABELS[t])]}
+              head={[tx('Ngân hàng', 'Bank', '銀行'), ...KEY_TENURES.map((t) => formatTenure(t))]}
             >
               {banks.map((bank) => (
                 <tr key={bank.id} className="hover:bg-white/[0.02]">
@@ -406,7 +443,7 @@ export default function Rates() {
                             custom && 'ring-1 ring-amber-400/40'
                           )}
                         >
-                          {pct(r)}
+                          {pct(r, 2, lang)}
                         </button>
                       </td>
                     );
@@ -431,7 +468,9 @@ export default function Rates() {
                         <h3 className="text-base font-semibold text-white">{b.name}</h3>
                         <Badge tone="brand">{b.partner}</Badge>
                       </div>
-                      <p className="mt-0.5 text-xs text-zinc-500">{b.description}</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        {lang === 'en' || lang === 'ja' ? getBankCopy({ id: b.id }, lang).fullName : b.description}
+                      </p>
                     </div>
                   </div>
                   <a
@@ -440,7 +479,7 @@ export default function Rates() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-lg bg-white/[0.04] px-2.5 py-1.5 text-xs text-zinc-300 ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.08] hover:text-white"
                   >
-                    Website <ExternalLink className="size-3" />
+                    {tx('Website', 'Website', '公式サイト')} <ExternalLink className="size-3" />
                   </a>
                 </div>
 
@@ -461,20 +500,33 @@ export default function Rates() {
       <Modal
         open={Boolean(editTarget)}
         onClose={() => setEditTarget(null)}
-        title={editTarget ? `Chỉnh lãi suất ${editTarget.bank.name} (${TENURE_LABELS[editTarget.tenure]})` : ''}
+        title={
+          editTarget
+            ? tx(
+                `Chỉnh lãi suất ${editTarget.bank.name} (${formatTenure(editTarget.tenure)})`,
+                `Edit ${editTarget.bank.name} Rate (${formatTenure(editTarget.tenure)})`,
+                `${editTarget.bank.name} 金利設定（${formatTenure(editTarget.tenure)}）`
+              )
+            : ''
+        }
       >
         {editTarget && (
           <div className="space-y-4">
             <p className="text-xs leading-relaxed text-zinc-400">
-              Nếu bạn có mã cộng lãi suất hoặc ưu đãi hạng hội viên tại {editTarget.bank.name}, hãy cập nhật tại đây. Mức
-              lãi suất này sẽ tự động áp dụng cho các công cụ tính toán khác.
+              {tx(
+                `Nếu bạn có mã cộng lãi suất hoặc ưu đãi hạng hội viên tại ${editTarget.bank.name}, hãy cập nhật tại đây. Mức lãi suất này sẽ tự động áp dụng cho các công cụ tính toán khác.`,
+                `If you have a promo code or VIP rate tier at ${editTarget.bank.name}, customize it here. It will automatically carry across all calculators.`,
+                `${editTarget.bank.name} の優遇金利コードや会員特典をお持ちの場合はここで上書きできます。すべての計算ツールに自動反映されます。`
+              )}
             </p>
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-300">Lãi suất mới (%/năm)</label>
+              <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+                {tx('Lãi suất mới (%/năm)', 'Custom rate (% p.a.)', '設定金利 (年率%)')}
+              </label>
               <DecimalInput
                 value={editValue}
                 onChange={setEditValue}
-                suffix="%/năm"
+                suffix={tx('%/năm', '%/yr', '%/年')}
                 min={0.1}
                 max={25}
                 step={0.05}
@@ -482,11 +534,11 @@ export default function Rates() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="primary" className="flex-1" onClick={saveEdit}>
-                Lưu thay đổi
+                {tx('Lưu thay đổi', 'Save Override', '変更を保存')}
               </Button>
               {isCustom(editTarget.bank, editTarget.tenure) && (
                 <Button variant="secondary" onClick={resetEdit}>
-                  <RotateCcw className="size-4" /> Mặc định
+                  <RotateCcw className="size-4" /> {tx('Mặc định', 'Reset', '元に戻す')}
                 </Button>
               )}
             </div>

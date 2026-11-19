@@ -13,6 +13,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import { useI18n } from '../i18n/index.jsx';
 import { useRates } from '../state.jsx';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
@@ -37,35 +38,7 @@ import {
 import { BankPicker } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
 
-const STRATEGIES = [
-  {
-    id: 'ROLLING_1M',
-    title: '100% kỳ hạn 1 tháng (xoay vòng)',
-    desc: 'Toàn bộ tiền gửi vào kỳ hạn 1 tháng và tự động tái tục. Thanh khoản cao nhất.',
-    split: '100% gói 1T',
-  },
-  {
-    id: 'SPLIT_50_50',
-    title: 'Bậc thang 50% (1T) + 50% (3T)',
-    desc: 'Chia đôi khoản tiết kiệm hàng tháng vào kỳ hạn 1 tháng và 3 tháng để cân bằng lãi suất & thanh khoản.',
-    split: '50% 1T · 50% 3T',
-  },
-  {
-    id: 'TNEX_PROMO_30_70',
-    title: 'Tối ưu lãi suất 30% (1T) + 70% (6T)',
-    desc: 'Giữ 30% ở kỳ hạn 1 tháng dự phòng khẩn cấp, 70% đưa vào kỳ hạn 6 tháng để hưởng lãi suất cao.',
-    split: '30% 1T · 70% 6T',
-  },
-  {
-    id: 'CUSTOM',
-    title: 'Tuỳ chỉnh tỷ lệ 2 kỳ hạn',
-    desc: 'Tự chọn 2 kỳ hạn và tỷ lệ phần trăm phân bổ theo nhu cầu thanh khoản cá nhân.',
-    split: 'Tuỳ chỉnh',
-  },
-];
-
 const CUSTOM_TERMS = ['1M', '3M', '6M', '9M', '12M'];
-const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v) }));
 
 const INITIAL_LADDER_DATA = {
   timelineRows: [],
@@ -82,12 +55,14 @@ const COHORT_TONES = {
 
 function LadderStageDetails({ row, granularity }) {
   const [termFilter, setTermFilter] = useState('all');
+  const { lang, tx, formatTenure } = useI18n();
   if (!row) return null;
 
   const cohorts = row.cohorts || [];
   const packages = row.packages || [];
   const validFilter = termFilter === 'all' || cohorts.some((c) => c.term === termFilter) ? termFilter : 'all';
   const filteredPackages = validFilter === 'all' ? packages : packages.filter((p) => p.term === validFilter);
+  const pkgUnit = tx('sổ', 'CDs', '口');
 
   if (granularity === 'cohorts') {
     return (
@@ -106,22 +81,33 @@ function LadderStageDetails({ row, granularity }) {
                     <span className="text-sm font-semibold text-white">{cohort.label}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge tone="neutral">{cohort.packageCount} sổ</Badge>
+                    <Badge tone="neutral">
+                      {cohort.packageCount} {pkgUnit}
+                    </Badge>
                     <Badge tone={cohort.rolledPackages > 0 ? 'brand' : 'neutral'}>
-                      {cohort.rolledPackages > 0 ? `${cohort.rolledPackages} đã tái tục` : 'Kỳ đầu'}
+                      {cohort.rolledPackages > 0
+                        ? tx(`${cohort.rolledPackages} đã tái tục`, `${cohort.rolledPackages} rolled`, `${cohort.rolledPackages}件継続`)
+                        : tx('Kỳ đầu', 'First cycle', '初回')}
                     </Badge>
                   </div>
                 </div>
-                <div className="mt-1 text-[11px] text-zinc-400">Lãi suất áp dụng: {pct(cohort.rate)}/năm</div>
+                <div className="mt-1 text-[11px] text-zinc-400">
+                  {tx('Lãi suất áp dụng:', 'Applied rate:', '適用金利：')} {pct(cohort.rate, 2, lang)}
+                  {tx('/năm', '/yr', '/年')}
+                </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-xs tabular-nums">
                   <div className="rounded-lg bg-black/25 px-2.5 py-2">
-                    <div className="text-[11px] text-zinc-500">Tổng vốn hiện tại</div>
-                    <div className="mt-0.5 font-semibold text-white">{vnd(cohort.totalCurrentBalance)}</div>
+                    <div className="text-[11px] text-zinc-500">
+                      {tx('Tổng vốn hiện tại', 'Current Balance', '現在合計元本')}
+                    </div>
+                    <div className="mt-0.5 font-semibold text-white">{vnd(cohort.totalCurrentBalance, lang)}</div>
                   </div>
                   <div className="rounded-lg bg-black/25 px-2.5 py-2">
-                    <div className="text-[11px] text-zinc-500">Lãi đã gộp thêm</div>
-                    <div className="mt-0.5 font-medium text-emerald-300">+{vnd(cohort.totalAccumulatedInterest)}</div>
+                    <div className="text-[11px] text-zinc-500">
+                      {tx('Lãi đã gộp thêm', 'Compounded Int.', '組入済み利息')}
+                    </div>
+                    <div className="mt-0.5 font-medium text-emerald-300">+{vnd(cohort.totalAccumulatedInterest, lang)}</div>
                   </div>
                 </div>
               </div>
@@ -130,12 +116,19 @@ function LadderStageDetails({ row, granularity }) {
                 <div className="text-emerald-200">
                   {cohort.packageCount > 1 && (
                     <span className="mr-1.5 text-[11px] text-emerald-300/80">
-                      TB mỗi sổ +{compact(cohort.perPackageMonthlyInterest)}/th ·
+                      {tx(
+                        `TB mỗi sổ +${compact(cohort.perPackageMonthlyInterest, lang)}/th ·`,
+                        `Avg/CD +${compact(cohort.perPackageMonthlyInterest, lang)}/mo ·`,
+                        `1口平均 +${compact(cohort.perPackageMonthlyInterest, lang)}/月 ·`
+                      )}
                     </span>
                   )}
-                  <strong className="font-semibold text-emerald-300">+{vnd(cohort.totalMonthlyInterest)}/tháng</strong>
+                  <strong className="font-semibold text-emerald-300">
+                    +{vnd(cohort.totalMonthlyInterest, lang)}
+                    {tx('/tháng', '/mo', '/月')}
+                  </strong>
                 </div>
-                <span className="font-semibold text-emerald-300">{pct(cohort.sharePct, 1)}</span>
+                <span className="font-semibold text-emerald-300">{pct(cohort.sharePct, 1, lang)}</span>
               </div>
             </div>
           );
@@ -148,7 +141,7 @@ function LadderStageDetails({ row, granularity }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-1.5">
         <Chip active={validFilter === 'all'} onClick={() => setTermFilter('all')}>
-          Tất cả ({row.packagesTotalCount || packages.length} sổ)
+          {tx('Tất cả', 'All', 'すべて')} ({row.packagesTotalCount || packages.length} {pkgUnit})
         </Chip>
         {cohorts.map((c) => (
           <Chip key={c.term} active={validFilter === c.term} onClick={() => setTermFilter(c.term)}>
@@ -167,29 +160,38 @@ function LadderStageDetails({ row, granularity }) {
               <div className="flex items-center justify-between gap-2">
                 <span className="truncate font-medium text-white">{pkg.name}</span>
                 <Badge tone={pkg.rolloverCount > 0 ? 'brand' : 'neutral'}>
-                  {pkg.rolloverCount > 0 ? `Xoay vòng ${pkg.rolloverCount}` : `Đáo hạn T${pkg.maturityMonth}`}
+                  {pkg.rolloverCount > 0
+                    ? tx(`Xoay vòng ${pkg.rolloverCount}`, `Rolled ×${pkg.rolloverCount}`, `継続 ${pkg.rolloverCount}回`)
+                    : tx(`Đáo hạn T${pkg.maturityMonth}`, `Mat. M${pkg.maturityMonth}`, `満期 M${pkg.maturityMonth}`)}
                 </Badge>
               </div>
               <div className="mt-1 flex justify-between text-[11px] text-zinc-500">
-                <span>Kỳ hạn {pkg.term.replace('M', ' tháng')} · {pct(pkg.rate)}</span>
-                <span>Mở T{pkg.startMonth}</span>
+                <span>
+                  {formatTenure(pkg.term)} · {pct(pkg.rate, 2, lang)}
+                </span>
+                <span>
+                  {tx(`Mở T${pkg.startMonth}`, `Open M${pkg.startMonth}`, `開始 M${pkg.startMonth}`)}
+                </span>
               </div>
               <div className="mt-2.5 space-y-1 border-t border-white/[0.05] pt-2 text-[11px]">
                 <div className="flex justify-between text-zinc-400">
-                  <span>Số dư sổ:</span>
-                  <span className="font-medium text-white">{vnd(pkg.currentAmount)}</span>
+                  <span>{tx('Số dư sổ:', 'CD balance:', '証書残高：')}</span>
+                  <span className="font-medium text-white">{vnd(pkg.currentAmount, lang)}</span>
                 </div>
                 {pkg.accumulatedInterest > 0 && (
                   <div className="flex justify-between text-emerald-300/80">
-                    <span>Lãi nhập gốc:</span>
-                    <span>+{vnd(pkg.accumulatedInterest)}</span>
+                    <span>{tx('Lãi nhập gốc:', 'Interest added:', '累計利息：')}</span>
+                    <span>+{vnd(pkg.accumulatedInterest, lang)}</span>
                   </div>
                 )}
               </div>
             </div>
             <div className="mt-2.5 flex items-center justify-between rounded-lg bg-emerald-500/[0.08] px-2.5 py-1.5 font-medium text-emerald-300 ring-1 ring-inset ring-emerald-400/20">
-              <span>+{vnd(pkg.monthlyInterest)}/tháng</span>
-              <span className="text-[11px] opacity-80">{pct(pkg.sharePct, 1)}</span>
+              <span>
+                +{vnd(pkg.monthlyInterest, lang)}
+                {tx('/tháng', '/mo', '/月')}
+              </span>
+              <span className="text-[11px] opacity-80">{pct(pkg.sharePct, 1, lang)}</span>
             </div>
           </div>
         ))}
@@ -203,6 +205,8 @@ function LadderPackageExplorer({ rows, splitLabel }) {
   const [granularity, setGranularity] = useState('cohorts'); // 'cohorts' | 'individual'
   const [selectedMonthIdx, setSelectedMonthIdx] = useState(null);
   const [expandedMonthIdx, setExpandedMonthIdx] = useState(null);
+  const { lang, tx } = useI18n();
+  const pkgUnit = tx('sổ', 'CDs', '口');
 
   const stageMilestones = useMemo(() => {
     if (!rows.length) return [];
@@ -229,8 +233,12 @@ function LadderPackageExplorer({ rows, splitLabel }) {
   return (
     <Card className="p-5 sm:p-6">
       <CardHeader
-        title="Chi tiết lộ trình & Kệ sổ bậc thang"
-        description={`Kiểm tra ở từng tháng bạn đang nắm giữ bao nhiêu sổ (${splitLabel}) và từng nhóm kỳ hạn sinh lời ra sao.`}
+        title={tx('Chi tiết lộ trình & Kệ sổ bậc thang', 'Ladder Stage Shelf & Breakdown', 'ラダー貯蓄 ステージ別証書内訳')}
+        description={tx(
+          `Kiểm tra ở từng tháng bạn đang nắm giữ bao nhiêu sổ (${splitLabel}) và từng nhóm kỳ hạn sinh lời ra sao.`,
+          `Inspect active passbooks each month (${splitLabel}) and how each tenure tier generates monthly interest.`,
+          `各時点で保有中の証書口数（${splitLabel}）と預入期間ごとの利息配分を確認できます。`
+        )}
         right={
           <div className="flex flex-wrap items-center gap-2">
             <Segmented
@@ -238,8 +246,8 @@ function LadderPackageExplorer({ rows, splitLabel }) {
               value={explorerView}
               onChange={setExplorerView}
               options={[
-                { value: 'shelf', label: 'Kệ sổ theo giai đoạn' },
-                { value: 'matrix', label: 'Bảng phân tầng' },
+                { value: 'shelf', label: tx('Kệ sổ theo giai đoạn', 'Stage Shelf', 'ステージ別') },
+                { value: 'matrix', label: tx('Bảng phân tầng', 'Schedule Matrix', '月次テーブル') },
               ]}
             />
             <Segmented
@@ -247,8 +255,8 @@ function LadderPackageExplorer({ rows, splitLabel }) {
               value={granularity}
               onChange={setGranularity}
               options={[
-                { value: 'cohorts', label: 'Gộp theo kỳ hạn' },
-                { value: 'individual', label: 'Từng sổ lẻ' },
+                { value: 'cohorts', label: tx('Gộp theo kỳ hạn', 'By Tenure', '期間グループ') },
+                { value: 'individual', label: tx('Từng sổ lẻ', 'Single CDs', '個別証書') },
               ]}
             />
           </div>
@@ -278,10 +286,13 @@ function LadderPackageExplorer({ rows, splitLabel }) {
                     <span className={cx('text-xs font-semibold', active ? 'text-white' : 'text-zinc-300')}>
                       {r.month} {isLast ? '🎯' : ''}
                     </span>
-                    <Badge tone={active ? 'brand' : 'neutral'}>{r.activePackagesCount} sổ</Badge>
+                    <Badge tone={active ? 'brand' : 'neutral'}>
+                      {r.activePackagesCount} {pkgUnit}
+                    </Badge>
                   </div>
                   <div className="text-[11px] tabular-nums text-zinc-400">
-                    +{compact(r.estimatedMonthlyYield)}/th · {compact(r.totalPortfolioValue)}
+                    +{compact(r.estimatedMonthlyYield, lang)}
+                    {tx('/th', '/mo', '/月')} · {compact(r.totalPortfolioValue, lang)}
                   </div>
                 </button>
               );
@@ -293,16 +304,21 @@ function LadderPackageExplorer({ rows, splitLabel }) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-white">
                 <Package className="size-4 text-indigo-300" />
-                Danh mục tại {activeRow.month}
+                {tx(`Danh mục tại ${activeRow.month}`, `Portfolio at ${activeRow.month}`, `${activeRow.month}のポートフォリオ`)}
               </div>
-              <span className="text-xs text-zinc-400 tabular-nums">{activeRow.activePackagesCount} sổ đang chạy</span>
+              <span className="text-xs text-zinc-400 tabular-nums">
+                {activeRow.activePackagesCount} {tx('sổ đang chạy', 'active CDs', '口 稼働中')}
+              </span>
             </div>
 
             {activeRow.cohorts?.length > 0 && activeRow.estimatedMonthlyYield > 0 && (
               <div className="mt-4 space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-zinc-400">
-                  <span>Tỷ trọng tiền lãi theo kỳ hạn bậc thang</span>
-                  <span className="tabular-nums">Tổng +{vnd(activeRow.estimatedMonthlyYield)}/tháng</span>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-400">
+                  <span>{tx('Tỷ trọng tiền lãi theo kỳ hạn bậc thang', 'Interest contribution by ladder tier', '期間別利息シェア')}</span>
+                  <span className="tabular-nums">
+                    {tx('Tổng', 'Total', '合計')} +{vnd(activeRow.estimatedMonthlyYield, lang)}
+                    {tx('/tháng', '/mo', '/月')}
+                  </span>
                 </div>
                 <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
                   {activeRow.cohorts.map((c) => {
@@ -310,7 +326,7 @@ function LadderPackageExplorer({ rows, splitLabel }) {
                     return (
                       <div
                         key={c.key}
-                        title={`${c.label}: +${vnd(c.totalMonthlyInterest)}/th (${pct(c.sharePct, 1)})`}
+                        title={`${c.label}: +${vnd(c.totalMonthlyInterest, lang)}${tx('/th', '/mo', '/月')} (${pct(c.sharePct, 1, lang)})`}
                         className={cx('h-full border-r border-canvas/70 last:border-r-0', st.bar)}
                         style={{ width: `${Math.max(1, c.sharePct)}%` }}
                       />
@@ -323,7 +339,7 @@ function LadderPackageExplorer({ rows, splitLabel }) {
                     return (
                       <span key={c.key} className="flex items-center gap-1.5">
                         <span className={cx('size-2 rounded-full', st.dot)} />
-                        {c.label} ({pct(c.sharePct, 1)})
+                        {c.label} ({pct(c.sharePct, 1, lang)})
                       </span>
                     );
                   })}
@@ -337,18 +353,22 @@ function LadderPackageExplorer({ rows, splitLabel }) {
       ) : (
         <div className="mt-5 space-y-3">
           <div className="text-xs text-zinc-500">
-            Nhấn vào từng dòng tháng để mở danh sách chi tiết các sổ bậc thang đang sinh lời tại tháng đó.
+            {tx(
+              'Nhấn vào từng dòng tháng để mở danh sách chi tiết các sổ bậc thang đang sinh lời tại tháng đó.',
+              'Click any month row to inspect individual passbooks running in that period.',
+              '各月の行をクリックすると、その時点で運用中の定期証書の詳細が開きます。'
+            )}
           </div>
           <Table
             className="max-h-[540px]"
             head={[
-              'Tháng',
-              'Gửi thêm',
-              'Sổ đang chạy',
-              'Vốn đáo hạn',
-              'Lãi đáo hạn',
-              'Tổng danh mục',
-              'Lãi / tháng',
+              tx('Tháng', 'Month', '経過月'),
+              tx('Gửi thêm', 'Deposit', '新規積立'),
+              tx('Sổ đang chạy', 'Active CDs', '保有口数'),
+              tx('Vốn đáo hạn', 'Matured Bal.', '満期元利'),
+              tx('Lãi đáo hạn', 'Matured Int.', '満期利息'),
+              tx('Tổng danh mục', 'Total Assets', '総資産'),
+              tx('Lãi / tháng', 'Yield / Mo', '月間利息'),
             ]}
           >
             {rows.map((row) => {
@@ -372,18 +392,20 @@ function LadderPackageExplorer({ rows, splitLabel }) {
                         {row.month}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-zinc-300">{fmt(row.monthlyContribution)}</td>
+                    <td className="px-4 py-3 text-right text-zinc-300">{fmt(row.monthlyContribution, lang)}</td>
                     <td className="px-4 py-3 text-right">
-                      <Badge tone={isExpanded ? 'brand' : 'neutral'}>{row.activePackagesCount} sổ</Badge>
+                      <Badge tone={isExpanded ? 'brand' : 'neutral'}>
+                        {row.activePackagesCount} {pkgUnit}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-right text-zinc-400">
-                      {row.totalMaturedThisMonth > 0 ? fmt(row.totalMaturedThisMonth) : '—'}
+                      {row.totalMaturedThisMonth > 0 ? fmt(row.totalMaturedThisMonth, lang) : '—'}
                     </td>
                     <td className="px-4 py-3 text-right text-emerald-300">
-                      {row.totalInterestMaturedThisMonth > 0 ? `+${fmt(row.totalInterestMaturedThisMonth)}` : '—'}
+                      {row.totalInterestMaturedThisMonth > 0 ? `+${fmt(row.totalInterestMaturedThisMonth, lang)}` : '—'}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-white">{fmt(row.totalPortfolioValue)}</td>
-                    <td className="px-4 py-3 text-right text-indigo-300">+{fmt(row.estimatedMonthlyYield)}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-white">{fmt(row.totalPortfolioValue, lang)}</td>
+                    <td className="px-4 py-3 text-right text-indigo-300">+{fmt(row.estimatedMonthlyYield, lang)}</td>
                   </tr>
                   {isExpanded && (
                     <tr className="bg-black/25">
@@ -404,6 +426,7 @@ function LadderPackageExplorer({ rows, splitLabel }) {
 
 export default function Ladder() {
   const { banks, getRate } = useRates();
+  const { lang, tx, formatTenure } = useI18n();
   const saved = useMemo(() => loadSavedPlannerState(), []);
 
   const [monthlySavings, setMonthlySavings] = useState(() => Number(saved.saving) || 5_000_000);
@@ -412,7 +435,9 @@ export default function Ladder() {
   );
   const [dependentsCount] = useState(() => Number(saved.dependentsCount) || 0);
   const [monthlyExpense, setMonthlyExpense] = useState(() => {
-    const fixed = Number(saved.monthlyFixedExpense) || (saved.householdMode === 'COUPLE' || saved.householdMode === 'FAMILY' ? 18_000_000 : 12_000_000);
+    const fixed =
+      Number(saved.monthlyFixedExpense) ||
+      (saved.householdMode === 'COUPLE' || saved.householdMode === 'FAMILY' ? 18_000_000 : 12_000_000);
     const dep = saved.householdMode === 'FAMILY' ? Number(saved.monthlyDependentsCost) || 0 : 0;
     return fixed + dep;
   });
@@ -423,6 +448,54 @@ export default function Ladder() {
   const [shortTerm, setShortTerm] = useState('1M');
   const [longTerm, setLongTerm] = useState('12M');
   const [shortPct, setShortPct] = useState(40);
+
+  const presets = (arr) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : chip(v, lang) }));
+
+  const strategiesList = useMemo(
+    () => [
+      {
+        id: 'ROLLING_1M',
+        title: tx('100% kỳ hạn 1 tháng (xoay vòng)', '100% 1-Month Rolling', '100% 1ヶ月定期ロールオーバー'),
+        desc: tx(
+          'Toàn bộ tiền gửi vào kỳ hạn 1 tháng và tự động tái tục. Thanh khoản cao nhất.',
+          'All monthly deposits roll into 1-month passbooks. Maximum monthly liquidity.',
+          '全額を1ヶ月定期で自動更新。最も高い流動性を維持できます。'
+        ),
+        split: tx('100% gói 1T', '100% 1M CD', '100% 1ヶ月枠'),
+      },
+      {
+        id: 'SPLIT_50_50',
+        title: tx('Bậc thang 50% (1T) + 50% (3T)', 'Balanced Ladder 50% (1M) + 50% (3M)', 'バランス型 50%(1ヶ月) + 50%(3ヶ月)'),
+        desc: tx(
+          'Chia đôi khoản tiết kiệm hàng tháng vào kỳ hạn 1 tháng và 3 tháng để cân bằng lãi suất & thanh khoản.',
+          'Split deposits equally across 1M and 3M terms to balance yield and flexibility.',
+          '毎月の積立を1ヶ月と3ヶ月に半額ずつ分散し、利回りと流動性を両立。'
+        ),
+        split: tx('50% 1T · 50% 3T', '50% 1M · 50% 3M', '50% 1ヶ月 · 50% 3ヶ月'),
+      },
+      {
+        id: 'TNEX_PROMO_30_70',
+        title: tx('Tối ưu lãi suất 30% (1T) + 70% (6T)', 'Yield Booster 30% (1M) + 70% (6M)', '利回り優先 30%(1ヶ月) + 70%(6ヶ月)'),
+        desc: tx(
+          'Giữ 30% ở kỳ hạn 1 tháng dự phòng khẩn cấp, 70% đưa vào kỳ hạn 6 tháng để hưởng lãi suất cao.',
+          'Keep 30% liquid in 1M reserve and commit 70% into higher-yield 6M deposits.',
+          '30%を1ヶ月緊急枠で確保しつつ、70%を高金利な6ヶ月枠へ集中配分。'
+        ),
+        split: tx('30% 1T · 70% 6T', '30% 1M · 70% 6M', '30% 1ヶ月 · 70% 6ヶ月'),
+      },
+      {
+        id: 'CUSTOM',
+        title: tx('Tuỳ chỉnh tỷ lệ 2 kỳ hạn', 'Custom Dual-Tenure Split', 'カスタム2期間配分'),
+        desc: tx(
+          'Tự chọn 2 kỳ hạn và tỷ lệ phần trăm phân bổ theo nhu cầu thanh khoản cá nhân.',
+          'Pick any 2 tenures and percentage split tailored to your cash needs.',
+          '任意の2つの期間と割合を自分の資金計画に合わせて自由設定します。'
+        ),
+        split: tx('Tuỳ chỉnh', 'Custom', 'カスタム'),
+      },
+    ],
+    [tx]
+  );
 
   useEffect(() => {
     syncUserPrefCookie({ bankId, inputMode });
@@ -462,14 +535,15 @@ export default function Ladder() {
   const totalDeposited = monthlySavings * totalMonths;
   const totalInterest = Math.max(0, result.finalPortfolioValue - totalDeposited);
   const lastRow = result.timelineRows[result.timelineRows.length - 1];
-  const activeStrategy = STRATEGIES.find((s) => s.id === strategy) || STRATEGIES[0];
+  const activeStrategy = strategiesList.find((s) => s.id === strategy) || strategiesList[0];
   const splitLabel =
     strategy === 'CUSTOM'
-      ? `${shortPct}% ${shortTerm.replace('M', 'T')} · ${100 - shortPct}% ${longTerm.replace('M', 'T')}`
+      ? `${shortPct}% ${formatTenure(shortTerm)} · ${100 - shortPct}% ${formatTenure(longTerm)}`
       : activeStrategy.split;
   const principalRatio = result.finalPortfolioValue > 0 ? (totalDeposited / result.finalPortfolioValue) * 100 : 0;
 
   const hhMeta = HOUSEHOLD_MODES.find((m) => m.id === householdMode) || HOUSEHOLD_MODES[0];
+  const hhLabel = tx(hhMeta.label, hhMeta.labelEn, hhMeta.labelJa);
   const hasPartner = householdMode === 'COUPLE' || householdMode === 'FAMILY';
   const recMonths =
     householdMode === 'FAMILY'
@@ -480,7 +554,7 @@ export default function Ladder() {
   const recommendedLiquidTarget = monthlyExpense * recMonths;
   const liquidCohortsValue = (lastRow?.cohorts || [])
     .filter((c) => c.term === '1M' || c.term === '3M')
-    .reduce((sum, c) => sum + (Number(c.totalValue) || 0), 0);
+    .reduce((sum, c) => sum + (Number(c.totalCurrentBalance ?? c.totalValue) || 0), 0);
   const liquidCoveragePct =
     recommendedLiquidTarget > 0 ? Math.min(100, Number(((liquidCohortsValue / recommendedLiquidTarget) * 100).toFixed(1))) : 100;
 
@@ -494,23 +568,29 @@ export default function Ladder() {
   })();
   const e1MonthlyLadder = Math.round((monthlySavings * e1SharePct) / 100);
   const e2MonthlyLadder = Math.max(0, monthlySavings - e1MonthlyLadder);
+  const pkgUnit = tx('sổ', 'CDs', '口');
 
   return (
     <>
       <PageHeader
         icon={Layers}
-        eyebrow="Chiến lược bậc thang"
-        title="Tiết kiệm bậc thang (Savings Ladder)"
-        description="Thay vì dồn hết tiền vào một sổ dài hạn dễ mất lãi khi cần rút gấp, hãy chia nhỏ khoản gửi hàng tháng vào nhiều kỳ hạn xoay vòng."
+        eyebrow={tx('Chiến lược bậc thang', 'Ladder Strategy', '階段式定期戦略')}
+        title={tx('Tiết kiệm bậc thang (Savings Ladder)', 'Savings Ladder Simulator', 'ラダー貯蓄（定期預金分散）')}
+        description={tx(
+          'Thay vì dồn hết tiền vào một sổ dài hạn dễ mất lãi khi cần rút gấp, hãy chia nhỏ khoản gửi hàng tháng vào nhiều kỳ hạn xoay vòng.',
+          'Instead of locking everything into one long deposit, stagger monthly deposits across short & long tenures for rolling liquidity.',
+          '全額を長期定期に固定する代わりに、毎月の積立を複数期間に分散させて高い流動性と利回りを両立させます。'
+        )}
       />
 
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
-        {/* ── Left Inputs (Unified with Planner UI) ── */}
+        {/* Left Inputs */}
         <Card className="space-y-5 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
           <div className="space-y-2 border-b border-white/[0.06] pb-4">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
-                <SlidersHorizontal className="size-3.5 text-indigo-300" /> Phiên bản nhập liệu
+                <SlidersHorizontal className="size-3.5 text-indigo-300" />{' '}
+                {tx('Phiên bản nhập liệu', 'Input Mode', '入力モード')}
               </span>
               <Segmented
                 size="sm"
@@ -522,19 +602,27 @@ export default function Ladder() {
                   }
                 }}
                 options={[
-                  { value: 'basic', label: 'Cơ bản' },
-                  { value: 'advanced', label: 'Chuyên sâu' },
+                  { value: 'basic', label: tx('Cơ bản', 'Basic', '基本') },
+                  { value: 'advanced', label: tx('Chuyên sâu', 'Pro', '詳細') },
                 ]}
               />
             </div>
             <p className="text-[11px] leading-relaxed text-zinc-500">
               {inputMode === 'basic'
-                ? 'Phiên bản Cơ bản (Nhanh): chọn mức gửi hàng tháng và 1 trong 3 công thức bậc thang chuẩn.'
-                : 'Phiên bản Chuyên sâu (Thực tế): kéo dài mô phỏng tới 60 tháng & tự tuỳ chỉnh tỷ lệ 2 kỳ hạn.'}
+                ? tx(
+                    'Phiên bản Cơ bản (Nhanh): chọn mức gửi hàng tháng và 1 trong 3 công thức bậc thang chuẩn.',
+                    'Basic (Quick): set your monthly deposit and choose from 3 proven ladder templates.',
+                    '基本（簡易）：毎月の積立額と3つの定番配分パターンから選ぶだけで試算します。'
+                  )
+                : tx(
+                    'Phiên bản Chuyên sâu (Thực tế): kéo dài mô phỏng tới 60 tháng & tự tuỳ chỉnh tỷ lệ 2 kỳ hạn.',
+                    'Pro (Custom): extend simulation up to 60 months & customize dual-tenure weights.',
+                    '詳細（実践）：最大60ヶ月までの試算と2期間の自由な配分調整が可能です。'
+                  )}
             </p>
             <div className="pt-2">
               <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-                Hồ sơ thanh khoản
+                {tx('Hồ sơ thanh khoản', 'Liquidity Profile', '世帯プロファイル')}
               </span>
               <HouseholdModeSwitch value={householdMode} onChange={setHouseholdMode} compact />
             </div>
@@ -542,10 +630,10 @@ export default function Ladder() {
 
           <div className="space-y-4">
             <span className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-              1. Khoản gửi &amp; Thời gian
+              {tx('1. Khoản gửi & Thời gian', '1. Deposit & Horizon', '1. 積立額と期間')}
             </span>
             <MoneyField
-              label="Số tiền gửi mới mỗi tháng"
+              label={tx('Số tiền gửi mới mỗi tháng', 'New Monthly Deposit', '毎月の新規積立額')}
               value={monthlySavings}
               onChange={setMonthlySavings}
               min={500_000}
@@ -556,7 +644,7 @@ export default function Ladder() {
             />
 
             <MoneyField
-              label="Chi tiêu sinh hoạt / tháng (đo quỹ dự phòng)"
+              label={tx('Chi tiêu sinh hoạt / tháng (đo quỹ dự phòng)', 'Monthly Living Cost (for EF check)', '毎月の生活費（緊急資金測定用）')}
               value={monthlyExpense}
               onChange={setMonthlyExpense}
               min={0}
@@ -568,8 +656,8 @@ export default function Ladder() {
 
             {inputMode === 'advanced' && (
               <SliderField
-                label="Thời gian mô phỏng"
-                display={`${totalMonths} tháng (${(totalMonths / 12).toFixed(1)} năm)`}
+                label={tx('Thời gian mô phỏng', 'Simulation Duration', 'シミュレーション期間')}
+                display={`${totalMonths} ${tx('tháng', 'mos', 'ヶ月')} (${(totalMonths / 12).toFixed(1)} ${tx('năm', 'yrs', '年')})`}
                 value={totalMonths}
                 onChange={setTotalMonths}
                 min={6}
@@ -581,37 +669,44 @@ export default function Ladder() {
 
           <div className="space-y-3 border-t border-white/[0.06] pt-5">
             <span className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-              2. Ngân hàng áp dụng
+              {tx('2. Ngân hàng áp dụng', '2. Digital Bank', '2. 適用銀行')}
             </span>
-            <BankPicker bankId={bankId} onBank={setBankId} tenure="6M" label="Chọn ngân hàng áp dụng lãi suất" />
+            <BankPicker
+              bankId={bankId}
+              onBank={setBankId}
+              tenure="6M"
+              label={tx('Chọn ngân hàng áp dụng lãi suất', 'Select bank rate table', '適用金利の銀行を選択')}
+            />
           </div>
 
           <div className="space-y-2.5 border-t border-white/[0.06] pt-5">
             <span className="block text-xs font-medium uppercase tracking-wider text-zinc-500">
-              3. Chiến lược phân bổ bậc thang
+              {tx('3. Chiến lược phân bổ bậc thang', '3. Ladder Split Strategy', '3. ラダー配分戦略')}
             </span>
-            {STRATEGIES.filter((s) => inputMode === 'advanced' || s.id !== 'CUSTOM').map((s) => {
-              const active = strategy === s.id;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setStrategy(s.id)}
-                  className={cx(
-                    'w-full rounded-xl p-3.5 text-left ring-1 ring-inset transition-all',
-                    active
-                      ? 'bg-indigo-500/10 ring-indigo-400/40'
-                      : 'bg-white/[0.02] ring-white/[0.07] hover:bg-white/[0.05]'
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-white">{s.title}</span>
-                    <Badge tone={active ? 'brand' : 'neutral'}>{s.split}</Badge>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-zinc-500">{s.desc}</p>
-                </button>
-              );
-            })}
+            {strategiesList
+              .filter((s) => inputMode === 'advanced' || s.id !== 'CUSTOM')
+              .map((s) => {
+                const active = strategy === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setStrategy(s.id)}
+                    className={cx(
+                      'w-full rounded-xl p-3.5 text-left ring-1 ring-inset transition-all',
+                      active
+                        ? 'bg-indigo-500/10 ring-indigo-400/40'
+                        : 'bg-white/[0.02] ring-white/[0.07] hover:bg-white/[0.05]'
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-white">{s.title}</span>
+                      <Badge tone={active ? 'brand' : 'neutral'}>{s.split}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">{s.desc}</p>
+                  </button>
+                );
+              })}
 
             {inputMode === 'basic' && (
               <button
@@ -619,8 +714,16 @@ export default function Ladder() {
                 onClick={() => setInputMode('advanced')}
                 className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3.5 py-2.5 text-left text-xs text-zinc-400 ring-1 ring-inset ring-white/[0.06] transition hover:bg-white/[0.05] hover:text-zinc-200"
               >
-                <span>Chuyên sâu: Thời gian {totalMonths} tháng &amp; Tuỳ chỉnh % kỳ hạn</span>
-                <span className="shrink-0 font-medium text-indigo-300">Mở rộng</span>
+                <span>
+                  {tx(
+                    `Chuyên sâu: Thời gian ${totalMonths} tháng & Tuỳ chỉnh % kỳ hạn`,
+                    `Pro: ${totalMonths}-month horizon & Custom tier split`,
+                    `詳細：${totalMonths}ヶ月期間・割合カスタム設定`
+                  )}
+                </span>
+                <span className="shrink-0 font-medium text-indigo-300">
+                  {tx('Mở rộng', 'Expand', '開く')}
+                </span>
               </button>
             )}
 
@@ -628,7 +731,9 @@ export default function Ladder() {
               <div className="mt-3 space-y-4 rounded-xl bg-black/25 p-4 ring-1 ring-inset ring-white/[0.08]">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium text-zinc-400">Gói ngắn hạn (Thanh khoản)</label>
+                    <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                      {tx('Gói ngắn hạn (Thanh khoản)', 'Short Tranche (Liquid)', '短期枠（流動性）')}
+                    </label>
                     <div className="flex flex-wrap gap-1">
                       {CUSTOM_TERMS.slice(0, 3).map((t) => (
                         <button
@@ -640,13 +745,15 @@ export default function Ladder() {
                             shortTerm === t ? 'bg-indigo-500 text-white' : 'bg-white/[0.05] text-zinc-400 hover:text-white'
                           )}
                         >
-                          {t.replace('M', 'T')} ({pct(bankRates[t])})
+                          {formatTenure(t)} ({pct(bankRates[t], 2, lang)})
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium text-zinc-400">Gói dài hạn (Lãi cao)</label>
+                    <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                      {tx('Gói dài hạn (Lãi cao)', 'Long Tranche (Higher Yield)', '長期枠（高金利）')}
+                    </label>
                     <div className="flex flex-wrap gap-1">
                       {CUSTOM_TERMS.slice(1).map((t) => (
                         <button
@@ -658,14 +765,14 @@ export default function Ladder() {
                             longTerm === t ? 'bg-emerald-500 text-white' : 'bg-white/[0.05] text-zinc-400 hover:text-white'
                           )}
                         >
-                          {t.replace('M', 'T')} ({pct(bankRates[t])})
+                          {formatTenure(t)} ({pct(bankRates[t], 2, lang)})
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
                 <SliderField
-                  label="Tỷ lệ phân bổ"
+                  label={tx('Tỷ lệ phân bổ', 'Allocation Ratio', '配分比率')}
                   display={splitLabel}
                   value={shortPct}
                   onChange={setShortPct}
@@ -678,7 +785,7 @@ export default function Ladder() {
           </div>
         </Card>
 
-        {/* ── Results ── */}
+        {/* Results */}
         <div id="ladder-results" className="min-w-0 space-y-5">
           {!initialized && loading ? (
             <ResultsSkeleton />
@@ -691,27 +798,46 @@ export default function Ladder() {
                 <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-indigo-500/15 blur-3xl" />
                 <div className="relative">
                   <div className="flex flex-wrap items-center gap-2 text-[13px] text-zinc-400">
-                    Sau <span className="font-medium text-white">{totalMonths} tháng</span> gửi đều{' '}
-                    <span className="font-medium text-white">{compact(monthlySavings)}/tháng</span>, danh mục bậc thang
-                    của bạn đạt
+                    {tx('Sau', 'After', '積立期間')}{' '}
+                    <span className="font-medium text-white">
+                      {totalMonths} {tx('tháng', 'mos', 'ヶ月')}
+                    </span>{' '}
+                    {tx('gửi đều', 'depositing', '・毎月')}{' '}
+                    <span className="font-medium text-white">
+                      {compact(monthlySavings, lang)}
+                      {tx('/tháng', '/mo', '/月')}
+                    </span>
+                    , {tx('danh mục bậc thang của bạn đạt', 'your ladder portfolio reaches', 'ラダーポートフォリオ総額は')}
                     <Badge tone="brand">
                       {bank.name} · {splitLabel}
                     </Badge>
                   </div>
                   <div className="mt-3 break-words text-3xl font-semibold tracking-tight text-white tabular-nums sm:text-4xl lg:text-5xl">
-                    {vnd(result.finalPortfolioValue)}
+                    {vnd(result.finalPortfolioValue, lang)}
                   </div>
                   <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
-                    Với <strong className="text-white">{lastRow?.activePackagesCount || 0} sổ</strong> đang xoay vòng liên
-                    tục, danh mục tự tạo ra dòng lãi ước tính{' '}
-                    <strong className="text-emerald-300">+{vnd(result.finalMonthlyYield)}/tháng</strong> và đã gộp{' '}
-                    <strong className="text-indigo-300">+{vnd(totalInterest)}</strong> tiền lãi đáo hạn.
+                    {tx('Với', 'With', '保有証書')}{' '}
+                    <strong className="text-white">
+                      {lastRow?.activePackagesCount || 0} {pkgUnit}
+                    </strong>{' '}
+                    {tx(
+                      'đang xoay vòng liên tục, danh mục tự tạo ra dòng lãi ước tính',
+                      'actively rolling, your ladder generates an estimated monthly yield of',
+                      '口が継続回転し、月間予想利息'
+                    )}{' '}
+                    <strong className="text-emerald-300">
+                      +{vnd(result.finalMonthlyYield, lang)}
+                      {tx('/tháng', '/mo', '/月')}
+                    </strong>{' '}
+                    {tx('và đã gộp', 'with', '・組入済み累計利息')}{' '}
+                    <strong className="text-indigo-300">+{vnd(totalInterest, lang)}</strong>{' '}
+                    {tx('tiền lãi đáo hạn.', 'in compounded interest.', 'を達成します。')}
                   </p>
                   <div className="mt-6">
                     <div className="mb-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-zinc-500">
-                      <span>Tỷ trọng gốc đã nộp / tổng danh mục cuối kỳ</span>
+                      <span>{tx('Tỷ trọng gốc đã nộp / tổng danh mục cuối kỳ', 'Principal deposited / total portfolio', '総積立元本 / 最終残高比率')}</span>
                       <span className="tabular-nums">
-                        {compact(totalDeposited)} / {compact(result.finalPortfolioValue)}
+                        {compact(totalDeposited, lang)} / {compact(result.finalPortfolioValue, lang)}
                       </span>
                     </div>
                     <Progress value={principalRatio} />
@@ -723,31 +849,31 @@ export default function Ladder() {
               <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                 <Stat
                   icon={Coins}
-                  label="Tổng danh mục cuối kỳ"
-                  value={compact(result.finalPortfolioValue)}
-                  hint={vnd(result.finalPortfolioValue)}
+                  label={tx('Tổng danh mục cuối kỳ', 'Final Portfolio Value', '最終資産合計')}
+                  value={compact(result.finalPortfolioValue, lang)}
+                  hint={vnd(result.finalPortfolioValue, lang)}
                   className="card-interactive"
                 />
                 <Stat
                   icon={Wallet}
-                  label="Tổng gốc đã nộp"
-                  value={compact(totalDeposited)}
-                  hint={`${totalMonths} tháng × ${compact(monthlySavings)}`}
+                  label={tx('Tổng gốc đã nộp', 'Total Deposited', '積立元本合計')}
+                  value={compact(totalDeposited, lang)}
+                  hint={`${totalMonths}${tx('T', 'm', 'ヶ月')} × ${compact(monthlySavings, lang)}`}
                   className="card-interactive"
                 />
                 <Stat
                   icon={PiggyBank}
-                  label="Lãi thụ động / tháng"
+                  label={tx('Lãi thụ động / tháng', 'Monthly Passive Yield', '毎月予想利息')}
                   tone="emerald"
-                  value={`+${compact(result.finalMonthlyYield)}`}
-                  hint={`Lãi đã gộp: +${compact(totalInterest)}`}
+                  value={`+${compact(result.finalMonthlyYield, lang)}`}
+                  hint={`${tx('Lãi đã gộp:', 'Compounded:', '組入利息：')} +${compact(totalInterest, lang)}`}
                   className="card-interactive"
                 />
                 <Stat
                   icon={Package}
-                  label="Sổ đang xoay vòng"
+                  label={tx('Sổ đang xoay vòng', 'Active Passbooks', '運用中証書数')}
                   tone="indigo"
-                  value={`${lastRow?.activePackagesCount || 0} sổ`}
+                  value={`${lastRow?.activePackagesCount || 0} ${pkgUnit}`}
                   hint={splitLabel}
                   className="card-interactive"
                 />
@@ -762,17 +888,37 @@ export default function Ladder() {
                     ) : (
                       <ShieldAlert className="size-4 text-amber-400" />
                     )}
-                    Thanh khoản dự phòng ({hhMeta.label} · {recMonths} tháng chi phí)
+                    {tx(
+                      `Thanh khoản dự phòng (${hhLabel} · ${recMonths} tháng chi phí)`,
+                      `Emergency Liquidity (${hhLabel} · ${recMonths}-month target)`,
+                      `緊急流動性カバー（${hhLabel} · ${recMonths}ヶ月目安）`
+                    )}
                   </span>
                   <Badge tone={liquidCoveragePct >= 100 ? 'success' : 'warning'}>
-                    Lớp 1T–3T đạt {pct(liquidCoveragePct, 0)}
+                    {tx(
+                      `Lớp 1T–3T đạt ${pct(liquidCoveragePct, 0, lang)}`,
+                      `1M–3M tier at ${pct(liquidCoveragePct, 0, lang)}`,
+                      `1〜3ヶ月枠 達成率 ${pct(liquidCoveragePct, 0, lang)}`
+                    )}
                   </Badge>
                 </div>
 
                 <div className="mt-3">
                   <div className="mb-1.5 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs tabular-nums text-zinc-400">
-                    <span>Sổ linh hoạt (1T–3T) cuối kỳ: {vnd(liquidCohortsValue)}</span>
-                    <span>Mục tiêu dự phòng {recMonths}T: {vnd(recommendedLiquidTarget)}</span>
+                    <span>
+                      {tx(
+                        `Sổ linh hoạt (1T–3T) cuối kỳ: ${vnd(liquidCohortsValue, lang)}`,
+                        `Liquid 1M–3M balance at end: ${vnd(liquidCohortsValue, lang)}`,
+                        `満期時の短期枠（1〜3ヶ月）残高：${vnd(liquidCohortsValue, lang)}`
+                      )}
+                    </span>
+                    <span>
+                      {tx(
+                        `Mục tiêu dự phòng ${recMonths}T: ${vnd(recommendedLiquidTarget, lang)}`,
+                        `${recMonths}M EF target: ${vnd(recommendedLiquidTarget, lang)}`,
+                        `緊急資金目標(${recMonths}ヶ月)：${vnd(recommendedLiquidTarget, lang)}`
+                      )}
+                    </span>
                   </div>
                   <Progress value={liquidCoveragePct} />
                 </div>
@@ -780,24 +926,27 @@ export default function Ladder() {
                 {hasPartner && (
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3.5 py-2.5 text-xs tabular-nums text-zinc-300 ring-1 ring-inset ring-white/[0.06]">
                     <span className="flex items-center gap-1.5 text-zinc-400">
-                      <Users className="size-3.5 text-indigo-300" /> Góp bậc thang mỗi tháng:
+                      <Users className="size-3.5 text-indigo-300" />{' '}
+                      {tx('Góp bậc thang mỗi tháng:', 'Monthly ladder split:', '毎月のラダー積立分担：')}
                     </span>
                     <span>
-                      Người 1: <strong className="text-white">{vnd(e1MonthlyLadder)}</strong> ({pct(e1SharePct, 0)}) · Người 2:{' '}
-                      <strong className="text-white">{vnd(e2MonthlyLadder)}</strong> ({pct(100 - e1SharePct, 0)})
+                      {tx('Người 1:', 'Earner 1:', '1人目：')}{' '}
+                      <strong className="text-white">{vnd(e1MonthlyLadder, lang)}</strong> ({pct(e1SharePct, 0, lang)}) ·{' '}
+                      {tx('Người 2:', 'Earner 2:', '2人目：')}{' '}
+                      <strong className="text-white">{vnd(e2MonthlyLadder, lang)}</strong> ({pct(100 - e1SharePct, 0, lang)})
                     </span>
                   </div>
                 )}
               </Card>
 
-              {/* Option 4 Ladder Stage Shelf & Expandable Matrix */}
+              {/* Ladder Stage Shelf & Expandable Matrix */}
               <LadderPackageExplorer rows={result.timelineRows} splitLabel={splitLabel} />
 
               <RateDisclaimer />
 
               <FeedbackWidget
                 toolId="ladder"
-                toolLabel="Tiết kiệm bậc thang"
+                toolLabel={tx('Tiết kiệm bậc thang', 'Savings Ladder', 'ラダー貯蓄')}
                 snapshot={{ monthlySavings, totalMonths, bankId, strategy, finalValue: result.finalPortfolioValue }}
               />
             </div>
@@ -814,15 +963,19 @@ export default function Ladder() {
         >
           <div className="min-w-0">
             <div className="text-[11px] text-zinc-400">
-              {bank.name} · {lastRow?.activePackagesCount || 0} sổ ({totalMonths}T)
+              {bank.name} · {lastRow?.activePackagesCount || 0} {pkgUnit} ({totalMonths}
+              {tx('T', 'm', 'ヶ月')})
             </div>
             <div className="truncate text-sm font-semibold tabular-nums text-white">
-              {compact(result.finalPortfolioValue)} ·{' '}
-              <span className="text-emerald-300">+{compact(result.finalMonthlyYield)}/th</span>
+              {compact(result.finalPortfolioValue, lang)} ·{' '}
+              <span className="text-emerald-300">
+                +{compact(result.finalMonthlyYield, lang)}
+                {tx('/th', '/mo', '/月')}
+              </span>
             </div>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-medium text-indigo-200">
-            Kết quả <ArrowDown className="size-3" />
+            {tx('Kết quả', 'Results', '結果')} <ArrowDown className="size-3" />
           </span>
         </button>
       </div>

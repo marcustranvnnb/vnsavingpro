@@ -12,10 +12,32 @@ function num(v, fallback = 0, min = -1e15, max = 1e15) {
 }
 
 export const HOUSEHOLD_MODE_LABELS = {
-  INDIVIDUAL: 'Cá nhân',
-  COUPLE: 'Cặp đôi (2 người)',
-  FAMILY: 'Gia đình',
+  vi: {
+    INDIVIDUAL: 'Cá nhân',
+    COUPLE: 'Cặp đôi (2 người)',
+    FAMILY: 'Gia đình',
+  },
+  en: {
+    INDIVIDUAL: 'Individual',
+    COUPLE: 'Couple (2 Earners)',
+    FAMILY: 'Family',
+  },
+  ja: {
+    INDIVIDUAL: '個人',
+    COUPLE: 'カップル（2人）',
+    FAMILY: 'ファミリー',
+  },
 };
+
+function normLang(l) {
+  return l === 'en' || l === 'ja' ? l : 'vi';
+}
+
+function lx(lang, vi, en, ja) {
+  if (lang === 'en') return en;
+  if (lang === 'ja') return ja;
+  return vi;
+}
 
 export function getRecommendedEmergencyMonths(mode = 'INDIVIDUAL', dependentsCount = 0) {
   const deps = Math.round(num(dependentsCount, 0, 0, 10));
@@ -78,7 +100,9 @@ export function computeHouseholdAnalysis({
   emergencyFundRate = 4.75,
   annualStepUpPct = 0,
   annualBonusAmount = 0,
+  lang = 'vi',
 }) {
+  const l = normLang(lang);
   const mode = ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(householdMode) ? householdMode : 'INDIVIDUAL';
   const hasPartner = mode === 'COUPLE' || mode === 'FAMILY';
   const safeDependents = mode === 'FAMILY' ? Math.round(num(dependentsCount, 0, 0, 10)) : 0;
@@ -192,16 +216,23 @@ export function computeHouseholdAnalysis({
   const stressTest = {
     ifEarner1Stops: buildStressCase(
       hasPartner ? e2Avg : 0,
-      hasPartner ? 'Nếu Người 1 tạm ngừng thu nhập' : 'Nếu thu nhập chính tạm gián đoạn'
+      hasPartner
+        ? lx(l, 'Nếu Người 1 tạm ngừng thu nhập', 'If Earner 1 pauses income', '1人目の収入が一時停止した場合')
+        : lx(l, 'Nếu thu nhập chính tạm gián đoạn', 'If primary income is disrupted', '主収入が一時的に途絶えた場合')
     ),
     ifEarner2Stops: hasPartner
-      ? buildStressCase(e1Avg, 'Nếu Người 2 tạm ngừng thu nhập')
+      ? buildStressCase(
+          e1Avg,
+          lx(l, 'Nếu Người 2 tạm ngừng thu nhập', 'If Earner 2 pauses income', '2人目の収入が一時停止した場合')
+        )
       : null,
   };
 
+  const labels = HOUSEHOLD_MODE_LABELS[l] || HOUSEHOLD_MODE_LABELS.vi;
+
   return {
     mode,
-    modeLabel: HOUSEHOLD_MODE_LABELS[mode],
+    modeLabel: labels[mode],
     hasPartner,
     membersCount: hasPartner ? 2 + safeDependents : 1,
     dependentsCount: safeDependents,

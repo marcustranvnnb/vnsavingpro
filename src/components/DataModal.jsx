@@ -16,6 +16,7 @@ import { Badge, Button, Callout, Modal } from './ui.jsx';
 import { exportFeedbackCSV } from './FeedbackWidget.jsx';
 import { fetchCloudPlanFromApi, saveCloudPlanToApi } from '../utils/apiClient.js';
 import { cryptoStorage, isPlainObject } from '../utils/cryptoStorage.js';
+import { useI18n } from '../i18n/index.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { href, useRates, useToast } from '../state.jsx';
 import { APP_VERSION, APP_VERSION_DATE } from '../tools.js';
@@ -47,6 +48,7 @@ function saveCloudCodeLocal(code) {
 export function DataModal({ open, onClose, onOpenAuth }) {
   const { customRates, replaceAll, ratesSyncMeta } = useRates();
   const { user, getAccessToken } = useAuth();
+  const { lang, tx } = useI18n();
   const notify = useToast();
   const fileRef = useRef(null);
 
@@ -69,7 +71,7 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       const plannerState = cryptoStorage.load('PLANNER_STATE', null);
       const savedCustomRates = cryptoStorage.load('CUSTOM_RATES', {});
       const res = await saveCloudPlanToApi({
-        title: 'Kế hoạch VnSavingPro',
+        title: tx('Kế hoạch VnSavingPro', 'VnSavingPro Plan', 'VnSavingPro プラン'),
         shareCode: cloudCode || undefined,
         accessToken: getAccessToken(),
         payload: {
@@ -82,18 +84,22 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       saveCloudCodeLocal(res.shareCode);
       const storageLabel =
         res.storage === 'supabase'
-          ? 'Supabase Postgres (vĩnh viễn)'
-          : 'bộ nhớ tạm Serverless (fallback)';
+          ? tx('Supabase Postgres (vĩnh viễn)', 'Supabase Postgres (permanent)', 'Supabase Postgres（永続保存）')
+          : tx('bộ nhớ tạm Serverless (fallback)', 'Serverless cache (fallback)', 'サーバーレス一時キャッシュ');
       setCloudStatus({
         tone: 'success',
-        message: `Đã lưu kế hoạch lên ${storageLabel}. Mã chia sẻ: ${res.shareCode}`,
+        message: tx(
+          `Đã lưu kế hoạch lên ${storageLabel}. Mã chia sẻ: ${res.shareCode}`,
+          `Saved plan to ${storageLabel}. Share code: ${res.shareCode}`,
+          `${storageLabel} に保存しました。共有コード：${res.shareCode}`
+        ),
         needsReload: false,
       });
-      notify(`Đã đồng bộ Cloud — Mã: ${res.shareCode}`);
+      notify(tx(`Đã đồng bộ Cloud — Mã: ${res.shareCode}`, `Synced to Cloud — Code: ${res.shareCode}`, `クラウド同期完了 — コード：${res.shareCode}`));
     } catch (err) {
       setCloudStatus({
         tone: 'danger',
-        message: err?.message || 'Không thể lưu kế hoạch lên Cloud lúc này.',
+        message: err?.message || tx('Không thể lưu kế hoạch lên Cloud lúc này.', 'Could not save plan to Cloud right now.', '現在クラウドへ保存できませんでした。'),
         needsReload: false,
       });
     } finally {
@@ -107,7 +113,11 @@ export function DataModal({ open, onClose, onOpenAuth }) {
     if (!CLOUD_CODE_RE.test(clean)) {
       setCloudStatus({
         tone: 'danger',
-        message: 'Mã Cloud hợp lệ gồm 6–12 ký tự chữ hoặc số (VD: A7K9P2).',
+        message: tx(
+          'Mã Cloud hợp lệ gồm 6–12 ký tự chữ hoặc số (VD: A7K9P2).',
+          'Valid Cloud codes are 6–12 alphanumeric characters (e.g. A7K9P2).',
+          '有効なクラウドコードは6〜12文字の英数字です（例：A7K9P2）。'
+        ),
         needsReload: false,
       });
       return;
@@ -129,14 +139,18 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       saveCloudCodeLocal(loadedCode);
       setCloudStatus({
         tone: 'success',
-        message: `Đã khôi phục kế hoạch từ mã ${loadedCode} (${res.storage === 'supabase' ? 'Supabase Postgres' : 'Memory'}).`,
+        message: tx(
+          `Đã khôi phục kế hoạch từ mã ${loadedCode} (${res.storage === 'supabase' ? 'Supabase Postgres' : 'Memory'}).`,
+          `Restored plan from code ${loadedCode} (${res.storage === 'supabase' ? 'Supabase Postgres' : 'Memory'}).`,
+          `コード ${loadedCode} からプランを復元しました。`
+        ),
         needsReload: true,
       });
-      notify(`Đã khôi phục kế hoạch từ mã ${loadedCode}`);
+      notify(tx(`Đã khôi phục kế hoạch từ mã ${loadedCode}`, `Restored plan from ${loadedCode}`, `コード ${loadedCode} から復元しました`));
     } catch (err) {
       setCloudStatus({
         tone: 'danger',
-        message: err?.message || 'Không tìm thấy mã kế hoạch trên Cloud.',
+        message: err?.message || tx('Không tìm thấy mã kế hoạch trên Cloud.', 'Plan code not found on Cloud.', 'クラウド上にプランコードが見つかりません。'),
         needsReload: false,
       });
     } finally {
@@ -149,10 +163,10 @@ export function DataModal({ open, onClose, onOpenAuth }) {
     try {
       await navigator.clipboard?.writeText(cloudCode);
       setCopiedCode(true);
-      notify(`Đã sao chép mã Cloud: ${cloudCode}`);
+      notify(tx(`Đã sao chép mã Cloud: ${cloudCode}`, `Copied Cloud code: ${cloudCode}`, `コードをコピーしました：${cloudCode}`));
       setTimeout(() => setCopiedCode(false), 1800);
     } catch {
-      notify(`Mã Cloud của bạn: ${cloudCode}`);
+      notify(tx(`Mã Cloud của bạn: ${cloudCode}`, `Your Cloud code: ${cloudCode}`, `クラウドコード：${cloudCode}`));
     }
   };
 
@@ -172,7 +186,7 @@ export function DataModal({ open, onClose, onOpenAuth }) {
     a.download = `VnSavingPro_Backup_${today()}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    notify('Đã tải file sao lưu');
+    notify(tx('Đã tải file sao lưu', 'Downloaded backup JSON', 'バックアップファイルを保存しました'));
   };
 
   const importBackup = async (e) => {
@@ -180,7 +194,7 @@ export function DataModal({ open, onClose, onOpenAuth }) {
     e.target.value = '';
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert('File sao lưu vượt quá giới hạn 2 MB.');
+      alert(tx('File sao lưu vượt quá giới hạn 2 MB.', 'Backup file exceeds the 2 MB limit.', 'バックアップファイルが2MBの上限を超えています。'));
       return;
     }
     try {
@@ -196,15 +210,25 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       if (Array.isArray(data.feedbackLog)) {
         cryptoStorage.save('USER_FEEDBACK_LOG', data.feedbackLog);
       }
-      notify('Đã kiểm tra an toàn & khôi phục dữ liệu');
+      notify(tx('Đã kiểm tra an toàn & khôi phục dữ liệu', 'Verified & restored local backup', 'データを検証・復元しました'));
       onClose();
     } catch {
-      alert('File sao lưu không hợp lệ.');
+      alert(tx('File sao lưu không hợp lệ.', 'Invalid backup file.', '無効なバックアップファイルです。'));
     }
   };
 
   const clearAll = () => {
-    if (!confirm('Xoá toàn bộ dữ liệu đã lưu trên thiết bị này? Hành động này không thể hoàn tác.')) return;
+    if (
+      !confirm(
+        tx(
+          'Xoá toàn bộ dữ liệu đã lưu trên thiết bị này? Hành động này không thể hoàn tác.',
+          'Erase all saved data on this device? This action cannot be undone.',
+          'この端末に保存されたすべてのデータを消去しますか？この操作は取り消せません。'
+        )
+      )
+    ) {
+      return;
+    }
     cryptoStorage.clearAll();
     try {
       window.localStorage?.removeItem(CLOUD_CODE_KEY);
@@ -214,12 +238,12 @@ export function DataModal({ open, onClose, onOpenAuth }) {
     setCloudCode('');
     setInputCode('');
     replaceAll({});
-    notify('Đã xoá dữ liệu trên thiết bị');
+    notify(tx('Đã xoá dữ liệu trên thiết bị', 'Cleared local device data', '端末のデータを削除しました'));
     onClose();
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Dữ liệu & Đồng bộ Cloud">
+    <Modal open={open} onClose={onClose} title={tx('Dữ liệu & Đồng bộ Cloud', 'Data & Cloud Sync', 'データ管理・クラウド同期')}>
       {/* Supabase Cloud Sync Card */}
       <div className="mb-4 rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -233,15 +257,23 @@ export function DataModal({ open, onClose, onOpenAuth }) {
           </div>
           <Badge tone={supabaseConnected ? 'success' : 'warning'}>
             {supabaseConnected
-              ? 'Supabase Cloud: Đã kết nối'
-              : 'Chế độ Local Fallback (Chưa gắn khóa Supabase)'}
+              ? tx('Supabase Cloud: Đã kết nối', 'Supabase Cloud: Connected', 'Supabase 接続済み')
+              : tx('Chế độ Local Fallback (Chưa gắn khóa Supabase)', 'Local Fallback Mode', 'ローカルフォールバック中')}
           </Badge>
         </div>
 
         <p className="mt-2 text-xs leading-relaxed text-zinc-400">
           {supabaseConnected
-            ? 'Lãi suất cập nhật 09:00 hằng ngày, góp ý người dùng và kế hoạch tiết kiệm được lưu vĩnh viễn trên PostgreSQL Supabase.'
-            : 'Máy chủ đang chạy ở chế độ tạm. Khi cấu hình dự án Supabase trong .env.local hoặc Vercel Environment Variables, mọi dữ liệu sẽ tự động lưu vĩnh viễn trên PostgreSQL.'}
+            ? tx(
+                'Lãi suất cập nhật 09:00 hằng ngày, góp ý người dùng và kế hoạch tiết kiệm được lưu vĩnh viễn trên PostgreSQL Supabase.',
+                'Daily 09:00 AM bank rates, feedback, and shared savings plans are persisted on Supabase PostgreSQL.',
+                '毎日09:00の金利データや共有プランはSupabase PostgreSQLに永続保存されます。'
+              )
+            : tx(
+                'Máy chủ đang chạy ở chế độ tạm. Khi cấu hình Supabase trong biến môi trường, mọi dữ liệu sẽ lưu vĩnh viễn.',
+                'Running in temporary fallback mode until Supabase env variables are connected.',
+                '環境変数設定前の一時フォールバックモードで稼働しています。'
+              )}
         </p>
 
         <div className="mt-3 flex flex-col gap-2.5">
@@ -255,17 +287,17 @@ export function DataModal({ open, onClose, onOpenAuth }) {
             >
               <Cloud className="size-3.5" />
               {cloudBusy === 'save'
-                ? 'Đang đồng bộ...'
+                ? tx('Đang đồng bộ...', 'Syncing...', '同期中...')
                 : cloudCode
-                ? 'Cập nhật kế hoạch lên Cloud'
-                : 'Lưu kế hoạch lên Cloud & Tạo mã chia sẻ'}
+                  ? tx('Cập nhật kế hoạch lên Cloud', 'Update Plan on Cloud', 'クラウドのプランを更新')
+                  : tx('Lưu kế hoạch lên Cloud & Tạo mã chia sẻ', 'Save to Cloud & Create Code', 'クラウドに保存してコード生成')}
             </Button>
 
             {cloudCode && (
               <button
                 type="button"
                 onClick={handleCopyCode}
-                title="Sao chép mã chia sẻ"
+                title={tx('Sao chép mã chia sẻ', 'Copy share code', '共有コードをコピー')}
                 className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-indigo-400/30 bg-indigo-500/15 px-3 font-mono text-xs font-semibold tracking-wider text-indigo-200 transition hover:bg-indigo-500/25"
               >
                 {cloudCode}
@@ -279,13 +311,15 @@ export function DataModal({ open, onClose, onOpenAuth }) {
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))}
-              placeholder="Nhập mã Cloud 6 ký tự (VD: A7K9P2)"
-              aria-label="Mã kế hoạch từ Cloud"
+              placeholder={tx('Nhập mã Cloud 6 ký tự (VD: A7K9P2)', 'Enter 6-char Cloud code (e.g. A7K9P2)', '6文字のコードを入力 (例: A7K9P2)')}
+              aria-label={tx('Mã kế hoạch từ Cloud', 'Cloud plan code', 'クラウドプランコード')}
               className="h-10 w-full flex-1 rounded-xl border border-white/10 bg-canvas/80 px-3 font-mono text-base uppercase tracking-wider text-white placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:h-9 sm:text-xs"
             />
             <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={cloudBusy !== null}>
               <DownloadCloud className="size-3.5" />
-              {cloudBusy === 'load' ? 'Đang tải...' : 'Tải kế hoạch từ mã Cloud'}
+              {cloudBusy === 'load'
+                ? tx('Đang tải...', 'Loading...', '読込中...')
+                : tx('Tải kế hoạch từ mã Cloud', 'Load Plan from Code', 'コードから読込')}
             </Button>
           </form>
 
@@ -304,7 +338,7 @@ export function DataModal({ open, onClose, onOpenAuth }) {
                   onClick={() => window.location.reload()}
                   className="inline-flex items-center gap-1 font-medium text-white underline underline-offset-2 hover:text-emerald-200"
                 >
-                  <RefreshCw className="size-3" /> Áp dụng ngay
+                  <RefreshCw className="size-3" /> {tx('Áp dụng ngay', 'Reload & apply', '今すぐ反映')}
                 </button>
               )}
             </div>
@@ -313,14 +347,22 @@ export function DataModal({ open, onClose, onOpenAuth }) {
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-2.5 text-[11px] text-zinc-400">
             {user ? (
               <>
-                <span>Đang đăng nhập: {user.email}</span>
+                <span>
+                  {tx('Đang đăng nhập:', 'Signed in:', 'ログイン中：')} {user.email}
+                </span>
                 <a href={href('profile')} onClick={onClose} className="font-medium text-indigo-300 hover:text-indigo-200">
-                  Mở Hồ sơ &amp; Kịch bản →
+                  {tx('Mở Hồ sơ & Kịch bản →', 'Open Profile & Plans →', 'プロフィールを開く →')}
                 </a>
               </>
             ) : (
               <>
-                <span>Đăng nhập để lưu nhiều kịch bản riêng tư</span>
+                <span>
+                  {tx(
+                    'Đăng nhập để lưu nhiều kịch bản riêng tư',
+                    'Sign in to save multiple private scenarios',
+                    'ログインして複数の非公開プランを保存'
+                  )}
+                </span>
                 {onOpenAuth && (
                   <button
                     type="button"
@@ -330,7 +372,7 @@ export function DataModal({ open, onClose, onOpenAuth }) {
                     }}
                     className="font-medium text-indigo-300 hover:text-indigo-200"
                   >
-                    Đăng nhập / Google →
+                    {tx('Đăng nhập / Google →', 'Sign in / Google →', 'ログイン / Google →')}
                   </button>
                 )}
               </>
@@ -340,29 +382,34 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       </div>
 
       <Callout icon={ShieldCheck} tone="brand" className="mb-4">
-        Dữ liệu cá nhân trên thiết bị luôn được mã hoá cục bộ. Chỉ khi bạn chủ động bấm lưu Cloud hoặc gửi góp ý, bản
-        sao mới được đồng bộ qua API máy chủ.
+        {tx(
+          'Dữ liệu cá nhân trên thiết bị luôn được mã hoá cục bộ. Chỉ khi bạn chủ động bấm lưu Cloud hoặc gửi góp ý, bản sao mới được đồng bộ qua API máy chủ.',
+          'Device data is always locally encrypted. Nothing syncs to Cloud servers unless you explicitly click Save to Cloud or submit feedback.',
+          '端末内の個人データは常に暗号化保存されます。クラウド保存や評価送信を押さない限りサーバーへ送信されません。'
+        )}
       </Callout>
 
       <dl className="mb-5 divide-y divide-white/[0.05] rounded-xl ring-1 ring-inset ring-white/[0.06]">
         <div className="flex items-center justify-between px-4 py-3 text-sm">
-          <dt className="text-zinc-400">Lãi suất tự chỉnh</dt>
+          <dt className="text-zinc-400">{tx('Lãi suất tự chỉnh', 'Custom interest overrides', 'カスタム金利設定数')}</dt>
           <dd className="font-medium tabular-nums text-white">{Object.keys(customRates).length}</dd>
         </div>
         <div className="flex items-center justify-between px-4 py-3 text-sm">
-          <dt className="text-zinc-400">Mã giới thiệu của bạn</dt>
+          <dt className="text-zinc-400">{tx('Mã giới thiệu của bạn', 'Saved referral codes', '保存済み紹介コード')}</dt>
           <dd className="font-medium tabular-nums text-white">{referralCount}</dd>
         </div>
         <div className="flex items-center justify-between px-4 py-3 text-sm">
-          <dt className="text-zinc-400">Kế hoạch thu nhập thụ động</dt>
-          <dd className="font-medium text-emerald-300">{hasSavedPlan ? 'Đã lưu tự động' : 'Chưa lưu'}</dd>
+          <dt className="text-zinc-400">{tx('Kế hoạch thu nhập thụ động', 'Passive income plan', '不労所得プラン')}</dt>
+          <dd className="font-medium text-emerald-300">
+            {hasSavedPlan ? tx('Đã lưu tự động', 'Auto-saved', '自動保存済み') : tx('Chưa lưu', 'Not saved yet', '未保存')}
+          </dd>
         </div>
         <div className="flex items-center justify-between px-4 py-3 text-sm">
-          <dt className="text-zinc-400">Đánh giá &amp; góp ý đã lưu</dt>
+          <dt className="text-zinc-400">{tx('Đánh giá & góp ý đã lưu', 'Saved feedback items', '保存済みフィードバック')}</dt>
           <dd className="font-medium tabular-nums text-white">{feedbackCount}</dd>
         </div>
         <div className="flex items-center justify-between px-4 py-3 text-sm">
-          <dt className="text-zinc-400">Phiên bản công cụ</dt>
+          <dt className="text-zinc-400">{tx('Phiên bản công cụ', 'App version', 'バージョン')}</dt>
           <dd className="font-medium tabular-nums text-indigo-300">
             {APP_VERSION} ({APP_VERSION_DATE})
           </dd>
@@ -371,23 +418,25 @@ export function DataModal({ open, onClose, onOpenAuth }) {
 
       <div className="grid grid-cols-2 gap-2">
         <Button onClick={exportBackup}>
-          <Download className="size-4" /> Sao lưu JSON
+          <Download className="size-4" /> {tx('Sao lưu JSON', 'Export JSON', 'JSON出力')}
         </Button>
         <Button onClick={() => fileRef.current?.click()}>
-          <Upload className="size-4" /> Khôi phục
+          <Upload className="size-4" /> {tx('Khôi phục', 'Restore', '復元')}
         </Button>
         {feedbackCount > 0 && (
           <Button
             className="col-span-2"
             onClick={() => {
-              if (exportFeedbackCSV()) notify('Đã xuất lịch sử đánh giá & góp ý (.CSV)');
+              if (exportFeedbackCSV(lang)) {
+                notify(tx('Đã xuất lịch sử đánh giá & góp ý (.CSV)', 'Exported feedback history (.CSV)', 'フィードバック履歴 (.CSV) を出力しました'));
+              }
             }}
           >
-            <MessageSquareText className="size-4" /> Xuất lịch sử Feedback (.CSV)
+            <MessageSquareText className="size-4" /> {tx('Xuất lịch sử Feedback (.CSV)', 'Export Feedback Log (.CSV)', 'フィードバック履歴出力 (.CSV)')}
           </Button>
         )}
         <Button variant="danger" className="col-span-2" onClick={clearAll}>
-          <Trash2 className="size-4" /> Xoá toàn bộ dữ liệu
+          <Trash2 className="size-4" /> {tx('Xoá toàn bộ dữ liệu', 'Clear All Device Data', '全データを削除')}
         </Button>
       </div>
       <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={importBackup} />

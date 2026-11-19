@@ -5,6 +5,7 @@ import {
   getCookieConsent,
   saveCookieConsent,
 } from '../utils/cookieManager.js';
+import { useI18n } from '../i18n/index.jsx';
 import { useToast } from '../state.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
 
@@ -35,6 +36,7 @@ function CookieToggle({ title, desc, checked, disabled = false, onChange, badge 
 }
 
 export function CookieBanner({ settingsOpen, onCloseSettings, onOpenSettings }) {
+  const { lang, tx } = useI18n();
   const notify = useToast();
   const [bannerVisible, setBannerVisible] = useState(false);
   const [prefsEnabled, setPrefsEnabled] = useState(true);
@@ -58,16 +60,16 @@ export function CookieBanner({ settingsOpen, onCloseSettings, onOpenSettings }) 
         setPrefsEnabled(existing.preferences);
         setAnalyticsEnabled(existing.analytics);
       }
-      setActiveCookies(getActiveCookiesList());
+      setActiveCookies(getActiveCookiesList(lang));
     }
-  }, [settingsOpen]);
+  }, [settingsOpen, lang]);
 
   const applyConsent = (preferences, analytics, msg) => {
     saveCookieConsent({ preferences, analytics });
     setPrefsEnabled(preferences);
     setAnalyticsEnabled(analytics);
     setBannerVisible(false);
-    setActiveCookies(getActiveCookiesList());
+    setActiveCookies(getActiveCookiesList(lang));
     onCloseSettings?.();
     if (msg) notify(msg);
   };
@@ -77,7 +79,7 @@ export function CookieBanner({ settingsOpen, onCloseSettings, onOpenSettings }) 
       {bannerVisible && !settingsOpen && (
         <div
           role="region"
-          aria-label="Cài đặt Cookie"
+          aria-label={tx('Cài đặt Cookie', 'Cookie Settings', 'Cookie設定')}
           className="print-hidden fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-3xl animate-pop md:bottom-5"
         >
           <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-elevated/95 p-4 shadow-2xl backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:p-5">
@@ -86,80 +88,116 @@ export function CookieBanner({ settingsOpen, onCloseSettings, onOpenSettings }) 
                 <Cookie className="size-4" />
               </span>
               <div className="space-y-1 text-xs">
-                <div className="font-semibold text-white">VnSavingPro sử dụng Cookie trên trình duyệt</div>
+                <div className="font-semibold text-white">
+                  {tx('VnSavingPro sử dụng Cookie trên trình duyệt', 'VnSavingPro uses browser cookies', 'VnSavingProはブラウザCookieを使用します')}
+                </div>
                 <p className="leading-relaxed text-zinc-400">
-                  Cookie giúp ghi nhớ ngân hàng, kỳ hạn bạn chọn và đo lường trải nghiệm trang. Số liệu tài chính cá nhân
-                  của bạn vẫn chỉ được lưu cục bộ trên thiết bị.
+                  {tx(
+                    'Cookie giúp ghi nhớ ngân hàng, kỳ hạn bạn chọn và đo lường trải nghiệm trang. Số liệu tài chính cá nhân của bạn vẫn chỉ được lưu cục bộ trên thiết bị.',
+                    'Cookies remember your preferred bank, tenure, and language while measuring UX. Personal financial figures remain locally encrypted on your device.',
+                    'Cookieは選択した銀行・期間・言語設定の保持とUX計測に使用されます。個人の資産数値は端末内に暗号化保存されます。'
+                  )}
                 </p>
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onOpenSettings?.()}
-              >
-                <SlidersHorizontal className="size-3.5" /> Tuỳ chỉnh
+              <Button size="sm" variant="ghost" onClick={() => onOpenSettings?.()}>
+                <SlidersHorizontal className="size-3.5" /> {tx('Tuỳ chỉnh', 'Customize', '詳細設定')}
               </Button>
               <Button
                 size="sm"
                 variant="secondary"
-                onClick={() => applyConsent(false, false, 'Đã lưu: chỉ sử dụng cookie thiết yếu')}
+                onClick={() =>
+                  applyConsent(
+                    false,
+                    false,
+                    tx('Đã lưu: chỉ sử dụng cookie thiết yếu', 'Saved: essential cookies only', '保存しました：必須Cookieのみ')
+                  )
+                }
               >
-                Chỉ thiết yếu
+                {tx('Chỉ thiết yếu', 'Essential only', '必須のみ')}
               </Button>
               <Button
                 size="sm"
                 variant="primary"
-                onClick={() => applyConsent(true, true, 'Đã chấp nhận cookie ghi nhớ & phân tích')}
+                onClick={() =>
+                  applyConsent(
+                    true,
+                    true,
+                    tx('Đã chấp nhận cookie ghi nhớ & phân tích', 'Accepted preference & analytics cookies', '設定・分析Cookieを許可しました')
+                  )
+                }
               >
-                Chấp nhận tất cả
+                {tx('Chấp nhận tất cả', 'Accept all', 'すべて許可')}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      <Modal open={settingsOpen} onClose={onCloseSettings} title="Cài đặt & Quản lý Cookie" className="max-w-lg">
+      <Modal
+        open={settingsOpen}
+        onClose={onCloseSettings}
+        title={tx('Cài đặt & Quản lý Cookie', 'Cookie Preferences', 'Cookie設定・管理')}
+        className="max-w-lg"
+      >
         <div className="space-y-4">
           <p className="text-xs leading-relaxed text-zinc-400">
-            Bạn có toàn quyền bật hoặc tắt các nhóm cookie không thiết yếu dưới đây. Thay đổi có hiệu lực ngay lập tức trên
-            trình duyệt này.
+            {tx(
+              'Bạn có toàn quyền bật hoặc tắt các nhóm cookie không thiết yếu dưới đây. Thay đổi có hiệu lực ngay lập tức trên trình duyệt này.',
+              'You can enable or disable non-essential cookie categories below. Changes take effect immediately in this browser.',
+              '以下の任意Cookieカテゴリはいつでもオン/オフできます。変更はこのブラウザに即時反映されます。'
+            )}
           </p>
 
           <div className="space-y-2.5">
             <CookieToggle
-              title="Cookie thiết yếu (vnsaving_cookie_consent)"
-              badge="Luôn bật"
+              title={tx('Cookie thiết yếu (vnsaving_cookie_consent)', 'Essential cookie (vnsaving_cookie_consent)', '必須Cookie (vnsaving_cookie_consent)')}
+              badge={tx('Luôn bật', 'Always on', '常に有効')}
               checked
               disabled
-              desc="Lưu trạng thái cài đặt cookie để hệ thống không hỏi lại trong các lần truy cập sau."
+              desc={tx(
+                'Lưu trạng thái cài đặt cookie để hệ thống không hỏi lại trong các lần truy cập sau.',
+                'Stores your cookie consent choice so you are not prompted repeatedly.',
+                'Cookie同意状態を保存し、次回訪問時の再表示を防ぎます。'
+              )}
             />
             <CookieToggle
-              title="Cookie ghi nhớ tuỳ chọn (vnsaving_prefs)"
-              badge={prefsEnabled ? 'Đang bật' : 'Đã tắt'}
+              title={tx('Cookie ghi nhớ tuỳ chọn (vnsaving_prefs)', 'Preference cookie (vnsaving_prefs)', '環境設定Cookie (vnsaving_prefs)')}
+              badge={prefsEnabled ? tx('Đang bật', 'Enabled', '有効') : tx('Đã tắt', 'Disabled', '無効')}
               checked={prefsEnabled}
               onChange={setPrefsEnabled}
-              desc="Ghi nhớ nhanh ngân hàng số yêu thích, kỳ hạn mặc định và chế độ Cơ bản / Chuyên sâu."
+              desc={tx(
+                'Ghi nhớ nhanh ngân hàng số yêu thích, kỳ hạn mặc định, ngôn ngữ và chế độ Cơ bản / Chuyên sâu.',
+                'Remembers your favorite digital bank, default tenure, language, and Basic/Pro mode.',
+                '優先銀行・標準期間・表示言語・基本/詳細モードを記憶します。'
+              )}
             />
             <CookieToggle
-              title="Cookie đo lường & Google Tag Manager (vnsaving_analytics)"
-              badge={analyticsEnabled ? 'Đang bật' : 'Đã tắt'}
+              title={tx('Cookie đo lường & Google Tag Manager (vnsaving_analytics)', 'Analytics & GTM cookie (vnsaving_analytics)', '分析・GTM Cookie (vnsaving_analytics)')}
+              badge={analyticsEnabled ? tx('Đang bật', 'Enabled', '有効') : tx('Đã tắt', 'Disabled', '無効')}
               checked={analyticsEnabled}
               onChange={setAnalyticsEnabled}
-              desc="Cho phép thống kê ẩn danh lượt truy cập trang (page_view) nhằm cải thiện chất lượng công cụ."
+              desc={tx(
+                'Cho phép thống kê ẩn danh lượt truy cập trang (page_view) nhằm cải thiện chất lượng công cụ.',
+                'Allows anonymous page_view statistics to improve calculator usability.',
+                'ツールの品質向上のため匿名のページ閲覧統計を許可します。'
+              )}
             />
           </div>
 
           <div className="rounded-xl bg-white/[0.02] p-3 ring-1 ring-inset ring-white/[0.06]">
             <div className="mb-2 flex items-center justify-between text-xs font-medium text-zinc-300">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="size-3.5 text-emerald-400" /> Cookie đang hoạt động trên trình duyệt
+                <ShieldCheck className="size-3.5 text-emerald-400" />{' '}
+                {tx('Cookie đang hoạt động trên trình duyệt', 'Active browser cookies', '現在有効なブラウザCookie')}
               </span>
-              <span className="text-[11px] tabular-nums text-zinc-500">{activeCookies.length} cookie</span>
+              <span className="text-[11px] tabular-nums text-zinc-500">
+                {activeCookies.length} {tx('cookie', 'cookies', '件')}
+              </span>
             </div>
             {activeCookies.length === 0 ? (
-              <p className="text-[11px] text-zinc-500">Chưa có cookie nào được thiết lập.</p>
+              <p className="text-[11px] text-zinc-500">{tx('Chưa có cookie nào được thiết lập.', 'No cookies set yet.', '設定されているCookieはありません。')}</p>
             ) : (
               <div className="max-h-32 space-y-1.5 overflow-y-auto pr-1 text-[11px]">
                 {activeCookies.map((c) => (
@@ -179,16 +217,28 @@ export function CookieBanner({ settingsOpen, onCloseSettings, onOpenSettings }) 
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => applyConsent(prefsEnabled, analyticsEnabled, 'Đã lưu cài đặt Cookie')}
+              onClick={() =>
+                applyConsent(
+                  prefsEnabled,
+                  analyticsEnabled,
+                  tx('Đã lưu cài đặt Cookie', 'Saved cookie preferences', 'Cookie設定を保存しました')
+                )
+              }
             >
-              Lưu lựa chọn
+              {tx('Lưu lựa chọn', 'Save preferences', '設定を保存')}
             </Button>
             <Button
               size="sm"
               variant="primary"
-              onClick={() => applyConsent(true, true, 'Đã bật tất cả cookie hỗ trợ')}
+              onClick={() =>
+                applyConsent(
+                  true,
+                  true,
+                  tx('Đã bật tất cả cookie hỗ trợ', 'Enabled all cookies', 'すべてのCookieを有効にしました')
+                )
+              }
             >
-              Chấp nhận tất cả
+              {tx('Chấp nhận tất cả', 'Accept all', 'すべて許可')}
             </Button>
           </div>
         </div>

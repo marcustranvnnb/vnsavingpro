@@ -110,12 +110,37 @@ export function isAnalyticsAllowed() {
   return Boolean(consent.analytics);
 }
 
-export function getActiveCookiesList() {
+export function getActiveCookiesList(lang = 'vi') {
   if (!hasDocument() || !document.cookie) return [];
+  const t = (vi, en, ja) => (lang === 'en' ? en : lang === 'ja' ? ja : vi);
   const meta = {
-    [CONSENT_COOKIE]: { category: 'Thiết yếu', desc: 'Lưu lựa chọn đồng ý cookie của bạn', ttl: '180 ngày' },
-    [PREFS_COOKIE]: { category: 'Tuỳ chọn', desc: 'Ghi nhớ ngân hàng, kỳ hạn & chế độ nhập liệu', ttl: '90 ngày' },
-    [ANALYTICS_COOKIE]: { category: 'Phân tích', desc: 'Trạng thái đo lường hiệu năng & lượt xem trang', ttl: '90 ngày' },
+    [CONSENT_COOKIE]: {
+      category: t('Thiết yếu', 'Essential', '必須'),
+      desc: t(
+        'Lưu lựa chọn đồng ý cookie của bạn',
+        'Stores your cookie consent preferences',
+        'Cookie同意設定を保存します'
+      ),
+      ttl: t('180 ngày', '180 days', '180日間'),
+    },
+    [PREFS_COOKIE]: {
+      category: t('Tuỳ chọn', 'Preferences', '環境設定'),
+      desc: t(
+        'Ghi nhớ ngân hàng, kỳ hạn, ngôn ngữ & chế độ nhập liệu',
+        'Remembers selected bank, tenure, language & input mode',
+        '銀行・預入期間・言語・入力モードを記憶します'
+      ),
+      ttl: t('90 ngày', '90 days', '90日間'),
+    },
+    [ANALYTICS_COOKIE]: {
+      category: t('Phân tích', 'Analytics', '分析'),
+      desc: t(
+        'Trạng thái đo lường hiệu năng & lượt xem trang',
+        'Page view & performance analytics status',
+        'アクセス計測とパフォーマンス分析の状態'
+      ),
+      ttl: t('90 ngày', '90 days', '90日間'),
+    },
   };
   return document.cookie
     .split(';')
@@ -131,7 +156,11 @@ export function getActiveCookiesList() {
       } catch {
         // Leave raw
       }
-      const info = meta[name] || { category: 'Bên thứ 3 / Phiên', desc: 'Cookie trình duyệt / GTM', ttl: 'Theo phiên' };
+      const info = meta[name] || {
+        category: t('Bên thứ 3 / Phiên', 'Third-party / Session', 'サードパーティ / セッション'),
+        desc: t('Cookie trình duyệt / GTM', 'Browser / GTM cookie', 'ブラウザ / GTM Cookie'),
+        ttl: t('Theo phiên', 'Session', 'セッション期間'),
+      };
       return {
         name,
         valuePreview: decoded.length > 56 ? `${decoded.slice(0, 56)}…` : decoded,

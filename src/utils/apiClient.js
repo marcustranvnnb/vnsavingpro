@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cryptoStorage } from './cryptoStorage.js';
+import { getFormatLang } from './format.js';
 
 export const POC_QUOTA_EVENT = 'vnsaving:poc-quota-reached';
 
@@ -33,7 +34,11 @@ function setCached(key, value) {
  * Retains previous valid state while updating so UI sliders stay smooth and flicker-free.
  */
 export function useServerCalc(action, payload, initialData = null) {
-  const serialized = JSON.stringify(payload);
+  const effectivePayload =
+    payload && typeof payload === 'object' && !Array.isArray(payload) && !payload.lang
+      ? { ...payload, lang: getFormatLang() }
+      : payload;
+  const serialized = JSON.stringify(effectivePayload);
   const cacheKey = `${action}:${serialized}`;
 
   const [state, setState] = useState(() => {
@@ -62,7 +67,7 @@ export function useServerCalc(action, payload, initialData = null) {
         const res = await fetch('/api/calculate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, payload }),
+          body: JSON.stringify({ action, payload: effectivePayload }),
           signal: controller.signal,
         });
         if (!res.ok) {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Info, X } from 'lucide-react';
+import { useI18n } from '../i18n/index.jsx';
 import { fmt } from '../utils/format.js';
 
 export const cx = (...c) => c.filter(Boolean).join(' ');
@@ -361,6 +362,7 @@ export function BankMark({ bank, size = 'md' }) {
 /* ── Overlay ────────────────────────────────────────────── */
 
 export function Modal({ open, onClose, title, children, className }) {
+  const { tx } = useI18n();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -390,7 +392,7 @@ export function Modal({ open, onClose, title, children, className }) {
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <button
             onClick={onClose}
-            aria-label="Đóng"
+            aria-label={tx('Đóng', 'Close', '閉じる')}
             className="rounded-lg p-1.5 text-zinc-500 transition hover:bg-white/5 hover:text-white"
           >
             <X className="size-4" />
@@ -409,8 +411,9 @@ export function Skeleton({ className }) {
 }
 
 export function ResultsSkeleton() {
+  const { tx } = useI18n();
   return (
-    <div className="space-y-5 animate-fade" aria-busy="true" aria-label="Đang tải kết quả">
+    <div className="space-y-5 animate-fade" aria-busy="true" aria-label={tx('Đang tải kết quả', 'Loading results', '結果を読み込み中')}>
       <Card className="p-5 sm:p-7">
         <Skeleton className="h-4 w-56 rounded-full" />
         <Skeleton className="mt-4 h-11 w-64 rounded-xl" />
@@ -456,15 +459,23 @@ export function PageSkeleton() {
 }
 
 export function RateDisclaimer({ className }) {
+  const { tx } = useI18n();
   return (
     <Callout icon={Info} tone="neutral" className={cx('print-hidden text-xs', className)}>
       <div className="space-y-1">
-        <div className="font-medium text-zinc-200">Lưu ý về dữ liệu lãi suất &amp; Kết quả tính toán</div>
+        <div className="font-medium text-zinc-200">
+          {tx(
+            'Lưu ý về dữ liệu lãi suất & Kết quả tính toán',
+            'Notice on Bank Rate Data & Estimates',
+            '金利データおよび試算結果に関するご注意'
+          )}
+        </div>
         <p className="leading-relaxed text-zinc-400">
-          Thông tin lãi suất được tổng hợp tự động từ trang thông tin chính thức (public) của từng ngân hàng. Để nắm rõ
-          chi tiết hạn mức, điều kiện áp dụng và các gói chương trình ưu đãi mới nhất, bạn nên tải ứng dụng chính thức của
-          từng ngân hàng để tham khảo trực tiếp. Mọi số liệu và kết quả tính toán trên VnSavingPro chỉ mang tính chất
-          tham khảo.
+          {tx(
+            'Thông tin lãi suất được tổng hợp tự động từ trang thông tin chính thức (public) của từng ngân hàng. Để nắm rõ chi tiết hạn mức, điều kiện áp dụng và các gói chương trình ưu đãi mới nhất, bạn nên tải ứng dụng chính thức của từng ngân hàng để tham khảo trực tiếp. Mọi số liệu và kết quả tính toán trên VnSavingPro chỉ mang tính chất tham khảo.',
+            'Interest rates are auto-synced daily from each bank’s official public website. For exact deposit limits, eligibility criteria, and active promotional packages, please check each bank’s official mobile app directly. All calculations on VnSavingPro are for reference only.',
+            '金利情報は各銀行の公式公開ページから毎日自動収集しています。最新の適用条件・上限額・キャンペーン特典の詳細は、必ず各銀行の公式アプリにて直接ご確認ください。VnSavingProの試算結果は参考値です。'
+          )}
         </p>
       </div>
     </Callout>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Eye, EyeOff, KeyRound, Lock, LogIn, Mail, User, UserPlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useI18n } from '../i18n/index.jsx';
 import { useToast } from '../state.jsx';
 import { Button, Modal } from './ui.jsx';
 
@@ -38,6 +39,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
     resetPassword,
     updatePassword,
   } = useAuth();
+  const { tx } = useI18n();
   const notify = useToast();
 
   const [mode, setMode] = useState(passwordRecoveryMode ? 'update_password' : initialMode);
@@ -71,7 +73,10 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
     try {
       await signInWithGoogle();
     } catch (err) {
-      setFeedback({ tone: 'error', text: err?.message || 'Không thể kết nối Google OAuth.' });
+      setFeedback({
+        tone: 'error',
+        text: err?.message || tx('Không thể kết nối Google OAuth.', 'Unable to connect to Google OAuth.', 'Google OAuth に接続できません。'),
+      });
       setBusy(false);
     }
   };
@@ -84,41 +89,58 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
     try {
       if (mode === 'signin') {
         await signInWithEmail(email, password);
-        notify('Đăng nhập thành công');
+        notify(tx('Đăng nhập thành công', 'Signed in successfully', 'ログインしました'));
         onSuccess?.();
       } else if (mode === 'signup') {
         if (password.length < 6) {
-          throw new Error('Mật khẩu cần tối thiểu 6 ký tự.');
+          throw new Error(
+            tx('Mật khẩu cần tối thiểu 6 ký tự.', 'Password must be at least 6 characters.', 'パスワードは6文字以上で入力してください。')
+          );
         }
         const data = await signUpWithEmail(email, password, fullName);
         if (data?.session) {
-          notify('Tạo tài khoản & đăng nhập thành công');
+          notify(tx('Tạo tài khoản & đăng nhập thành công', 'Account created & signed in', 'アカウント作成・ログイン完了'));
           onSuccess?.();
         } else {
           setFeedback({
             tone: 'success',
-            text: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư để xác nhận email trước khi đăng nhập.',
+            text: tx(
+              'Đăng ký thành công! Vui lòng kiểm tra hộp thư để xác nhận email trước khi đăng nhập.',
+              'Account created! Please check your inbox to confirm your email before signing in.',
+              '登録が完了しました！受信箱の確認リンクをクリックしてからログインしてください。'
+            ),
           });
         }
       } else if (mode === 'forgot') {
         await resetPassword(email);
         setFeedback({
           tone: 'success',
-          text: 'Đã gửi email đặt lại mật khẩu! Vui lòng kiểm tra hộp thư (cả mục Spam).',
+          text: tx(
+            'Đã gửi email đặt lại mật khẩu! Vui lòng kiểm tra hộp thư (cả mục Spam).',
+            'Password reset email sent! Please check your inbox (including Spam).',
+            'パスワード再設定メールを送信しました。受信箱（迷惑メールフォルダ含む）をご確認ください。'
+          ),
         });
       } else if (mode === 'update_password') {
         if (password.length < 6) {
-          throw new Error('Mật khẩu mới cần tối thiểu 6 ký tự.');
+          throw new Error(
+            tx('Mật khẩu mới cần tối thiểu 6 ký tự.', 'New password must be at least 6 characters.', '新しいパスワードは6文字以上必要です。')
+          );
         }
         if (password !== confirmPassword) {
-          throw new Error('Mật khẩu xác nhận không khớp.');
+          throw new Error(
+            tx('Mật khẩu xác nhận không khớp.', 'Password confirmation does not match.', '確認用パスワードが一致しません。')
+          );
         }
         await updatePassword(password);
-        notify('Đã cập nhật mật khẩu mới');
+        notify(tx('Đã cập nhật mật khẩu mới', 'Password updated', '新しいパスワードを保存しました'));
         onSuccess?.();
       }
     } catch (err) {
-      setFeedback({ tone: 'error', text: err?.message || 'Thao tác thất bại.' });
+      setFeedback({
+        tone: 'error',
+        text: err?.message || tx('Thao tác thất bại.', 'Action failed.', '操作に失敗しました。'),
+      });
     } finally {
       setBusy(false);
     }
@@ -127,8 +149,11 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
   if (!authConfigured) {
     return (
       <div className="rounded-xl bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-200 ring-1 ring-inset ring-amber-400/20">
-        Tính năng đăng nhập chưa có biến môi trường <code>VITE_SUPABASE_URL</code> và{' '}
-        <code>VITE_SUPABASE_PUBLISHABLE_KEY</code>. Vui lòng kiểm tra cấu hình Vercel / <code>.env.local</code>.
+        {tx(
+          'Tính năng đăng nhập chưa có biến môi trường VITE_SUPABASE_URL và VITE_SUPABASE_PUBLISHABLE_KEY. Vui lòng kiểm tra cấu hình Vercel / .env.local.',
+          'Authentication requires VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Please check Vercel / .env.local config.',
+          'ログイン機能には環境変数 VITE_SUPABASE_URL と VITE_SUPABASE_PUBLISHABLE_KEY の設定が必要です。'
+        )}
       </div>
     );
   }
@@ -148,7 +173,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 mode === 'signin' ? 'bg-indigo-500 text-white shadow' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              Đăng nhập
+              {tx('Đăng nhập', 'Sign In', 'ログイン')}
             </button>
             <button
               type="button"
@@ -160,7 +185,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 mode === 'signup' ? 'bg-indigo-500 text-white shadow' : 'text-zinc-400 hover:text-white'
               }`}
             >
-              Đăng ký tài khoản
+              {tx('Đăng ký tài khoản', 'Create Account', '新規登録')}
             </button>
           </div>
 
@@ -172,17 +197,25 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
             disabled={busy}
           >
             <GoogleIcon />
-            {mode === 'signup' ? 'Đăng ký nhanh với Google' : 'Tiếp tục với Google'}
+            {mode === 'signup'
+              ? tx('Đăng ký nhanh với Google', 'Sign up with Google', 'Googleで登録')
+              : tx('Tiếp tục với Google', 'Continue with Google', 'Googleで続行')}
           </Button>
           {googleEnabled === false && (
             <p className="text-center text-[11px] leading-relaxed text-amber-300/90">
-              Google OAuth đang chờ kích hoạt (chưa bật Google provider &amp; Client ID/Secret trên Supabase Dashboard).
+              {tx(
+                'Google OAuth đang chờ kích hoạt (chưa bật Google provider & Client ID/Secret trên Supabase Dashboard).',
+                'Google OAuth is pending activation in Supabase Dashboard.',
+                'Google OAuthはSupabase側での有効化待ちです。'
+              )}
             </p>
           )}
 
           <div className="relative flex items-center py-0.5">
             <div className="flex-1 border-t border-white/[0.08]" />
-            <span className="px-3 text-[11px] uppercase tracking-wider text-zinc-500">hoặc dùng Email</span>
+            <span className="px-3 text-[11px] uppercase tracking-wider text-zinc-500">
+              {tx('hoặc dùng Email', 'or use Email', 'またはメールで続行')}
+            </span>
             <div className="flex-1 border-t border-white/[0.08]" />
           </div>
         </>
@@ -191,14 +224,16 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
       <form onSubmit={handleSubmit} className="space-y-3">
         {mode === 'signup' && (
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-zinc-300">Tên hiển thị</label>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+              {tx('Tên hiển thị', 'Display Name', '表示名')}
+            </label>
             <div className="relative">
               <User className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="VD: Minh Quân"
+                placeholder={tx('VD: Minh Quân', 'e.g. Alex Nguyen', '例：田中 太郎')}
                 maxLength={80}
                 className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
@@ -216,7 +251,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ban@example.com"
+                placeholder="you@example.com"
                 autoComplete="email"
                 className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
@@ -228,7 +263,9 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label className="text-xs font-medium text-zinc-300">
-                {mode === 'update_password' ? 'Mật khẩu mới' : 'Mật khẩu'}
+                {mode === 'update_password'
+                  ? tx('Mật khẩu mới', 'New Password', '新しいパスワード')
+                  : tx('Mật khẩu', 'Password', 'パスワード')}
               </label>
               {mode === 'signin' && (
                 <button
@@ -239,7 +276,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                   }}
                   className="text-xs text-indigo-300 hover:text-indigo-200"
                 >
-                  Quên mật khẩu?
+                  {tx('Quên mật khẩu?', 'Forgot password?', 'パスワードをお忘れですか？')}
                 </button>
               )}
             </div>
@@ -251,14 +288,18 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder={tx('Tối thiểu 6 ký tự', 'Minimum 6 characters', '6文字以上')}
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                 className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-10 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPass((v) => !v)}
-                aria-label={showPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                aria-label={
+                  showPass
+                    ? tx('Ẩn mật khẩu', 'Hide password', 'パスワードを隠す')
+                    : tx('Hiện mật khẩu', 'Show password', 'パスワードを表示')
+                }
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
               >
                 {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -269,7 +310,9 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
 
         {mode === 'update_password' && (
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-zinc-300">Xác nhận mật khẩu mới</label>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+              {tx('Xác nhận mật khẩu mới', 'Confirm New Password', '新しいパスワード（確認）')}
+            </label>
             <div className="relative">
               <KeyRound className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <input
@@ -278,7 +321,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 minLength={6}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Nhập lại mật khẩu mới"
+                placeholder={tx('Nhập lại mật khẩu mới', 'Re-enter new password', '新しいパスワードを再入力')}
                 autoComplete="new-password"
                 className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
@@ -302,25 +345,29 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
           {mode === 'signin' && (
             <>
               <LogIn className="size-4" />
-              {busy ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              {busy ? tx('Đang đăng nhập...', 'Signing in...', 'ログイン中...') : tx('Đăng nhập', 'Sign In', 'ログイン')}
             </>
           )}
           {mode === 'signup' && (
             <>
               <UserPlus className="size-4" />
-              {busy ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
+              {busy ? tx('Đang tạo tài khoản...', 'Creating account...', 'アカウント作成中...') : tx('Tạo tài khoản', 'Create Account', 'アカウント作成')}
             </>
           )}
           {mode === 'forgot' && (
             <>
               <Mail className="size-4" />
-              {busy ? 'Đang gửi email...' : 'Gửi link đặt lại mật khẩu'}
+              {busy
+                ? tx('Đang gửi email...', 'Sending email...', '送信中...')
+                : tx('Gửi link đặt lại mật khẩu', 'Send Reset Link', '再設定リンクを送信')}
             </>
           )}
           {mode === 'update_password' && (
             <>
               <KeyRound className="size-4" />
-              {busy ? 'Đang cập nhật...' : 'Lưu mật khẩu mới'}
+              {busy
+                ? tx('Đang cập nhật...', 'Updating...', '更新中...')
+                : tx('Lưu mật khẩu mới', 'Save New Password', '新しいパスワードを保存')}
             </>
           )}
         </Button>
@@ -334,7 +381,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
             }}
             className="w-full text-center text-xs text-zinc-400 hover:text-white"
           >
-            Quay lại Đăng nhập
+            {tx('Quay lại Đăng nhập', 'Back to Sign In', 'ログインに戻る')}
           </button>
         )}
       </form>
@@ -343,11 +390,15 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
 }
 
 export function AuthModal({ open, onClose, initialMode = 'signin' }) {
+  const { tx } = useI18n();
   return (
-    <Modal open={open} onClose={onClose} title="Tài khoản VnSavingPro" className="max-w-md">
+    <Modal open={open} onClose={onClose} title={tx('Tài khoản VnSavingPro', 'VnSavingPro Account', 'VnSavingPro アカウント')} className="max-w-md">
       <p className="mb-4 text-xs leading-relaxed text-zinc-400">
-        Đăng nhập để đồng bộ các kịch bản tiết kiệm giữa nhiều thiết bị và quản lý hồ sơ cá nhân. Bạn vẫn có thể sử dụng
-        mọi công cụ hoàn toàn miễn phí mà không cần đăng nhập.
+        {tx(
+          'Đăng nhập để đồng bộ các kịch bản tiết kiệm giữa nhiều thiết bị và quản lý hồ sơ cá nhân. Bạn vẫn có thể sử dụng mọi công cụ hoàn toàn miễn phí mà không cần đăng nhập.',
+          'Sign in to sync your savings scenarios across devices and manage your profile. You can still use every calculator free without signing in.',
+          '複数端末で貯蓄プランを同期したり、プロフィール設定を保存したりできます。ログイン不要ですべてのツールを無料で利用することも可能です。'
+        )}
       </p>
       <AuthForm initialMode={initialMode} onSuccess={onClose} />
     </Modal>

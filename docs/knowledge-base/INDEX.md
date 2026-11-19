@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-19 16:36 (Version 1.6.0.0: Homepage Refresh, Full Mobile/Tablet/PC Responsive Polish & 4-Part Auto-Versioning)
-> **Current Architecture Version**: v1.6.0.0 (Clean-URL History API SPA + Responsive Mobile/Tablet/PC UI + Household Financial Planning + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
+> **Last Synced**: 2026-11-19 17:24 (Version 1.7.0.0: Full 3-Language Support Vietnamese · English · Japanese across UI, Formatting & Serverless API)
+> **Current Architecture Version**: v1.7.0.0 (Trilingual VI/EN/JA SPA + Clean-URL History API + Responsive Mobile/Tablet/PC UI + Household Financial Planning + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---
@@ -37,13 +37,13 @@
 
 ---
 
-## File Registry (v1.6.0.0 Tier 1 Serverless + Supabase Postgres + Daily Scrapers)
+## File Registry (v1.7.0.0 Trilingual Tier 1 Serverless + Supabase Postgres + Daily Scrapers)
 
 - **Database & Schema (`supabase/`)**: `supabase/schema.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `usage_quotas`, `quota_alerts_log` + RLS policies), `supabase/email-templates/`, `.env.example`
 - **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,supabase,resend,quotaGuard}.js`
 - **Automated Scrapers, Versioning & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/bump-version.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
-- **Root & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/version.json`, `src/index.css`
-- **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation}.jsx` (`Referral.jsx` hidden)
+- **Root, i18n & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/version.json`, `src/index.css`, `src/i18n/index.jsx`
+- **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Auth,Profile}.jsx` (`Referral.jsx` hidden)
 - **Shared Components**: `src/components/{Layout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
 - **Data**: `src/data/{banksData,bankPackagesData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
 - **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`

@@ -7,6 +7,27 @@ function num(v, fallback = 0, min = -1e15, max = 1e15) {
   return Math.min(max, Math.max(min, n));
 }
 
+function normLang(l) {
+  return l === 'en' || l === 'ja' ? l : 'vi';
+}
+
+function lx(lang, vi, en, ja) {
+  if (lang === 'en') return en;
+  if (lang === 'ja') return ja;
+  return vi;
+}
+
+function formatLadderCohortLabel(term, lang = 'vi') {
+  const raw = String(term || '');
+  const m = raw.match(/^(\d+)([WM])$/i);
+  if (!m) return raw;
+  const count = Number(m[1]);
+  const isW = m[2].toUpperCase() === 'W';
+  if (lang === 'en') return isW ? `${count}-Week Tier` : `${count}-Month Tier`;
+  if (lang === 'ja') return isW ? `${count}週間枠` : `${count}ヶ月枠`;
+  return `Lô kỳ hạn ${count} ${isW ? 'tuần' : 'tháng'}`;
+}
+
 /**
  * Single interest calculation supporting Dual Modes
  * Mode 1: ACTUAL_DAYS (Thông tư 14 NHNN 365 days)
@@ -115,11 +136,26 @@ export function calculateDepositComparison({
   };
 }
 
-function formatDurationVi(monthsNeeded, isAlreadyReached) {
-  if (isAlreadyReached) return 'Đã đạt mục tiêu!';
-  if (monthsNeeded >= 720) return '> 60 năm (Cần tăng tiền gửi)';
+function formatTimeText(monthsNeeded, isAlreadyReached, lang = 'vi') {
+  const l = normLang(lang);
+  if (isAlreadyReached) return lx(l, 'Đã đạt mục tiêu!', 'Goal reached!', '目標達成！');
+  if (monthsNeeded >= 720) {
+    return lx(l, '> 60 năm (Cần tăng tiền gửi)', '> 60 yrs (Increase savings)', '60年超（積立額を増やしてください）');
+  }
   const fullYears = Math.floor(monthsNeeded / 12);
   const remainingMonths = monthsNeeded % 12;
+  if (l === 'en') {
+    const yLbl = fullYears === 1 ? 'yr' : 'yrs';
+    const mLbl = remainingMonths === 1 ? 'mo' : 'mos';
+    if (fullYears === 0) return `${remainingMonths} ${mLbl}`;
+    if (remainingMonths === 0) return `${fullYears} ${yLbl}`;
+    return `${fullYears} ${yLbl} ${remainingMonths} ${mLbl}`;
+  }
+  if (l === 'ja') {
+    if (fullYears === 0) return `${remainingMonths}ヶ月`;
+    if (remainingMonths === 0) return `${fullYears}年`;
+    return `${fullYears}年${remainingMonths}ヶ月`;
+  }
   if (fullYears === 0) return `${remainingMonths} tháng`;
   if (remainingMonths === 0) return `${fullYears} năm`;
   return `${fullYears} năm ${remainingMonths} tháng`;
@@ -136,7 +172,9 @@ function buildStagePackageSnapshot({
   logRow,
   nominalRequiredPrincipal,
   requiredPrincipal,
+  lang = 'vi',
 }) {
+  const l = normLang(lang);
   const active = contributions.filter((c) => c.openMonth <= stageMonth);
   const stageTotalBalance = logRow ? logRow.totalBalance : 0;
   const stageMonthlyInterest = logRow ? logRow.monthlyPassiveIncomeGenerated : 0;
@@ -166,10 +204,10 @@ function buildStagePackageSnapshot({
       c.type === 'INITIAL' ? 'INITIAL' : c.type === 'BONUS' ? `BONUS_${c.cohortYear}` : `YEAR_${c.cohortYear}`;
     const groupLabel =
       c.type === 'INITIAL'
-        ? 'Vốn ban đầu'
+        ? lx(l, 'Vốn ban đầu', 'Initial Capital', '初期資金')
         : c.type === 'BONUS'
-          ? `Thưởng cuối Năm ${c.cohortYear}`
-          : `Đợt gửi Năm ${c.cohortYear}`;
+          ? lx(l, `Thưởng cuối Năm ${c.cohortYear}`, `Year ${c.cohortYear} Bonus`, `${c.cohortYear}年目ボーナス`)
+          : lx(l, `Đợt gửi Năm ${c.cohortYear}`, `Year ${c.cohortYear} Deposits`, `${c.cohortYear}年目の積立`);
 
     detailedPackages.push({
       id: c.id,
@@ -282,14 +320,24 @@ function buildStagePackageSnapshot({
 
   const label =
     stageMonth === 0
-      ? 'Hiện tại'
+      ? lx(l, 'Hiện tại', 'Now', '現在')
       : stageMonth === finalMonth && isGoalReached
         ? stageMonth % 12 === 0
-          ? `Năm ${stageMonth / 12} · Đạt mục tiêu`
-          : `Tháng ${stageMonth} · Đạt mục tiêu`
+          ? lx(
+              l,
+              `Năm ${stageMonth / 12} · Đạt mục tiêu`,
+              `Year ${stageMonth / 12} · Goal Reached`,
+              `${stageMonth / 12}年目・目標達成`
+            )
+          : lx(
+              l,
+              `Tháng ${stageMonth} · Đạt mục tiêu`,
+              `Month ${stageMonth} · Goal Reached`,
+              `${stageMonth}ヶ月目・目標達成`
+            )
         : stageMonth % 12 === 0
-          ? `Năm ${stageMonth / 12}`
-          : `Tháng ${stageMonth}`;
+          ? lx(l, `Năm ${stageMonth / 12}`, `Year ${stageMonth / 12}`, `${stageMonth / 12}年目`)
+          : lx(l, `Tháng ${stageMonth}`, `Month ${stageMonth}`, `${stageMonth}ヶ月目`);
 
   const targetBase = requiredPrincipal || nominalRequiredPrincipal || 1;
   const goalProgressPct = Number(Math.min(100, (stageTotalBalance / Math.max(1, targetBase)) * 100).toFixed(1));
@@ -341,7 +389,10 @@ export function calculatePassiveIncomeRoadmap({
   prioritizeEmergencyFund = false,
   emergencyFundTarget = 0,
   emergencyFundRate = 4.75,
+  lang = 'vi',
 }) {
+  const l = normLang(lang);
+  const pkgPrefix = lx(l, 'Sổ #', 'CD #', '証書 #');
   const normalizedGoal = goalType === 'TARGET_AMOUNT' ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME';
   const normalizedSolve = solveMode === 'SAVING' ? 'SAVING' : 'TIME';
   const salary = num(currentSalary, 35000000, 100000, 1e12);
@@ -388,7 +439,7 @@ export function calculatePassiveIncomeRoadmap({
   if (goalStartCapital > 0) {
     contributions.push({
       id: nextPkgId,
-      code: `Sổ #${nextPkgId}`,
+      code: `${pkgPrefix}${nextPkgId}`,
       type: 'INITIAL',
       openMonth: 0,
       cohortYear: 0,
@@ -418,7 +469,7 @@ export function calculatePassiveIncomeRoadmap({
     if (depositAmt > 0) {
       contributions.push({
         id: nextPkgId,
-        code: `Sổ #${nextPkgId}`,
+        code: `${pkgPrefix}${nextPkgId}`,
         type: 'MONTHLY',
         openMonth: m,
         cohortYear,
@@ -429,7 +480,7 @@ export function calculatePassiveIncomeRoadmap({
     if (bonusAmt > 0) {
       contributions.push({
         id: nextPkgId,
-        code: `Sổ #${nextPkgId}`,
+        code: `${pkgPrefix}${nextPkgId}`,
         type: 'BONUS',
         openMonth: m,
         cohortYear,
@@ -517,7 +568,7 @@ export function calculatePassiveIncomeRoadmap({
             if (surplus > 0) {
               contributions.push({
                 id: nextPkgId,
-                code: `Sổ #${nextPkgId}`,
+                code: `${pkgPrefix}${nextPkgId}`,
                 type: 'INITIAL',
                 openMonth: m,
                 cohortYear: Math.floor((m - 1) / 12) + 1,
@@ -594,7 +645,7 @@ export function calculatePassiveIncomeRoadmap({
             if (surplus > 0) {
               contributions.push({
                 id: nextPkgId,
-                code: `Sổ #${nextPkgId}`,
+                code: `${pkgPrefix}${nextPkgId}`,
                 type: 'INITIAL',
                 openMonth: monthsNeeded,
                 cohortYear: yearIdx + 1,
@@ -662,6 +713,7 @@ export function calculatePassiveIncomeRoadmap({
           logRow: logMap.get(sm),
           nominalRequiredPrincipal,
           requiredPrincipal,
+          lang: l,
         })
       );
     }
@@ -670,7 +722,7 @@ export function calculatePassiveIncomeRoadmap({
   const yearsNeeded = Number((monthsNeeded / 12).toFixed(1));
   const fullYears = Math.floor(monthsNeeded / 12);
   const remainingMonths = monthsNeeded % 12;
-  const timeText = formatDurationVi(monthsNeeded, isAlreadyReached);
+  const timeText = formatTimeText(monthsNeeded, isAlreadyReached, l);
 
   const totalDeposited = Math.round(depositedSoFar);
   const finalBalance = Math.round(currentBalance);
@@ -729,8 +781,10 @@ export function simulateLadderingMatrix({
     { term: "3M", percent: 50, rate: 4.75 }
   ],
   totalMonths = 12,
-  bankRates = {}
+  bankRates = {},
+  lang = 'vi',
 }) {
+  const l = normLang(lang);
   const mAmount = num(monthlySavings, 1000000, 0, 1e12);
   const monthsCap = Math.round(num(totalMonths, 12, 1, 60));
   const timelineRows = [];
@@ -777,7 +831,7 @@ export function simulateLadderingMatrix({
         const rolloverMonths = pkg.term.endsWith("W") ? 1 : (parseInt(pkg.term, 10) || 1);
         activePackages.push({
           id: packageCounter++,
-          name: `${pkg.name} (Xoay vòng ${m})`,
+          name: `${pkg.name} (${lx(l, `Xoay vòng ${m}`, `Rollover M${m}`, `継続 ${m}ヶ月目`)})`,
           initialAmount: pkg.maturedAmount,
           currentAmount: pkg.maturedAmount,
           term: pkg.term,
@@ -796,7 +850,7 @@ export function simulateLadderingMatrix({
         const monthsSpan = cfg.term === "1W" || cfg.term === "2W" || cfg.term === "3W" ? 1 : (parseInt(cfg.term, 10) || 1);
         activePackages.push({
           id: packageCounter++,
-          name: `Gói ${packageCounter - 1} (${cfg.term})`,
+          name: `${lx(l, 'Gói', 'CD', '証書')} ${packageCounter - 1} (${cfg.term})`,
           initialAmount: pkgAmount,
           currentAmount: pkgAmount,
           term: cfg.term,
@@ -824,7 +878,7 @@ export function simulateLadderingMatrix({
         termMap.set(p.term, {
           key: p.term,
           term: p.term,
-          label: `Lô kỳ hạn ${p.term.replace('M', ' tháng').replace('W', ' tuần')}`,
+          label: formatLadderCohortLabel(p.term, l),
           rate: p.rate,
           packageCount: 0,
           rolledPackages: 0,
@@ -898,7 +952,7 @@ export function simulateLadderingMatrix({
     }
 
     timelineRows.push({
-      month: `Tháng ${m}`,
+      month: lx(l, `Tháng ${m}`, `Month ${m}`, `${m}ヶ月目`),
       monthIndex: m,
       monthlyContribution: mAmount,
       activePackagesCount: currentActiveList.length,
