@@ -220,7 +220,7 @@ export default function Calculator() {
               <div className="text-xs font-medium uppercase tracking-wider text-indigo-300">
                 Tuỳ chỉnh chuyên sâu
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-zinc-400">Lãi suất tuỳ chỉnh</label>
                   <div className="flex items-center gap-1">
@@ -280,7 +280,7 @@ export default function Calculator() {
                       {usingCustom ? 'Lãi suất tự nhập' : bank.name} · {pct(rate)}/năm
                     </Badge>
                   </div>
-                  <div className="mt-3 text-4xl font-semibold tracking-tight text-emerald-300 tabular-nums sm:text-5xl">
+                  <div className="mt-3 break-words text-3xl font-semibold tracking-tight text-emerald-300 tabular-nums sm:text-4xl lg:text-5xl">
                     +{vnd(m1.interest)}
                   </div>
                   <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
@@ -289,7 +289,7 @@ export default function Calculator() {
                     tháng, tổng lãi đạt <strong className="text-emerald-300">+{vnd(m3.interest)}</strong>.
                   </p>
                   <div className="mt-6">
-                    <div className="mb-2 flex justify-between text-xs text-zinc-500">
+                    <div className="mb-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-zinc-500">
                       <span>Tỷ trọng tiền lãi trong tổng thu về</span>
                       <span className="tabular-nums">
                         +{compact(m1.interest)} / {compact(m1.total)} ({pct(interestSharePct, 1)})
@@ -511,8 +511,8 @@ export default function Calculator() {
         </div>
       </div>
 
-      {/* Mobile sticky live summary bar */}
-      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.1rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+      {/* Mobile / Tablet sticky live summary bar */}
+      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 md:inset-x-auto md:bottom-4 md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:px-4 lg:hidden">
         <button
           type="button"
           onClick={() => document.getElementById('calculator-results')?.scrollIntoView({ behavior: 'smooth' })}

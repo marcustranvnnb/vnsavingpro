@@ -177,7 +177,7 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
               onChange={(e) => setComment(e.target.value)}
               placeholder="Góp ý thêm về số liệu, giao diện hoặc tính năng bạn muốn có..."
               maxLength={800}
-              className="h-10 flex-1 rounded-xl bg-black/30 px-3 text-sm text-white placeholder:text-zinc-600 ring-1 ring-inset ring-white/10 outline-none focus:ring-indigo-400/60"
+              className="h-10 flex-1 rounded-xl bg-black/30 px-3 text-base text-white placeholder:text-zinc-600 ring-1 ring-inset ring-white/10 outline-none focus:ring-indigo-400/60 sm:text-sm"
             />
             <Button type="submit" variant="primary" disabled={submitting}>
               <Send className="size-3.5" /> {submitting ? 'Đang lưu...' : 'Gửi & Sao lưu'}

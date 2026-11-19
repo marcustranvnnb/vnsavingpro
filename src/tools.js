@@ -1,10 +1,32 @@
 import { Target, BarChart3, Calculator, Layers, Briefcase, TrendingDown, Gift } from 'lucide-react';
+import versionInfo from './version.json';
 
-export const APP_VERSION = 'v1.5.2';
-export const APP_VERSION_DATE = '18/11/2026';
-export const APP_VERSION_LABEL = 'Tier 1 Serverless · Auto Sync 4 Ngân hàng số';
+export const APP_VERSION = versionInfo.displayVersion;
+export const APP_VERSION_RAW = versionInfo.version;
+export const APP_VERSION_DATE = versionInfo.releaseDate;
+export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
+  {
+    version: 'v1.6.0.0',
+    date: '19/11/2026',
+    title: 'Làm mới Trang chủ, tối ưu Responsive Mobile/Tablet/PC & Chuẩn phiên bản 4 số',
+    items: [
+      'Cập nhật Trang chủ với bộ chọn Cá nhân / Cặp đôi / Gia đình ngay trên Ước tính nhanh, thẻ giới thiệu 3 mô hình tài chính và thông tin đồng bộ Cloud & Google.',
+      'Tối ưu UI/UX Responsive toàn trang cho Mobile, Tablet và PC/Desktop (thanh chạm mượt, bảng không tràn ngang, sticky bar không che footer).',
+      'Chuẩn hoá quản lý phiên bản 4 chữ số (v1.6.0.0) và tự động tăng build sau mỗi lần cập nhật nhỏ.',
+    ],
+  },
+  {
+    version: 'v1.5.5',
+    date: '19/11/2026',
+    title: 'Tài chính Cá nhân / Cặp đôi / Gia đình, Google OAuth & Supabase Cloud',
+    items: [
+      'Hỗ trợ 3 mô hình tài chính (Cá nhân, Cặp đôi, Gia đình) với lấp Quỹ dự phòng trước (Fund-First), chia đóng góp 2 người và Stress-test thu nhập.',
+      'Đăng nhập Google OAuth / Email + Hồ sơ cá nhân + lưu nhiều kịch bản tiết kiệm trên Supabase Cloud.',
+      'Kích hoạt bảo vệ hạn mức Free-Tier Quota Guard & cảnh báo Resend Email tự động.',
+    ],
+  },
   {
     version: 'v1.5.2',
     date: '18/11/2026',
@@ -50,7 +72,7 @@ export const ALL_TOOLS = [
     pageTitle: 'Kế Hoạch Thu Nhập Thụ Động — VnSavingPro',
     label: 'Thu nhập thụ động',
     short: 'Kế hoạch',
-    desc: 'Tính số vốn và thời gian cần để lãi tiết kiệm trả cho bạn một khoản cố định mỗi tháng.',
+    desc: 'Lập lộ trình thu nhập thụ động hoặc mục tiêu tài sản cho Cá nhân, Cặp đôi & Gia đình, kèm Quỹ dự phòng và Stress-test.',
     icon: Target,
     primary: true,
   },
@@ -83,7 +105,7 @@ export const ALL_TOOLS = [
     pageTitle: 'Tiết Kiệm Bậc Thang — VnSavingPro',
     label: 'Tiết kiệm bậc thang',
     short: 'Bậc thang',
-    desc: 'Chia tiền gửi hàng tháng vào nhiều kỳ hạn để vừa lãi cao vừa linh hoạt.',
+    desc: 'Chia tiền gửi bậc thang nhiều kỳ hạn, theo dõi mức phủ Quỹ dự phòng 1T–3T và chia khoản góp 2 người.',
     icon: Layers,
     primary: true,
   },
@@ -94,7 +116,7 @@ export const ALL_TOOLS = [
     pageTitle: 'Lộ Trình Tăng Lương & Tự Do Tài Chính — VnSavingPro',
     label: 'Lộ trình tăng lương',
     short: 'Tăng lương',
-    desc: 'Tăng lương hay nhảy việc giúp bạn về đích tài chính nhanh hơn bao lâu?',
+    desc: 'Mô phỏng tác động tăng lương & nhảy việc cho 1 hoặc 2 người đi làm để rút ngắn thời gian tự do tài chính.',
     icon: Briefcase,
   },
   {

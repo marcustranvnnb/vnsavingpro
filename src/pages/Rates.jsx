@@ -60,14 +60,14 @@ function PackageItem({ pkg }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 p-4 text-left"
+        className="flex w-full flex-wrap items-center justify-between gap-2.5 p-4 text-left sm:flex-nowrap sm:gap-3"
       >
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-white">{pkg.name}</span>
             <Badge tone="neutral">{TYPE_LABELS[pkg.type] || pkg.type}</Badge>
           </div>
-          <p className="mt-1 truncate text-xs text-zinc-500">{pkg.description}</p>
+          <p className="mt-1 line-clamp-2 text-xs text-zinc-500 sm:truncate">{pkg.description}</p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {pkg.bestRate && (
@@ -265,7 +265,7 @@ export default function Rates() {
                     type="button"
                     onClick={() => setTenure(t)}
                     className={cx(
-                      'rounded-xl px-3 py-1.5 text-xs font-medium transition-all',
+                      'min-h-[34px] rounded-xl px-3 py-1.5 text-xs font-medium transition-all',
                       active
                         ? 'bg-indigo-500 text-white shadow-[0_4px_14px_-4px_rgba(99,102,241,0.7)]'
                         : 'bg-white/[0.03] text-zinc-400 ring-1 ring-inset ring-white/[0.07] hover:bg-white/[0.06] hover:text-white'
@@ -423,7 +423,7 @@ export default function Rates() {
             const matched = banks.find((x) => x.id === b.id) || { color: b.color, logoText: b.shortName };
             return (
               <Card key={b.id} className="space-y-4 p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <BankMark bank={matched} size="lg" />
                     <div>

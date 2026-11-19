@@ -200,7 +200,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="VD: Minh Quân"
                 maxLength={80}
-                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
             </div>
           </div>
@@ -218,7 +218,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ban@example.com"
                 autoComplete="email"
-                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
             </div>
           </div>
@@ -253,7 +253,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Tối thiểu 6 ký tự"
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-10 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-10 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
               <button
                 type="button"
@@ -280,7 +280,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Nhập lại mật khẩu mới"
                 autoComplete="new-password"
-                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 pl-9 pr-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
             </div>
           </div>

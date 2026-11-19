@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
 
-export function VersionBadge({ compact = false }) {
+export function VersionBadge({ compact = false, className }) {
   const [open, setOpen] = useState(false);
   const { updatedAt, source } = useRates();
 
@@ -16,7 +16,10 @@ export function VersionBadge({ compact = false }) {
         onClick={() => setOpen(true)}
         title={`Thông tin phiên bản ${APP_VERSION} (${APP_VERSION_LABEL})`}
         aria-label={`Xem thông tin phiên bản ${APP_VERSION}`}
-        className="inline-flex shrink-0 items-center rounded-full transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        className={cx(
+          'inline-flex shrink-0 items-center rounded-full transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400',
+          className
+        )}
       >
         <Badge tone="brand" className="cursor-pointer gap-1 px-2 py-0.5 text-[11px] font-medium">
           <Info className="size-3" />
@@ -109,11 +112,12 @@ function MoreMenu({ route }) {
       <button
         onClick={() => setOpen((v) => !v)}
         className={cx(
-          'flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm transition-colors',
+          'flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[13px] transition-colors lg:px-3 lg:text-sm',
           activeTool ? 'bg-white/[0.06] text-white' : 'text-zinc-400 hover:text-white'
         )}
       >
-        {activeTool ? `Công cụ: ${activeTool.short}` : 'Công cụ khác'}{' '}
+        <span className="hidden lg:inline">{activeTool ? `Công cụ: ${activeTool.short}` : 'Công cụ khác'}</span>
+        <span className="lg:hidden">{activeTool ? activeTool.short : 'Thêm'}</span>
         <ChevronDown className={cx('size-3.5 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
@@ -216,10 +220,10 @@ function UserMenu({ onOpenAuth }) {
 export function TopNav({ route, onOpenData, onOpenAuth }) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
-        <div className="flex items-center gap-2">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:gap-6">
+        <div className="flex min-w-0 items-center gap-2">
           <Logo />
-          <VersionBadge compact />
+          <VersionBadge compact className="hidden min-[400px]:inline-flex md:hidden xl:inline-flex" />
         </div>
         <nav className="hidden items-center gap-0.5 md:flex">
           {primary.map((t) => (
@@ -227,7 +231,7 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
               key={t.id}
               href={href(t.id)}
               className={cx(
-                'rounded-lg px-3 py-1.5 text-sm transition-colors',
+                'whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[13px] transition-colors lg:px-3 lg:text-sm',
                 route === t.id ? 'bg-white/[0.06] text-white' : 'text-zinc-400 hover:text-white'
               )}
             >
@@ -236,14 +240,14 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
           ))}
           <MoreMenu route={route} />
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Button variant="ghost" size="sm" onClick={onOpenData} aria-label="Dữ liệu của bạn">
             <ShieldCheck className="size-4" />
             <span className="hidden lg:inline">Dữ liệu</span>
           </Button>
           <UserMenu onOpenAuth={onOpenAuth} />
           {route !== 'plan' && (
-            <Button as="a" href={href('plan')} variant="primary" size="sm" className="hidden md:inline-flex">
+            <Button as="a" href={href('plan')} variant="primary" size="sm" className="hidden xl:inline-flex">
               Lập kế hoạch
             </Button>
           )}
@@ -253,8 +257,9 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
   );
 }
 
-export function MobileTabBar({ route }) {
+export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
   const [sheet, setSheet] = useState(false);
+  const { user, authConfigured } = useAuth();
   useEffect(() => setSheet(false), [route]);
   const items = [{ id: 'home', short: 'Trang chủ', icon: Home }, ...primary.slice(0, 3)];
   const moreActive = !items.some((i) => i.id === route);
@@ -270,19 +275,20 @@ export function MobileTabBar({ route }) {
                 key={t.id}
                 href={href(t.id)}
                 className={cx(
-                  'flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors',
+                  'flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition active:scale-95',
                   active ? 'text-white' : 'text-zinc-500'
                 )}
               >
                 <t.icon className={cx('size-5', active && 'text-indigo-300')} />
-                {t.short}
+                <span className="truncate">{t.short}</span>
               </a>
             );
           })}
           <button
+            type="button"
             onClick={() => setSheet(true)}
             className={cx(
-              'flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium',
+              'flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition active:scale-95',
               moreActive ? 'text-white' : 'text-zinc-500'
             )}
           >
@@ -291,26 +297,75 @@ export function MobileTabBar({ route }) {
           </button>
         </div>
       </nav>
-      <Modal open={sheet} onClose={() => setSheet(false)} title="Tất cả công cụ">
-        <div className="grid gap-1.5">
-          {TOOLS.slice(3).map((t) => (
-            <a
-              key={t.id}
-              href={href(t.id)}
-              className={cx(
-                'flex items-center gap-3 rounded-xl p-3 ring-1 ring-inset transition-colors',
-                route === t.id ? 'bg-indigo-500/10 ring-indigo-400/20' : 'ring-white/[0.06] hover:bg-white/[0.04]'
-              )}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
-                <t.icon className="size-4 text-indigo-300" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-medium text-white">{t.label}</span>
-                <span className="block truncate text-xs text-zinc-500">{t.desc}</span>
-              </span>
-            </a>
-          ))}
+      <Modal open={sheet} onClose={() => setSheet(false)} title="Công cụ & Tài khoản">
+        <div className="space-y-4">
+          <div className="grid gap-1.5">
+            {TOOLS.slice(3).map((t) => (
+              <a
+                key={t.id}
+                href={href(t.id)}
+                className={cx(
+                  'flex items-center gap-3 rounded-xl p-3 ring-1 ring-inset transition-colors',
+                  route === t.id ? 'bg-indigo-500/10 ring-indigo-400/20' : 'ring-white/[0.06] hover:bg-white/[0.04]'
+                )}
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04]">
+                  <t.icon className="size-4 text-indigo-300" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-white">{t.label}</span>
+                  <span className="block truncate text-xs text-zinc-500">{t.desc}</span>
+                </span>
+              </a>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3">
+            {user ? (
+              <Button
+                as="a"
+                href={href('profile')}
+                variant="secondary"
+                size="sm"
+                onClick={() => setSheet(false)}
+              >
+                <User className="size-3.5 text-indigo-300" /> Hồ sơ &amp; Kịch bản
+              </Button>
+            ) : (
+              authConfigured &&
+              onOpenAuth && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setSheet(false);
+                    onOpenAuth();
+                  }}
+                >
+                  <LogIn className="size-3.5" /> Đăng nhập
+                </Button>
+              )
+            )}
+            {onOpenData && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setSheet(false);
+                  onOpenData();
+                }}
+              >
+                <ShieldCheck className="size-3.5 text-emerald-300" /> Dữ liệu &amp; Cloud
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-white/[0.06] pt-3 text-xs text-zinc-400">
+            <span>Phiên bản hiện tại</span>
+            <VersionBadge />
+          </div>
         </div>
       </Modal>
     </>
@@ -319,17 +374,17 @@ export function MobileTabBar({ route }) {
 
 export function Footer({ onOpenCookies }) {
   return (
-    <footer className="border-t border-white/[0.06] pb-24 md:pb-0">
+    <footer className="border-t border-white/[0.06] pb-36 md:pb-20 lg:pb-0">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-start md:justify-between">
         <div className="max-w-md">
           <Logo />
           <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-            Công cụ lập kế hoạch tiết kiệm cá nhân. Thông tin lãi suất được lấy từ trang chính thức public của từng ngân
-            hàng; chi tiết gói gửi và ưu đãi vui lòng tải ứng dụng ngân hàng để tham khảo trực tiếp. Mọi kết quả tính
-            toán chỉ mang tính chất tham khảo.
+            Công cụ lập kế hoạch tiết kiệm cá nhân, cặp đôi và gia đình. Thông tin lãi suất được lấy từ trang chính
+            thức public của từng ngân hàng; chi tiết gói gửi và ưu đãi vui lòng tải ứng dụng ngân hàng để tham khảo trực
+            tiếp. Mọi kết quả tính toán chỉ mang tính chất tham khảo.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm sm:gap-x-10">
           {TOOLS.map((t) => (
             <a key={t.id} href={href(t.id)} className="text-zinc-500 transition-colors hover:text-white">
               {t.label}

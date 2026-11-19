@@ -26,7 +26,7 @@ function StressTestRow({ item }) {
           {ok ? 'Vẫn trụ được chi phí' : `Thiếu ${compact(item.monthlyGap)}/th`}
         </Badge>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] tabular-nums text-zinc-400 sm:grid-cols-3">
+      <div className="mt-2 grid grid-cols-1 gap-1.5 text-[11px] tabular-nums text-zinc-400 sm:grid-cols-3 sm:gap-2">
         <div>
           Thu nhập còn: <strong className="text-zinc-200">{compact(item.remainingIncome)}</strong>
         </div>
@@ -83,7 +83,7 @@ export function HouseholdInsightsCard({ analysis, roadmap }) {
       />
 
       {/* Top 3 Household Metrics */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl bg-white/[0.025] p-3.5 ring-1 ring-inset ring-white/[0.06]">
           <p className="text-[11px] text-zinc-400">Chi phí sinh hoạt / tháng</p>
           <p className="mt-1 text-base font-semibold tabular-nums text-white">{vnd(analysis.totalMonthlyExpense)}</p>
@@ -138,7 +138,7 @@ export function HouseholdInsightsCard({ analysis, roadmap }) {
         </div>
 
         <div className="mt-2.5">
-          <div className="mb-1.5 flex justify-between text-[11px] tabular-nums text-zinc-400">
+          <div className="mb-1.5 flex flex-wrap justify-between gap-x-3 gap-y-1 text-[11px] tabular-nums text-zinc-400">
             <span>Vốn hiện có phân bổ dự phòng: {compact(analysis.emergencyFundCoveredByCapital)}</span>
             <span>Mục tiêu khuyến nghị: {vnd(efTarget)}</span>
           </div>

@@ -73,7 +73,7 @@ function IncomeRangeField({ label, sublabel, minVal, maxVal, onMin, onMax, quick
         <span className="text-xs font-medium text-zinc-200">{label}</span>
         {sublabel && <span className="text-[11px] text-zinc-500">{sublabel}</span>}
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <span className="mb-1 block text-[11px] text-zinc-500">Thấp nhất / tháng</span>
           <NumberInput
@@ -1569,7 +1569,7 @@ export default function Planner({ params = {} }) {
                 {effectiveInflation > 0 && <Badge tone="warning">Đã bù lạm phát {pct(effectiveInflation, 1)}/năm</Badge>}
               </div>
 
-              <div className="mt-3 text-4xl font-semibold tracking-tight text-white tabular-nums sm:text-5xl">
+              <div className="mt-3 break-words text-3xl font-semibold tracking-tight text-white tabular-nums sm:text-4xl lg:text-5xl">
                 {roadmap.isAlreadyReached ? (
                   'Đã đạt mục tiêu 🎉'
                 ) : isSavingSolver ? (
@@ -1605,7 +1605,7 @@ export default function Planner({ params = {} }) {
               </p>
 
               <div className="mt-6">
-                <div className="mb-2 flex justify-between text-xs text-zinc-500">
+                <div className="mb-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-zinc-500">
                   <span>Tiến độ hiện tại</span>
                   <span className="tabular-nums">
                     {compact(capital)} / {compact(roadmap.requiredPrincipal)}
@@ -1723,7 +1723,7 @@ export default function Planner({ params = {} }) {
             />
             {view === 'growth' ? (
               <>
-                <div className="mt-6 h-72">
+                <div className="mt-5 h-60 sm:mt-6 sm:h-72 lg:h-80">
                   {roadmap.monthByMonthLog.length > 1 ? (
                     <GrowthChart log={roadmap.monthByMonthLog} target={roadmap.requiredPrincipal} />
                   ) : (
@@ -1869,8 +1869,8 @@ export default function Planner({ params = {} }) {
           </p>
         </div>
       </Modal>
-      {/* Mobile sticky live summary bar */}
-      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.1rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+      {/* Mobile / Tablet sticky live summary bar */}
+      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 md:inset-x-auto md:bottom-4 md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:px-4 lg:hidden">
         <button
           type="button"
           onClick={() => document.getElementById('planner-results')?.scrollIntoView({ behavior: 'smooth' })}

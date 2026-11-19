@@ -69,16 +69,16 @@ function Shell() {
       <main className="flex-1">
         {Page ? (
           <Suspense fallback={<PageSkeleton />}>
-            <div key={route} className="mx-auto max-w-6xl animate-rise px-4 pb-16 pt-8 sm:px-6 sm:pt-12">
+            <div key={route} className="mx-auto max-w-6xl animate-rise px-3.5 pb-24 pt-6 sm:px-6 sm:pb-20 sm:pt-10 lg:pb-16 lg:pt-12">
               <Page params={params} />
             </div>
           </Suspense>
         ) : (
-          <Home />
+          <Home onOpenAuth={() => setAuthOpen(true)} onOpenData={() => setDataOpen(true)} />
         )}
       </main>
       <Footer onOpenCookies={() => setCookieOpen(true)} />
-      <MobileTabBar route={route} />
+      <MobileTabBar route={route} onOpenData={() => setDataOpen(true)} onOpenAuth={() => setAuthOpen(true)} />
       <PocValidationOverlay
         open={pocState.locked || previewPoc}
         info={pocState.info}

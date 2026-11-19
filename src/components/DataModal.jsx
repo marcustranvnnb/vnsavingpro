@@ -274,16 +274,16 @@ export function DataModal({ open, onClose, onOpenAuth }) {
             )}
           </div>
 
-          <form onSubmit={handleLoadCloud} className="flex items-center gap-2">
+          <form onSubmit={handleLoadCloud} className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <input
               type="text"
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12))}
               placeholder="Nhập mã Cloud 6 ký tự (VD: A7K9P2)"
               aria-label="Mã kế hoạch từ Cloud"
-              className="h-9 flex-1 rounded-xl border border-white/10 bg-canvas/80 px-3 font-mono text-xs uppercase tracking-wider text-white placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+              className="h-10 w-full flex-1 rounded-xl border border-white/10 bg-canvas/80 px-3 font-mono text-base uppercase tracking-wider text-white placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:h-9 sm:text-xs"
             />
-            <Button type="submit" size="sm" disabled={cloudBusy !== null}>
+            <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={cloudBusy !== null}>
               <DownloadCloud className="size-3.5" />
               {cloudBusy === 'load' ? 'Đang tải...' : 'Tải kế hoạch từ mã Cloud'}
             </Button>
@@ -310,7 +310,7 @@ export function DataModal({ open, onClose, onOpenAuth }) {
             </div>
           )}
 
-          <div className="flex items-center justify-between border-t border-white/[0.06] pt-2.5 text-[11px] text-zinc-400">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-2.5 text-[11px] text-zinc-400">
             {user ? (
               <>
                 <span>Đang đăng nhập: {user.email}</span>

@@ -116,7 +116,7 @@ export const useToast = () => useContext(ToastCtx);
 function ToastViewport({ toast }) {
   if (!toast) return null;
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[70] flex justify-center px-4 md:bottom-8">
+    <div className="pointer-events-none fixed inset-x-0 bottom-36 z-[70] flex justify-center px-4 md:bottom-8">
       <div
         key={toast.id}
         className="flex animate-pop items-center gap-2 rounded-xl border border-white/10 bg-elevated/95 px-4 py-2.5 text-sm text-white shadow-2xl backdrop-blur"

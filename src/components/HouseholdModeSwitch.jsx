@@ -35,7 +35,7 @@ export function HouseholdModeSwitch({ value, onChange, compact = false }) {
             type="button"
             onClick={() => onChange(m.id)}
             className={cx(
-              'flex flex-col items-center justify-center rounded-lg px-2 text-center transition',
+              'flex min-h-[44px] flex-col items-center justify-center rounded-lg px-2 text-center transition sm:min-h-0',
               compact ? 'py-1.5' : 'py-2',
               active
                 ? 'bg-indigo-500/20 text-white ring-1 ring-inset ring-indigo-400/40 shadow-sm'
@@ -43,10 +43,10 @@ export function HouseholdModeSwitch({ value, onChange, compact = false }) {
             )}
           >
             <span className="flex items-center gap-1.5 text-xs font-medium">
-              <Icon className={cx('size-3.5', active ? 'text-indigo-300' : 'text-zinc-500')} />
+              <Icon className={cx('size-3.5 shrink-0', active ? 'text-indigo-300' : 'text-zinc-500')} />
               <span>{m.label}</span>
             </span>
-            {!compact && <span className="mt-0.5 text-[10px] text-zinc-500">{m.shortDesc}</span>}
+            {!compact && <span className="mt-0.5 hidden text-[10px] text-zinc-500 sm:block">{m.shortDesc}</span>}
           </button>
         );
       })}

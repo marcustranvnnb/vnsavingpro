@@ -70,7 +70,7 @@ export default function Inflation() {
 
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* Controls */}
-        <Card className="space-y-6 p-5 sm:p-6">
+        <Card className="space-y-6 p-5 sm:p-6 lg:sticky lg:top-20">
           <MoneyField
             label="Thu nhập thụ động mục tiêu / tháng"
             value={targetIncome}

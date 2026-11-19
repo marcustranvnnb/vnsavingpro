@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v1.5.5 Serverless + Supabase Free Tier)
+# VnSavingPro — Architecture & Technical Reference (v1.6.0.0 Serverless + Supabase Free Tier)
 
 ## 1. High-Level Architecture
 
@@ -55,9 +55,15 @@ flowchart TD
 - **Cross-Tool Plan Continuity (`src/utils/apiClient.js`)**:
   - `loadSavedPlannerState()` reads `PLANNER_STATE` so `Calculator`, `Ladder`, `Career`, and `Inflation` pre-fill from the user's active financial plan.
 
-## 4. Design System (`src/index.css` & `src/components/ui.jsx`)
+## 4. Design System, Responsive Layout & App Versioning (`src/index.css`, `src/components/ui.jsx`, `src/version.json`)
 
 - **Theme**: Dark-first financial dashboard (`bg-canvas` `#08090b`, `bg-surface` `#0e0f13`, `bg-elevated` `#16181d`, indigo/emerald accents, `Inter` font with `tabular-nums`).
+- **4-Part App Versioning (`src/version.json` + `scripts/bump-version.js` + `AGENTS.md`)**:
+  - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0`, synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part).
+  - Run `npm run version:bump` (or `node scripts/bump-version.js [build|patch|minor|major]`) on every committed update.
+- **Responsive Breakpoints (Mobile `<640px`, Tablet `640px–1024px`, PC/Desktop `>=1024px`)**:
+  - `overflow-x: clip` on `html, body` prevents horizontal scroll while preserving sticky sidebars on Desktop (`lg:sticky lg:top-20`).
+  - Mobile & touch devices: `text-base sm:text-sm` on text inputs (prevents iOS focus zoom), `@media (pointer: coarse)` 22px slider thumbs, `min-h-[44px]`/`min-h-[52px]` tap targets, bottom-sheet modal grab handles, `MobileTabBar` quick account/data/version sheet, and tablet-centered (`md:max-w-xl`) sticky result bars that clear both `MobileTabBar` and `Footer` (`pb-36 md:pb-20 lg:pb-0`).
 - **Reusable Primitives (`src/components/ui.jsx`)**:
   - `NumberInput` manages `focused` + `draft` state so typing or clearing digits never jumps the cursor or locks on `0`.
   - `@media print` in `src/index.css` expands scrollable tables and hides navigation/action controls for clean PDF printing.

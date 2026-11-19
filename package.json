@@ -1,12 +1,14 @@
 {
   "name": "vnsavingpro",
   "private": true,
-  "version": "1.5.2",
+  "version": "1.6.0",
+  "appVersion": "1.6.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "version:bump": "node scripts/bump-version.js",
     "scrape:tnex": "node scripts/scrape-tnex.js",
     "scrape:timo": "node scripts/scrape-timo.js",
     "scrape:liobank": "node scripts/scrape-liobank.js",

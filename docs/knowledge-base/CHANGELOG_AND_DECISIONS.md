@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Version 1.6.0.0: Homepage Refresh, Mobile/Tablet/PC Responsive UX & 4-Part Auto-Versioning
+
+- **Request**: Refresh Homepage content to reflect current capabilities, polish responsive UI/UX across Mobile browsers, Tablets, and PC/Desktop, set app version to `1.6.0.0`, and enforce automatic version bumping on every small update.
+- **Changes Implemented**:
+  - **4-Part Versioning & Rule**: Created [src/version.json](../../src/version.json) (`1.6.0.0`), [scripts/bump-version.js](../../scripts/bump-version.js), added `appVersion` + `version:bump` in [package.json](../../package.json), wired `src/version.json` into [src/tools.js](../../src/tools.js) with updated `VERSION_HIGHLIGHTS` (`v1.6.0.0`, `v1.5.5`) and `ALL_TOOLS` descriptions, and added Mandatory App Versioning Rule to [AGENTS.md](../../AGENTS.md).
+  - **Homepage Refresh**: Updated [src/pages/Home.jsx](../../src/pages/Home.jsx), [index.html](../../index.html), and [src/App.jsx](../../src/App.jsx) with compact `HouseholdModeSwitch` + 4 savings presets in `QuickEstimate`, dedicated 3-mode Household showcase (`Cá nhân`, `Cặp đôi`, `Gia đình`), auto-sync `09:00` badges, and a modernized *Bảo mật, Đồng bộ Cloud & Báo cáo* section with Google/Email Auth and Cloud backup actions.
+  - **Responsive UI/UX**: Updated [src/index.css](../../src/index.css) (`overflow-x: clip`, coarse-pointer slider thumbs, `prefers-reduced-motion`), [ui.jsx](../../src/components/ui.jsx) (`MoneyField` mobile stacking, `text-base sm:text-sm` inputs preventing iOS zoom, `overscroll-x-contain` tables, `max-h-[90dvh]` modal bottom-sheet handle), [Layout.jsx](../../src/components/Layout.jsx) (uncluttered tablet header, mobile quick-action `"Thêm"` sheet with account/Cloud/version access, `pb-36 md:pb-20 lg:pb-0` footer clearance), [state.jsx](../../src/state.jsx) (`bottom-36` toast), [HouseholdModeSwitch.jsx](../../src/components/HouseholdModeSwitch.jsx), [HouseholdInsightsCard.jsx](../../src/components/HouseholdInsightsCard.jsx), [DataModal.jsx](../../src/components/DataModal.jsx), [AuthModal.jsx](../../src/components/AuthModal.jsx), [FeedbackWidget.jsx](../../src/components/FeedbackWidget.jsx), and pages ([Planner.jsx](../../src/pages/Planner.jsx), [Calculator.jsx](../../src/pages/Calculator.jsx), [Ladder.jsx](../../src/pages/Ladder.jsx), [Rates.jsx](../../src/pages/Rates.jsx), [Career.jsx](../../src/pages/Career.jsx), [Inflation.jsx](../../src/pages/Inflation.jsx), [Profile.jsx](../../src/pages/Profile.jsx)).
+
+---
+
 ## [2026-11-19] — Deep Individual / Couple / Family Planning (`Cá nhân` | `Cặp đôi` | `Gia đình`)
 
 - **Request**: Expand financial calculations to support Individual, Couple, and Family modes across Planner, Ladder, Career, Profile, and exports, covering both Basic and Pro details, per-earner contribution splits, stress tests, and Parallel + Fund-First Emergency Fund modes.

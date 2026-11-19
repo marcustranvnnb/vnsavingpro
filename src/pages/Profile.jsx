@@ -277,7 +277,7 @@ export default function Profile() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   maxLength={80}
-                  className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+                  className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
                 />
               </div>
 
@@ -286,7 +286,7 @@ export default function Profile() {
                 <select
                   value={defaultBankId}
                   onChange={(e) => setDefaultBankId(e.target.value)}
-                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
                 >
                   {banks.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -301,7 +301,7 @@ export default function Profile() {
                 <select
                   value={preferredGoalType}
                   onChange={(e) => setPreferredGoalType(e.target.value)}
-                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
                 >
                   <option value="PASSIVE_INCOME">Thu nhập thụ động hàng tháng</option>
                   <option value="TARGET_AMOUNT">Số tiền mục tiêu cụ thể</option>
@@ -313,7 +313,7 @@ export default function Profile() {
                 <select
                   value={defaultHouseholdMode}
                   onChange={(e) => setDefaultHouseholdMode(e.target.value)}
-                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white focus:border-indigo-400/60 focus:outline-none"
+                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
                 >
                   <option value="INDIVIDUAL">Cá nhân</option>
                   <option value="COUPLE">Cặp đôi (2 người có thu nhập)</option>
@@ -343,7 +343,7 @@ export default function Profile() {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
                 autoComplete="new-password"
-                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
               />
               <Button type="submit" variant="secondary" className="w-full" disabled={savingPass}>
                 <KeyRound className="size-4" />
@@ -362,16 +362,16 @@ export default function Profile() {
               right={<Cloud className="size-4 text-emerald-400" />}
             />
 
-            <form onSubmit={handleSaveCurrentPlan} className="mt-4 flex flex-wrap gap-2">
+            <form onSubmit={handleSaveCurrentPlan} className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
                 value={newPlanTitle}
                 onChange={(e) => setNewPlanTitle(e.target.value)}
                 placeholder="Đặt tên kịch bản hiện tại (VD: Mua nhà 2028)"
                 maxLength={120}
-                className="h-10 min-w-[200px] flex-1 rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:flex-1 sm:text-sm"
               />
-              <Button type="submit" variant="primary" disabled={savingPlan}>
+              <Button type="submit" variant="primary" className="w-full sm:w-auto" disabled={savingPlan}>
                 <Plus className="size-4" />
                 {savingPlan ? 'Đang lưu...' : 'Lưu kế hoạch hiện tại'}
               </Button>

@@ -626,7 +626,7 @@ export default function Ladder() {
 
             {inputMode === 'advanced' && strategy === 'CUSTOM' && (
               <div className="mt-3 space-y-4 rounded-xl bg-black/25 p-4 ring-1 ring-inset ring-white/[0.08]">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-xs font-medium text-zinc-400">Gói ngắn hạn (Thanh khoản)</label>
                     <div className="flex flex-wrap gap-1">
@@ -698,7 +698,7 @@ export default function Ladder() {
                       {bank.name} · {splitLabel}
                     </Badge>
                   </div>
-                  <div className="mt-3 text-4xl font-semibold tracking-tight text-white tabular-nums sm:text-5xl">
+                  <div className="mt-3 break-words text-3xl font-semibold tracking-tight text-white tabular-nums sm:text-4xl lg:text-5xl">
                     {vnd(result.finalPortfolioValue)}
                   </div>
                   <p className="mt-3 max-w-xl text-sm leading-relaxed text-zinc-400">
@@ -708,7 +708,7 @@ export default function Ladder() {
                     <strong className="text-indigo-300">+{vnd(totalInterest)}</strong> tiền lãi đáo hạn.
                   </p>
                   <div className="mt-6">
-                    <div className="mb-2 flex justify-between text-xs text-zinc-500">
+                    <div className="mb-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-zinc-500">
                       <span>Tỷ trọng gốc đã nộp / tổng danh mục cuối kỳ</span>
                       <span className="tabular-nums">
                         {compact(totalDeposited)} / {compact(result.finalPortfolioValue)}
@@ -770,7 +770,7 @@ export default function Ladder() {
                 </div>
 
                 <div className="mt-3">
-                  <div className="mb-1.5 flex justify-between text-xs tabular-nums text-zinc-400">
+                  <div className="mb-1.5 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs tabular-nums text-zinc-400">
                     <span>Sổ linh hoạt (1T–3T) cuối kỳ: {vnd(liquidCohortsValue)}</span>
                     <span>Mục tiêu dự phòng {recMonths}T: {vnd(recommendedLiquidTarget)}</span>
                   </div>
@@ -805,8 +805,8 @@ export default function Ladder() {
         </div>
       </div>
 
-      {/* Mobile sticky live summary bar */}
-      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.1rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+      {/* Mobile / Tablet sticky live summary bar */}
+      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 md:inset-x-auto md:bottom-4 md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:px-4 lg:hidden">
         <button
           type="button"
           onClick={() => document.getElementById('ladder-results')?.scrollIntoView({ behavior: 'smooth' })}

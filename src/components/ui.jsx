@@ -45,7 +45,7 @@ export function PageHeader({ icon: Icon, eyebrow, title, description, actions })
         <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-[32px] sm:leading-tight">{title}</h1>
         {description && <p className="mt-2 text-sm leading-relaxed text-zinc-400 sm:text-[15px]">{description}</p>}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>}
+      {actions && <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto">{actions}</div>}
     </div>
   );
 }
@@ -135,7 +135,7 @@ export function Chip({ active, className, ...props }) {
     <button
       type="button"
       className={cx(
-        'rounded-lg px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition-colors',
+        'min-h-[32px] rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 ring-inset transition-colors sm:min-h-0 sm:py-1',
         active
           ? 'bg-indigo-500/15 text-indigo-200 ring-indigo-400/30'
           : 'bg-white/[0.03] text-zinc-400 ring-white/[0.07] hover:bg-white/[0.06] hover:text-zinc-200',
@@ -196,7 +196,7 @@ export function NumberInput({ value, onChange, suffix, max, className, ariaLabel
         onFocus={handleFocus}
         onBlur={() => setFocused(false)}
         onChange={handleChange}
-        className="w-full min-w-0 bg-transparent text-right text-sm font-medium tabular-nums text-white outline-none"
+        className="w-full min-w-0 bg-transparent text-right text-base font-medium tabular-nums text-white outline-none sm:text-sm"
       />
       {suffix && <span className="ml-2 shrink-0 text-xs text-zinc-500">{suffix}</span>}
     </div>
@@ -220,7 +220,7 @@ export function DecimalInput({ value, onChange, suffix, min = 0, max = 100, step
         step={step}
         value={value}
         onChange={(e) => onChange(e.target.value === '' ? '' : Math.min(max, Math.max(min, Number(e.target.value))))}
-        className="w-full min-w-0 bg-transparent text-right text-sm font-medium tabular-nums text-white outline-none"
+        className="w-full min-w-0 bg-transparent text-right text-base font-medium tabular-nums text-white outline-none sm:text-sm"
       />
       {suffix && <span className="ml-2 shrink-0 text-xs text-zinc-500">{suffix}</span>}
     </div>
@@ -231,9 +231,9 @@ export function DecimalInput({ value, onChange, suffix, min = 0, max = 100, step
 export function MoneyField({ label, hint, value, onChange, min, max, step, presets, suffix = '₫', inputMax }) {
   return (
     <div className="space-y-2.5">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <label className="text-[13px] font-medium text-zinc-300">{label}</label>
-        <NumberInput value={value} onChange={onChange} suffix={suffix} max={inputMax} className="w-40" ariaLabel={label} />
+        <NumberInput value={value} onChange={onChange} suffix={suffix} max={inputMax} className="w-full sm:w-44" ariaLabel={label} />
       </div>
       <Range value={value} min={min} max={max} step={step} onChange={onChange} ariaLabel={label} />
       {presets && (
@@ -254,9 +254,9 @@ export function MoneyField({ label, hint, value, onChange, min, max, step, prese
 export function SliderField({ label, display, value, onChange, min, max, step, hint }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="text-[13px] font-medium text-zinc-300">{label}</label>
-        <span className="rounded-lg bg-white/[0.04] px-2.5 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-inset ring-white/[0.07]">
+        <span className="shrink-0 rounded-lg bg-white/[0.04] px-2.5 py-1 text-sm font-semibold tabular-nums text-white ring-1 ring-inset ring-white/[0.07]">
           {display}
         </span>
       </div>
@@ -278,12 +278,12 @@ const TONES = {
 
 export function Stat({ label, value, hint, tone, icon: Icon, className }) {
   return (
-    <div className={cx('rounded-xl bg-white/[0.02] p-4 ring-1 ring-inset ring-white/[0.06]', className)}>
+    <div className={cx('min-w-0 rounded-xl bg-white/[0.02] p-3.5 ring-1 ring-inset ring-white/[0.06] sm:p-4', className)}>
       <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-        {Icon && <Icon className="size-3.5" />}
-        {label}
+        {Icon && <Icon className="size-3.5 shrink-0" />}
+        <span className="truncate">{label}</span>
       </div>
-      <div className={cx('mt-1.5 text-lg font-semibold tabular-nums tracking-tight sm:text-xl', TONES[tone] || 'text-white')}>
+      <div className={cx('mt-1.5 break-words text-base font-semibold tabular-nums tracking-tight sm:text-xl', TONES[tone] || 'text-white')}>
         {value}
       </div>
       {hint && <div className="mt-1 text-xs leading-relaxed text-zinc-500">{hint}</div>}
@@ -305,7 +305,7 @@ export function Progress({ value, className, tone = 'indigo' }) {
 
 export function Table({ head, children, className }) {
   return (
-    <div className={cx('overflow-auto rounded-xl ring-1 ring-inset ring-white/[0.06]', className)}>
+    <div className={cx('overflow-auto overscroll-x-contain rounded-xl ring-1 ring-inset ring-white/[0.06]', className)}>
       <table className="w-full min-w-[560px] text-left text-[13px]">
         <thead className="sticky top-0 z-10 bg-elevated/95 backdrop-blur">
           <tr>
@@ -313,7 +313,7 @@ export function Table({ head, children, className }) {
               <th
                 key={i}
                 className={cx(
-                  'whitespace-nowrap px-4 py-3 text-[11px] font-medium uppercase tracking-wider text-zinc-500',
+                  'whitespace-nowrap px-3 py-2.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500 sm:px-4 sm:py-3',
                   i > 0 && 'text-right'
                 )}
               >
@@ -381,10 +381,11 @@ export function Modal({ open, onClose, title, children, className }) {
         role="dialog"
         aria-modal="true"
         className={cx(
-          'relative max-h-[90vh] w-full animate-pop overflow-y-auto rounded-t-2xl border border-white/10 bg-elevated p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-2xl sm:pb-5',
+          'relative max-h-[90dvh] w-full animate-pop overflow-y-auto rounded-t-2xl border border-white/10 bg-elevated p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-2xl sm:pb-5',
           className
         )}
       >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15 sm:hidden" aria-hidden="true" />
         <div className="mb-4 flex items-center justify-between gap-4">
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <button

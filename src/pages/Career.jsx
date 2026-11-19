@@ -133,7 +133,7 @@ export default function Career() {
 
       <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
         {/* Controls */}
-        <Card className="space-y-6 p-5 sm:p-6">
+        <Card className="space-y-6 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
           <div className="space-y-2">
             <span className="block text-xs font-medium uppercase tracking-wider text-zinc-500">Hồ sơ tài chính</span>
             <HouseholdModeSwitch value={householdMode} onChange={setHouseholdMode} compact />
@@ -220,7 +220,7 @@ export default function Career() {
         {/* Results */}
         <div className={cx('min-w-0 space-y-5 transition-opacity', loading && 'opacity-75')}>
           {/* 3 Career Strategy Cards */}
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {results.map((item) => {
               const isSelected = item.id === selected;
               return (
