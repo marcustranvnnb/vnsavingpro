@@ -1,4 +1,5 @@
 import { readJsonBody } from './_lib/http.js';
+import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { isSupabaseConfigured, sbInsert, sbSelect } from './_lib/supabase.js';
 
 const MAX_ENTRIES = 500;
@@ -27,6 +28,10 @@ function normalizeRemoteEntry(row) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
+  if (quotaGuard.blocked) {
+    return sendPocQuotaResponse(res, quotaGuard);
+  }
   const supabaseConnected = isSupabaseConfigured();
 
   if (req.method === 'GET') {

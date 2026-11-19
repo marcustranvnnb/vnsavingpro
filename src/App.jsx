@@ -7,7 +7,9 @@ import { TopNav, MobileTabBar, Footer } from './components/Layout.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
 import { DataModal } from './components/DataModal.jsx';
 import { CookieBanner } from './components/CookieBanner.jsx';
+import { PocValidationOverlay } from './components/PocValidationOverlay.jsx';
 import { PageSkeleton } from './components/ui.jsx';
+import { fetchQuotaStatusFromApi, POC_QUOTA_EVENT } from './utils/apiClient.js';
 import Home from './pages/Home.jsx';
 
 // Tool pages are code-split so the home page loads fast (Chart.js only loads with the planner).
@@ -28,7 +30,32 @@ function Shell() {
   const [dataOpen, setDataOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [cookieOpen, setCookieOpen] = useState(false);
+  const [pocState, setPocState] = useState({ locked: false, info: null });
+  const [previewPoc, setPreviewPoc] = useState(() => params?.preview_poc === '1');
   const Page = pages[route];
+
+  useEffect(() => {
+    if (params?.preview_poc === '1') {
+      setPreviewPoc(true);
+    }
+  }, [params?.preview_poc]);
+
+  useEffect(() => {
+    const onPoc = (e) => {
+      setPocState({ locked: true, info: e.detail || null });
+    };
+    window.addEventListener(POC_QUOTA_EVENT, onPoc);
+    fetchQuotaStatusFromApi()
+      .then((status) => {
+        if (status?.pocValidationReached) {
+          setPocState({ locked: true, info: status });
+        }
+      })
+      .catch(() => {
+        // Ignore offline/network check errors on initial quota probe
+      });
+    return () => window.removeEventListener(POC_QUOTA_EVENT, onPoc);
+  }, []);
 
   useEffect(() => {
     if (passwordRecoveryMode && route !== 'auth') {
@@ -52,6 +79,13 @@ function Shell() {
       </main>
       <Footer onOpenCookies={() => setCookieOpen(true)} />
       <MobileTabBar route={route} />
+      <PocValidationOverlay
+        open={pocState.locked || previewPoc}
+        info={pocState.info}
+        isPreview={previewPoc && !pocState.locked}
+        onClosePreview={() => setPreviewPoc(false)}
+        onOpenData={() => setDataOpen(true)}
+      />
       <DataModal open={dataOpen} onClose={() => setDataOpen(false)} onOpenAuth={() => setAuthOpen(true)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
       <CookieBanner

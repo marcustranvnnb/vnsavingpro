@@ -4,6 +4,18 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-19] — Free-Tier Audit Verification, 80%/90%/95% Resend Alerts & POC Validation Phase Lock
+
+- **Request**: Verify all packages & infrastructure stay strictly on Free Tier, alert owner email (`tranlinhmarcus2406@gmail.com`) via Resend at 80%, 90%, 95%, and 100% quota thresholds, and show a respectful POC Validation Phase screen when any quota hits its cap.
+- **Changes Implemented**:
+  - **Infrastructure Audit**: Confirmed Vercel team `phaheviet` is on **Hobby (Free)** (`excessBillingEnabled: false`), Supabase org `marcustranvnnb` is on **Free Tier** (`~11 MB / 500 MB`, `0 / 50,000 MAU`), and all `package.json` packages are open-source MIT/ISC.
+  - **Supabase Migration (`add_free_tier_quota_guardian`)**: Added `public.usage_quotas`, `public.quota_alerts_log` (deduplication), and `service_role`-only RPCs `increment_quota_counter()` & `get_free_tier_usage_snapshot()` (`0` security advisor lints).
+  - **Quota Guardian & Resend Alerts**: Created [api/_lib/quotaGuard.js](../../api/_lib/quotaGuard.js) & [api/quota-status.js](../../api/quota-status.js), upgraded [api/_lib/resend.js](../../api/_lib/resend.js) (`getOwnerAlertEmail`, auto-normalizing free webmail sender domains to `onboarding@resend.dev`, `sendOwnerQuotaAlertEmail`) & [api/_lib/supabase.js](../../api/_lib/supabase.js) (`sbRpc`), and guarded `api/calculate.js`, `api/rates.js`, `api/plans.js`, `api/feedback.js`, and `api/cron/sync-rates.js`.
+  - **User-Facing POC Validation Phase Screen**: Created [src/components/PocValidationOverlay.jsx](../../src/components/PocValidationOverlay.jsx) and wired HTTP `503 POC_QUOTA_REACHED` detection across [src/utils/apiClient.js](../../src/utils/apiClient.js) and [src/App.jsx](../../src/App.jsx) (with `?preview_poc=1` preview support and JSON local backup access).
+  - **Vercel Env Sync**: Configured `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `OWNER_ALERT_EMAIL` on Vercel project `vnsavingpro`.
+
+---
+
 ## [2026-11-19] — Resend Email Helper & Supabase Custom SMTP Templates
 
 - **Request**: Prepare Resend integration and configuration for Supabase Auth emails.

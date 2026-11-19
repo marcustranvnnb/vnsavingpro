@@ -4,6 +4,7 @@ import { fetchTimoRates } from '../../scripts/scrape-timo.js';
 import { fetchLiobankRates } from '../../scripts/scrape-liobank.js';
 import { fetchCakeRates } from '../../scripts/scrape-cake.js';
 import { setLiveRatesSnapshotAsync } from '../_lib/liveRatesCache.js';
+import { checkAndTrackQuota, sendPocQuotaResponse } from '../_lib/quotaGuard.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -16,6 +17,11 @@ export default async function handler(req, res) {
   }
 
   res.setHeader('Cache-Control', 'no-store');
+
+  const quotaGuard = await checkAndTrackQuota({ trackApiHit: true, forceRefresh: true });
+  if (quotaGuard.blocked) {
+    return sendPocQuotaResponse(res, quotaGuard);
+  }
 
   const [tnex, timo, liobank, cake] = await Promise.all([
     fetchTnexRates(),

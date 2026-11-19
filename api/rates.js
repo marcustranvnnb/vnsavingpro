@@ -1,9 +1,15 @@
 import { TENURE_DAYS_MAP, TENURE_LABELS } from '../src/data/banksData.js';
 import { getLiveRatesSnapshotAsync } from './_lib/liveRatesCache.js';
+import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
+  if (quotaGuard.blocked) {
+    return sendPocQuotaResponse(res, quotaGuard);
   }
 
   const snapshot = await getLiveRatesSnapshotAsync();

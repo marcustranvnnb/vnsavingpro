@@ -1,6 +1,22 @@
 import { useEffect, useState } from 'react';
 import { cryptoStorage } from './cryptoStorage.js';
 
+export const POC_QUOTA_EVENT = 'vnsaving:poc-quota-reached';
+
+export function emitPocQuotaReached(detail = {}) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(POC_QUOTA_EVENT, { detail }));
+  }
+}
+
+function handlePotentialPocLock(res, json) {
+  if ((res?.status === 503 || json?.pocValidationReached) && json?.code === 'POC_QUOTA_REACHED') {
+    emitPocQuotaReached(json);
+    return true;
+  }
+  return false;
+}
+
 const calcCache = new Map();
 const MAX_CACHE_ENTRIES = 100;
 
@@ -50,7 +66,9 @@ export function useServerCalc(action, payload, initialData = null) {
           signal: controller.signal,
         });
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          const errJson = await res.json().catch(() => ({}));
+          handlePotentialPocLock(res, errJson);
+          throw new Error(errJson?.error || `HTTP ${res.status}`);
         }
         const json = await res.json();
         setCached(cacheKey, json);
@@ -81,10 +99,19 @@ export function loadSavedPlannerState() {
 
 export async function fetchLiveRatesFromApi() {
   const res = await fetch('/api/rates');
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+    throw new Error(json?.error || `HTTP ${res.status}`);
   }
-  return res.json();
+  return json;
+}
+
+export async function fetchQuotaStatusFromApi() {
+  const res = await fetch('/api/quota-status');
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  return json;
 }
 
 export async function saveCloudPlanToApi({ title, shareCode, payload, isShared = true, accessToken = null }) {
@@ -98,6 +125,7 @@ export async function saveCloudPlanToApi({ title, shareCode, payload, isShared =
     body: JSON.stringify({ title, shareCode, payload, isShared }),
   });
   const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
   if (!res.ok || !json?.ok) {
     throw new Error(json?.error || `HTTP ${res.status}`);
   }
@@ -112,6 +140,7 @@ export async function fetchCloudPlanFromApi(code, accessToken = null) {
   }
   const res = await fetch(`/api/plans?code=${encodeURIComponent(cleanCode)}`, { headers });
   const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
   if (!res.ok || !json?.ok) {
     throw new Error(json?.error || `HTTP ${res.status}`);
   }
@@ -125,6 +154,7 @@ export async function fetchMyCloudPlansFromApi(accessToken) {
     },
   });
   const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
   if (!res.ok || !json?.ok) {
     throw new Error(json?.error || `HTTP ${res.status}`);
   }
@@ -140,6 +170,7 @@ export async function deleteCloudPlanFromApi(code, accessToken) {
     },
   });
   const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
   if (!res.ok || !json?.ok) {
     throw new Error(json?.error || `HTTP ${res.status}`);
   }

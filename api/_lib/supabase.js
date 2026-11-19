@@ -111,6 +111,13 @@ export async function sbDelete(table, queryString = '') {
   return sbFetch(path, { method: 'DELETE' });
 }
 
+export async function sbRpc(fnName, params = {}) {
+  return sbFetch(`rpc/${encodeURIComponent(fnName)}`, {
+    method: 'POST',
+    body: params,
+  });
+}
+
 export async function getUserFromBearerToken(req) {
   const authHeader = String(req?.headers?.authorization || '').trim();
   if (!authHeader.toLowerCase().startsWith('bearer ')) {

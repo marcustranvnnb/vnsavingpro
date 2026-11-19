@@ -1,6 +1,6 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-19 01:07 (Resend Email Helper & Supabase Auth Vietnamese Email Templates Ready)
+> **Last Synced**: 2026-11-19 09:12 (Free-Tier Quota Guardian: 80%/90%/95%/100% Resend Alerts + POC Validation Phase Lock)
 > **Current Architecture Version**: v1.5.5 (Clean-URL History API SPA + Hardened Security Layer + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
@@ -39,8 +39,8 @@
 
 ## File Registry (v1.5.5 Tier 1 Serverless + Supabase Postgres + Daily Scrapers)
 
-- **Database & Schema (`supabase/`)**: `supabase/schema.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans` + RLS policies), `.env.example`
-- **Serverless API (`api/`)**: `api/rates.js` (`GET /api/rates`), `api/calculate.js` (`POST /api/calculate`), `api/feedback.js` (`GET`/`POST /api/feedback`), `api/plans.js` (`GET`/`POST /api/plans`), `api/cron/sync-rates.js` (daily 09:00 AM VN Vercel cron), `api/_lib/{calculator,feasibilityEvaluator,http,liveRatesCache,supabase}.js`
+- **Database & Schema (`supabase/`)**: `supabase/schema.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `usage_quotas`, `quota_alerts_log` + RLS policies), `supabase/email-templates/`, `.env.example`
+- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,http,liveRatesCache,supabase,resend,quotaGuard}.js`
 - **Automated Scrapers & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
 - **Root & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/index.css`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation}.jsx` (`Referral.jsx` hidden)

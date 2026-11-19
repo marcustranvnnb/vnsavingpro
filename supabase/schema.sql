@@ -201,3 +201,127 @@ CREATE POLICY "Authenticated users can delete own saved plans"
   FOR DELETE
   TO authenticated
   USING ((select auth.uid()) = user_id);
+
+-- ============================================================================
+-- 5. Free-Tier Quota Guardian & Alert Deduplication Log
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS public.usage_quotas (
+  metric_key TEXT NOT NULL,
+  period_key TEXT NOT NULL,
+  used_value BIGINT NOT NULL DEFAULT 0,
+  limit_value BIGINT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (metric_key, period_key)
+);
+
+ALTER TABLE public.usage_quotas ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.usage_quotas FROM PUBLIC, anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE public.usage_quotas TO service_role;
+
+CREATE POLICY "Service role full access usage quotas"
+  ON public.usage_quotas
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+CREATE TABLE IF NOT EXISTS public.quota_alerts_log (
+  metric_key TEXT NOT NULL,
+  period_key TEXT NOT NULL,
+  threshold_pct SMALLINT NOT NULL CHECK (threshold_pct IN (80, 90, 95, 100)),
+  used_value BIGINT NOT NULL DEFAULT 0,
+  limit_value BIGINT NOT NULL DEFAULT 0,
+  sent_to TEXT NOT NULL DEFAULT '',
+  email_status TEXT NOT NULL DEFAULT 'sent',
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (metric_key, period_key, threshold_pct)
+);
+
+ALTER TABLE public.quota_alerts_log ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.quota_alerts_log FROM PUBLIC, anon, authenticated;
+GRANT ALL PRIVILEGES ON TABLE public.quota_alerts_log TO service_role;
+
+CREATE POLICY "Service role full access quota alerts log"
+  ON public.quota_alerts_log
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+CREATE OR REPLACE FUNCTION public.increment_quota_counter(
+  p_metric_key TEXT,
+  p_period_key TEXT,
+  p_delta BIGINT DEFAULT 1,
+  p_limit_value BIGINT DEFAULT 0
+)
+RETURNS TABLE (used_value BIGINT, limit_value BIGINT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  INSERT INTO public.usage_quotas AS uq (metric_key, period_key, used_value, limit_value, updated_at)
+  VALUES (p_metric_key, p_period_key, GREATEST(0, COALESCE(p_delta, 0)), COALESCE(p_limit_value, 0), NOW())
+  ON CONFLICT (metric_key, period_key) DO UPDATE
+    SET used_value = uq.used_value + GREATEST(0, COALESCE(p_delta, 0)),
+        limit_value = CASE WHEN COALESCE(p_limit_value, 0) > 0 THEN p_limit_value ELSE uq.limit_value END,
+        updated_at = NOW()
+  RETURNING uq.used_value, uq.limit_value;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.increment_quota_counter(TEXT, TEXT, BIGINT, BIGINT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_quota_counter(TEXT, TEXT, BIGINT, BIGINT) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_free_tier_usage_snapshot()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_db_bytes BIGINT;
+  v_total_users BIGINT;
+  v_mau BIGINT;
+  v_month_key TEXT := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM');
+  v_day_key TEXT := to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD');
+  v_quotas JSONB;
+BEGIN
+  SELECT pg_database_size(current_database()) INTO v_db_bytes;
+  SELECT count(*) INTO v_total_users FROM auth.users;
+  SELECT count(DISTINCT id) INTO v_mau
+  FROM auth.users
+  WHERE COALESCE(last_sign_in_at, created_at) >= date_trunc('month', NOW() AT TIME ZONE 'UTC');
+
+  SELECT COALESCE(
+    jsonb_agg(
+      jsonb_build_object(
+        'metric_key', q.metric_key,
+        'period_key', q.period_key,
+        'used_value', q.used_value,
+        'limit_value', q.limit_value,
+        'updated_at', q.updated_at
+      )
+    ),
+    '[]'::jsonb
+  )
+  INTO v_quotas
+  FROM public.usage_quotas q
+  WHERE q.period_key IN (v_month_key, v_day_key);
+
+  RETURN jsonb_build_object(
+    'db_bytes', v_db_bytes,
+    'db_mb', ROUND((v_db_bytes / (1024.0 * 1024.0))::numeric, 2),
+    'total_users', v_total_users,
+    'mau_current_month', v_mau,
+    'month_key', v_month_key,
+    'day_key', v_day_key,
+    'quotas', v_quotas
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_free_tier_usage_snapshot() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_free_tier_usage_snapshot() TO service_role;

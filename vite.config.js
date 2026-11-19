@@ -18,6 +18,7 @@ function vercelApiPlugin() {
     '/api/calculate': 'api/calculate.js',
     '/api/feedback': 'api/feedback.js',
     '/api/plans': 'api/plans.js',
+    '/api/quota-status': 'api/quota-status.js',
     '/api/cron/sync-rates': 'api/cron/sync-rates.js',
   };
   const attach = (server) => {
@@ -114,7 +115,16 @@ function viteSriPlugin() {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  for (const key of ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'CRON_SECRET']) {
+  for (const key of [
+    'SUPABASE_URL',
+    'SUPABASE_ANON_KEY',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'CRON_SECRET',
+    'RESEND_API_KEY',
+    'RESEND_FROM_EMAIL',
+    'OWNER_ALERT_EMAIL',
+    'POC_FORCE_LOCK',
+  ]) {
     if (env[key] && !process.env[key]) {
       process.env[key] = env[key];
     }

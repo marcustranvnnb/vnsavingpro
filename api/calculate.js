@@ -8,6 +8,7 @@ import {
 } from './_lib/calculator.js';
 import { evaluatePlanFeasibility } from './_lib/feasibilityEvaluator.js';
 import { readJsonBody } from './_lib/http.js';
+import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX_REQUESTS = 120;
@@ -35,6 +36,11 @@ export default async function handler(req, res) {
 
   if (isRateLimited(req)) {
     return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+  }
+
+  const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
+  if (quotaGuard.blocked) {
+    return sendPocQuotaResponse(res, quotaGuard);
   }
 
   let body;

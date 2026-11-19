@@ -1,4 +1,5 @@
 import { readJsonBody } from './_lib/http.js';
+import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { getUserFromBearerToken, isSupabaseConfigured, sbDelete, sbSelect, sbUpsert } from './_lib/supabase.js';
 
 const ALLOWED_PAYLOAD_KEYS = new Set([
@@ -73,6 +74,10 @@ function formatPlanRow(row) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
+  if (quotaGuard.blocked) {
+    return sendPocQuotaResponse(res, quotaGuard);
+  }
   const supabaseConnected = isSupabaseConfigured();
   const auth = await getUserFromBearerToken(req);
   const authUser = auth.ok ? auth.user : null;
