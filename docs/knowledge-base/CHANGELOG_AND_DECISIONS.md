@@ -4,6 +4,18 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-20] — Version 1.8.0.0: Unified Adaptive Multi-Screen Layout System (Mobile · Tablet · Duo/Fold · Desktop)
+
+- **Request**: Unify the UI layout across Mobile, Tablet, and PC/Desktop with a shared adaptive layout system that propagates changes consistently across all screens, and add explicit Duo / Foldable support (similar to iPhone Duo/Fold, Samsung Galaxy Z Fold, Pixel Fold, Surface Duo).
+- **Changes Implemented**:
+  - **Version Bump (`v1.8.0.0`)**: Ran `node scripts/bump-version.js minor` updating [src/version.json](../../src/version.json), [package.json](../../package.json), and prepended `v1.8.0.0` release highlights in [src/tools.js](../../src/tools.js) (`vi`, `en`, `ja`).
+  - **Adaptive Display & Foldable Detection Engine**: Created [src/layout/DisplayModeContext.jsx](../../src/layout/DisplayModeContext.jsx) (`DisplayModeProvider`, `useDisplayMode`, pure `detectViewportMetrics()`) supporting `Auto | Mobile | Tablet | Duo / Fold | Desktop` selection plus `Auto | Book | Flex / Tabletop` Duo postures, automatic W3C Viewport Segments / foldable inner-screen detection (`<=390px` cover-screen tuning), CSS variable & `data-layout-*` synchronization, and cookie/localStorage persistence ([cookieManager.js](../../src/utils/cookieManager.js)).
+  - **Foldable CSS & Unified Layout Primitives**: Added W3C `@media (horizontal-viewport-segments: 2)` / `(vertical-viewport-segments: 2)`, `.duo-book-grid`, `.duo-hinge-vertical`, `.duo-hinge-horizontal`, and `.duo-pane-scroll` in [src/index.css](../../src/index.css); created [src/components/AdaptiveLayout.jsx](../../src/components/AdaptiveLayout.jsx) (`PageContainer`, `WorkspaceSplit`, `DualPaneSection`, `AdaptiveGrid`, `StickyResultBar`).
+  - **Adaptive Shell, Navigation, Modals & Toasts**: Updated [src/components/Layout.jsx](../../src/components/Layout.jsx) (`DisplayModeSwitcher`, `LayoutModeBanner`, `TabletToolBar`, hinge-safe Duo Book `TopNav`, updated `MobileTabBar` & `Footer`), [src/components/ui.jsx](../../src/components/ui.jsx) (mode-aware `Modal` bottom sheet vs. right-pane Duo Book docking, `MoneyField`, `PageHeader`, skeletons), [src/state.jsx](../../src/state.jsx) (`ToastViewport`), and [src/App.jsx](../../src/App.jsx) (`DisplayModeProvider`, constrained preview frame).
+  - **All Pages Migrated to Unified Primitives**: Updated [Home.jsx](../../src/pages/Home.jsx), [Planner.jsx](../../src/pages/Planner.jsx), [Calculator.jsx](../../src/pages/Calculator.jsx), [Ladder.jsx](../../src/pages/Ladder.jsx), [Career.jsx](../../src/pages/Career.jsx), [Inflation.jsx](../../src/pages/Inflation.jsx), [Rates.jsx](../../src/pages/Rates.jsx), and [Profile.jsx](../../src/pages/Profile.jsx).
+
+---
+
 ## [2026-11-19] — Version 1.7.0.0: Full 3-Language Support (Tiếng Việt · English · 日本語)
 
 - **Request**: Support 3 languages (`vi` Vietnamese, `en` English, `ja` Japanese) directly across the entire VnSavingPro web app and serverless calculation responses.

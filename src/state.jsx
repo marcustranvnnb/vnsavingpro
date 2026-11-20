@@ -3,6 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from './data/banksData.js';
 import { getLocalizedPageTitle, getRoutePath, resolveRouteId } from './tools.js';
 import { useI18n } from './i18n/index.jsx';
+import { useDisplayMode } from './layout/DisplayModeContext.jsx';
 import { fetchLiveRatesFromApi } from './utils/apiClient.js';
 import { isAnalyticsAllowed, syncUserPrefCookie } from './utils/cookieManager.js';
 import { clampNum, cryptoStorage, isPlainObject } from './utils/cryptoStorage.js';
@@ -117,14 +118,24 @@ const ToastCtx = createContext(() => {});
 export const useToast = () => useContext(ToastCtx);
 
 function ToastViewport({ toast }) {
+  const { mode, duoPosture, width } = useDisplayMode();
   if (!toast) return null;
+
+  const isDuoBook = mode === 'duo' && duoPosture === 'book' && width >= 560;
+  const posClass =
+    mode === 'mobile'
+      ? 'inset-x-0 bottom-36 justify-center px-4'
+      : isDuoBook
+        ? 'inset-x-0 bottom-6 justify-end pr-6 pl-4'
+        : 'inset-x-0 bottom-6 justify-center px-4';
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-36 z-[70] flex justify-center px-4 md:bottom-8">
+    <div className={`pointer-events-none fixed z-[70] flex ${posClass}`}>
       <div
         key={toast.id}
         className="flex animate-pop items-center gap-2 rounded-xl border border-white/10 bg-elevated/95 px-4 py-2.5 text-sm text-white shadow-2xl backdrop-blur"
       >
-        <CheckCircle2 className="size-4 text-emerald-400" />
+        <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
         {toast.message}
       </div>
     </div>

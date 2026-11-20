@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown,
   Calculator as CalcIcon,
   CheckCircle2,
   Coins,
@@ -18,6 +17,7 @@ import { TENURE_DAYS_MAP } from '../data/banksData.js';
 import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { chip, compact, pct, vnd } from '../utils/format.js';
+import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import {
   Badge,
   Callout,
@@ -163,9 +163,20 @@ export default function Calculator() {
         )}
       />
 
-      <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
-        {/* Left Inputs */}
-        <Card className="space-y-5 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+      <WorkspaceSplit
+        resultsId="calculator-results"
+        mobileSummary={{
+          eyebrow: `${bank.name} · ${formatTenure(tenure)} (${pct(rate, 2, lang)})`,
+          value: (
+            <>
+              {tx('Lãi TT14:', 'Circ.14 Int:', '利息：')}{' '}
+              <span className="text-emerald-300">+{compact(m1.interest, lang)}</span> ·{' '}
+              {tx('Tổng', 'Total', '合計')} {compact(m1.total, lang)}
+            </>
+          ),
+        }}
+        controls={
+          <div className="space-y-5">
           <div className="space-y-2 border-b border-white/[0.06] pb-4">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
@@ -295,10 +306,10 @@ export default function Calculator() {
               </div>
             </div>
           )}
-        </Card>
-
-        {/* Right Results */}
-        <div id="calculator-results" className="min-w-0 space-y-5">
+          </div>
+        }
+        results={
+          <div className="space-y-5">
           {!initialized && loading ? (
             <ResultsSkeleton />
           ) : (
@@ -343,7 +354,7 @@ export default function Calculator() {
               </Card>
 
               {/* 4 KPI Stats */}
-              <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <AdaptiveGrid cols={{ mobile: 2, tablet: 2, duo: 2, desktop: 4 }}>
                 <Stat
                   icon={Coins}
                   label={tx('Lãi chuẩn TT14 (365N)', 'SBV Circ. 14 (365d)', '中銀通達14号 (365日)')}
@@ -375,10 +386,10 @@ export default function Calculator() {
                   hint={tx('so với phá toàn bộ sổ', 'vs. breaking full CD', '全額解約と比較')}
                   className="card-interactive"
                 />
-              </div>
+              </AdaptiveGrid>
 
               {/* 3 Calculation Methods Comparison */}
-              <div className="grid gap-4 md:grid-cols-3">
+              <AdaptiveGrid cols={{ mobile: 1, tablet: 3, duo: 1, desktop: 3 }} gap="gap-4">
                 {methods.map((m) => (
                   <Card
                     key={m.id}
@@ -426,7 +437,7 @@ export default function Calculator() {
                     <p className="mt-4 border-t border-white/[0.05] pt-3 text-xs leading-relaxed text-zinc-500">{m.desc}</p>
                   </Card>
                 ))}
-              </div>
+              </AdaptiveGrid>
 
               {/* Method Differences */}
               <Card className="p-5 sm:p-6">
@@ -579,30 +590,9 @@ export default function Calculator() {
               />
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Mobile / Tablet sticky live summary bar */}
-      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 md:inset-x-auto md:bottom-4 md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:px-4 lg:hidden">
-        <button
-          type="button"
-          onClick={() => document.getElementById('calculator-results')?.scrollIntoView({ behavior: 'smooth' })}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-indigo-400/25 bg-elevated/95 px-4 py-2.5 text-left shadow-2xl backdrop-blur"
-        >
-          <div className="min-w-0">
-            <div className="text-[11px] text-zinc-400">
-              {bank.name} · {formatTenure(tenure)} ({pct(rate, 2, lang)})
-            </div>
-            <div className="truncate text-sm font-semibold tabular-nums text-white">
-              {tx('Lãi TT14:', 'Circ.14 Int:', '利息：')}{' '}
-              <span className="text-emerald-300">+{compact(m1.interest, lang)}</span> · {tx('Tổng', 'Total', '合計')} {compact(m1.total, lang)}
-            </div>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-medium text-indigo-200">
-            {tx('Kết quả', 'Results', '結果')} <ArrowDown className="size-3" />
-          </span>
-        </button>
-      </div>
+        }
+      />
     </>
   );
 }

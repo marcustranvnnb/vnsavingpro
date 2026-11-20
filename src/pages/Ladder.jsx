@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -19,6 +18,7 @@ import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { HOUSEHOLD_MODES, HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
+import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import {
   Badge,
   Card,
@@ -583,9 +583,22 @@ export default function Ladder() {
         )}
       />
 
-      <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
-        {/* Left Inputs */}
-        <Card className="space-y-5 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+      <WorkspaceSplit
+        resultsId="ladder-results"
+        mobileSummary={{
+          eyebrow: `${bank.name} · ${lastRow?.activePackagesCount || 0} ${pkgUnit} (${totalMonths}${tx('T', 'm', 'ヶ月')})`,
+          value: (
+            <>
+              {compact(result.finalPortfolioValue, lang)} ·{' '}
+              <span className="text-emerald-300">
+                +{compact(result.finalMonthlyYield, lang)}
+                {tx('/th', '/mo', '/月')}
+              </span>
+            </>
+          ),
+        }}
+        controls={
+          <div className="space-y-5">
           <div className="space-y-2 border-b border-white/[0.06] pb-4">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
@@ -783,10 +796,10 @@ export default function Ladder() {
               </div>
             )}
           </div>
-        </Card>
-
-        {/* Results */}
-        <div id="ladder-results" className="min-w-0 space-y-5">
+          </div>
+        }
+        results={
+          <div className="space-y-5">
           {!initialized && loading ? (
             <ResultsSkeleton />
           ) : (
@@ -846,7 +859,7 @@ export default function Ladder() {
               </Card>
 
               {/* 4 KPI Stats */}
-              <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <AdaptiveGrid cols={{ mobile: 2, tablet: 2, duo: 2, desktop: 4 }}>
                 <Stat
                   icon={Coins}
                   label={tx('Tổng danh mục cuối kỳ', 'Final Portfolio Value', '最終資産合計')}
@@ -877,7 +890,7 @@ export default function Ladder() {
                   hint={splitLabel}
                   className="card-interactive"
                 />
-              </div>
+              </AdaptiveGrid>
 
               {/* Household Emergency Liquidity Card */}
               <Card className="p-5 sm:p-6">
@@ -951,34 +964,9 @@ export default function Ladder() {
               />
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Mobile / Tablet sticky live summary bar */}
-      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 md:inset-x-auto md:bottom-4 md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:px-4 lg:hidden">
-        <button
-          type="button"
-          onClick={() => document.getElementById('ladder-results')?.scrollIntoView({ behavior: 'smooth' })}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-indigo-400/25 bg-elevated/95 px-4 py-2.5 text-left shadow-2xl backdrop-blur"
-        >
-          <div className="min-w-0">
-            <div className="text-[11px] text-zinc-400">
-              {bank.name} · {lastRow?.activePackagesCount || 0} {pkgUnit} ({totalMonths}
-              {tx('T', 'm', 'ヶ月')})
-            </div>
-            <div className="truncate text-sm font-semibold tabular-nums text-white">
-              {compact(result.finalPortfolioValue, lang)} ·{' '}
-              <span className="text-emerald-300">
-                +{compact(result.finalMonthlyYield, lang)}
-                {tx('/th', '/mo', '/月')}
-              </span>
-            </div>
           </div>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-medium text-indigo-200">
-            {tx('Kết quả', 'Results', '結果')} <ArrowDown className="size-3" />
-          </span>
-        </button>
-      </div>
+        }
+      />
     </>
   );
 }

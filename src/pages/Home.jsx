@@ -21,6 +21,8 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useServerCalc } from '../utils/apiClient.js';
 import { compact, chip, pct } from '../utils/format.js';
 import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
+import { AdaptiveGrid, DualPaneSection, PageContainer } from '../components/AdaptiveLayout.jsx';
+import { useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { Badge, BankMark, Button, Card, Chip, cx } from '../components/ui.jsx';
 
 const TARGETS = [5_000_000, 10_000_000, 20_000_000, 30_000_000];
@@ -271,10 +273,13 @@ export default function Home({ onOpenAuth, onOpenData }) {
   const { best, updatedAt } = useRates();
   const { user, authConfigured } = useAuth();
   const { lang, tx } = useI18n();
+  const { mode, duoPosture } = useDisplayMode();
   const top = best('12M');
   const localizedTools = getLocalizedTools(lang);
   const primary = localizedTools.filter((t) => t.primary);
   const secondary = localizedTools.filter((t) => !t.primary);
+  const isMobileMode = mode === 'mobile';
+  const compactFold = mode === 'duo' && duoPosture === 'tabletop';
 
   return (
     <>
@@ -282,66 +287,91 @@ export default function Home({ onOpenAuth, onOpenData }) {
       <section className="relative overflow-hidden border-b border-white/[0.05]">
         <div className="bg-grid pointer-events-none absolute inset-0" />
         <div className="pointer-events-none absolute left-1/2 top-[-280px] h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-4 pb-12 pt-8 sm:gap-10 sm:px-6 sm:pb-16 sm:pt-16 lg:grid-cols-[1.15fr_1fr] lg:gap-14 lg:pb-24 lg:pt-20">
-          <div className="animate-rise min-w-0">
-            <a
-              href={href('rates')}
-              className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl bg-white/[0.04] py-1.5 pl-1.5 pr-3 text-xs text-zinc-300 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.07] sm:rounded-full sm:py-1 sm:pl-1"
-            >
-              <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-300">
-                {APP_VERSION}
-              </span>
-              <span>
-                {tx(
-                  `Lãi suất cập nhật ${updatedAt} · Auto-sync 09:00 hằng ngày`,
-                  `Rates updated ${updatedAt} · Daily auto-sync 09:00 AM`,
-                  `金利更新 ${updatedAt} · 毎日 09:00 自動同期`
-                )}
-              </span>
-              <ArrowRight className="size-3 shrink-0" />
-            </a>
-            <h1 className="mt-5 text-3xl font-semibold leading-[1.12] tracking-tight text-white sm:mt-6 sm:text-5xl lg:text-[54px]">
-              {tx('Biến tiền tiết kiệm thành ', 'Turn monthly savings into ', '毎月の貯蓄を')}
-              <span className="text-gradient">
-                {tx('thu nhập thụ động', 'predictable passive income', '安定した不労所得へ')}
-              </span>
-            </h1>
-            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-zinc-400 sm:mt-5 sm:text-lg">
-              {tx(
-                'Lập lộ trình tài chính chuẩn xác cho Cá nhân, Cặp đôi & Gia đình — biết rõ cần gửi bao nhiêu, lấp Quỹ dự phòng thế nào và chọn ngân hàng số nào lãi cao nhất. Dùng ngay miễn phí, tuỳ chọn đồng bộ Cloud qua Google.',
-                'Build data-driven savings roadmaps for Individuals, Couples & Families — know how much to deposit, how to fill your Emergency Fund, and which Vietnam digital bank pays the highest yield. Free to use, optional Google Cloud sync.',
-                '個人・カップル・家族向けに、毎月の積立額・緊急防衛資金・最も有利なベトナムネット銀行を正確に試算。登録不要で無料利用でき、Google連携でクラウド保存にも対応。'
-              )}
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
-              <Button as="a" href={href('plan')} variant="primary" size="lg" className="w-full sm:w-auto">
-                {tx('Lập kế hoạch ngay', 'Start Planning Now', '今すぐプラン設計')} <ArrowRight className="size-4" />
-              </Button>
-              <Button as="a" href={href('rates')} size="lg" className="w-full sm:w-auto">
-                {tx('So sánh lãi suất', 'Compare Bank Rates', '金利を比較する')}
-              </Button>
-            </div>
-            <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 sm:mt-10 sm:gap-6">
-              {[
-                { k: pct(top.rate, 2, lang), v: tx('Lãi suất cao nhất (12T)', 'Highest 12M Rate', '12ヶ月最高金利') },
-                { k: tx('3 mô hình', '3 Profiles', '3世帯モデル'), v: tx('Cá nhân · Cặp đôi · Gia đình', 'Individual · Couple · Family', '個人・カップル・家族') },
-                { k: '09:00', v: tx('Tự động cập nhật mỗi ngày', 'Auto-synced daily (UTC+7)', '毎日自動レート同期') },
-              ].map((s) => (
-                <div key={s.v} className="min-w-0">
-                  <dt className="text-lg font-semibold tracking-tight text-white tabular-nums sm:text-2xl">{s.k}</dt>
-                  <dd className="mt-1 text-[11px] leading-snug text-zinc-500 sm:text-xs">{s.v}</dd>
+        <PageContainer
+          className={cx(
+            'relative',
+            compactFold ? 'pb-8 pt-6' : isMobileMode ? 'pb-10 pt-6' : 'pb-14 pt-10 sm:pb-16 sm:pt-14 lg:pb-20 lg:pt-18'
+          )}
+        >
+          <DualPaneSection
+            ratio="wide-left"
+            align="center"
+            left={
+              <div className="animate-rise min-w-0">
+                <a
+                  href={href('rates')}
+                  className="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl bg-white/[0.04] py-1.5 pl-1.5 pr-3 text-xs text-zinc-300 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.07] sm:rounded-full sm:py-1 sm:pl-1"
+                >
+                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-medium text-emerald-300">
+                    {APP_VERSION}
+                  </span>
+                  <span>
+                    {tx(
+                      `Lãi suất cập nhật ${updatedAt} · Auto-sync 09:00 hằng ngày`,
+                      `Rates updated ${updatedAt} · Daily auto-sync 09:00 AM`,
+                      `金利更新 ${updatedAt} · 毎日 09:00 自動同期`
+                    )}
+                  </span>
+                  <ArrowRight className="size-3 shrink-0" />
+                </a>
+                <h1
+                  className={cx(
+                    'mt-5 font-semibold leading-[1.12] tracking-tight text-white',
+                    isMobileMode ? 'text-3xl' : 'text-3xl sm:mt-6 sm:text-5xl lg:text-[54px]'
+                  )}
+                >
+                  {tx('Biến tiền tiết kiệm thành ', 'Turn monthly savings into ', '毎月の貯蓄を')}
+                  <span className="text-gradient">
+                    {tx('thu nhập thụ động', 'predictable passive income', '安定した不労所得へ')}
+                  </span>
+                </h1>
+                <p
+                  className={cx(
+                    'mt-4 max-w-xl leading-relaxed text-zinc-400',
+                    isMobileMode ? 'text-[15px]' : 'text-[15px] sm:mt-5 sm:text-lg'
+                  )}
+                >
+                  {tx(
+                    'Lập lộ trình tài chính chuẩn xác cho Cá nhân, Cặp đôi & Gia đình — biết rõ cần gửi bao nhiêu, lấp Quỹ dự phòng thế nào và chọn ngân hàng số nào lãi cao nhất. Tối ưu đồng bộ cho Mobile, Tablet, Duo / Màn hình gập & PC.',
+                    'Build data-driven savings roadmaps for Individuals, Couples & Families — know how much to deposit, how to fill your Emergency Fund, and which Vietnam digital bank pays the highest yield. Adaptive across Mobile, Tablet, Duo/Fold & Desktop.',
+                    '個人・カップル・家族向けに、毎月の積立額・緊急防衛資金・高金利ネット銀行を正確に試算。Mobile・Tablet・Duo/折りたたみ・PCの全画面に最適化されています。'
+                  )}
+                </p>
+                <div className={cx('mt-7 flex gap-3', isMobileMode ? 'flex-col' : 'flex-col sm:mt-8 sm:flex-row')}>
+                  <Button as="a" href={href('plan')} variant="primary" size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
+                    {tx('Lập kế hoạch ngay', 'Start Planning Now', '今すぐプラン設計')} <ArrowRight className="size-4" />
+                  </Button>
+                  <Button as="a" href={href('rates')} size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
+                    {tx('So sánh lãi suất', 'Compare Bank Rates', '金利を比較する')}
+                  </Button>
                 </div>
-              ))}
-            </dl>
-          </div>
-          <div className="animate-rise min-w-0 [animation-delay:120ms]">
-            <QuickEstimate />
-          </div>
-        </div>
+                <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 sm:mt-10 sm:gap-6">
+                  {[
+                    { k: pct(top.rate, 2, lang), v: tx('Lãi suất cao nhất (12T)', 'Highest 12M Rate', '12ヶ月最高金利') },
+                    { k: tx('4 chế độ', '4 Screens', '4画面対応'), v: tx('Mobile · Tablet · Duo · PC', 'Mobile · Tablet · Duo · PC', 'Mobile · Tablet · Duo · PC') },
+                    { k: '09:00', v: tx('Tự động cập nhật mỗi ngày', 'Auto-synced daily (UTC+7)', '毎日自動レート同期') },
+                  ].map((s) => (
+                    <div key={s.v} className="min-w-0">
+                      <dt className={cx('font-semibold tracking-tight text-white tabular-nums', isMobileMode ? 'text-base' : 'text-lg sm:text-2xl')}>
+                        {s.k}
+                      </dt>
+                      <dd className="mt-1 text-[11px] leading-snug text-zinc-500 sm:text-xs">{s.v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            }
+            right={
+              <div className="animate-rise min-w-0 [animation-delay:120ms]">
+                <QuickEstimate />
+              </div>
+            }
+          />
+        </PageContainer>
       </section>
 
       {/* Household Modes */}
-      <section className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16 lg:pt-20">
+      <PageContainer as="section" className="pt-12 sm:pt-16 lg:pt-20">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-indigo-300">
             <Users className="size-3.5" /> {tx('3 mô hình tài chính', '3 Household Models', '3つの世帯モデル')}
@@ -358,7 +388,7 @@ export default function Home({ onOpenAuth, onOpenData }) {
           </p>
         </div>
 
-        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 3 }} hingeAligned className="mt-7">
           {HOUSEHOLD_CARDS.map((card) => {
             const Icon = card.icon;
             return (
@@ -391,11 +421,11 @@ export default function Home({ onOpenAuth, onOpenData }) {
               </a>
             );
           })}
-        </div>
-      </section>
+        </AdaptiveGrid>
+      </PageContainer>
 
       {/* Tools */}
-      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
+      <PageContainer className="py-12 sm:py-16 lg:py-20">
         <div className="flex items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-medium text-indigo-300">
@@ -407,7 +437,7 @@ export default function Home({ onOpenAuth, onOpenData }) {
           </div>
         </div>
 
-        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 4 }} hingeAligned className="mt-7">
           {primary.map((t) => (
             <a
               key={t.id}
@@ -424,9 +454,13 @@ export default function Home({ onOpenAuth, onOpenData }) {
               </span>
             </a>
           ))}
-        </div>
+        </AdaptiveGrid>
 
-        <div className={cx('mt-3 grid gap-3', secondary.length <= 2 ? 'md:grid-cols-2' : 'md:grid-cols-3')}>
+        <AdaptiveGrid
+          cols={{ mobile: 1, tablet: 2, duo: 2, desktop: secondary.length <= 2 ? 2 : 3 }}
+          hingeAligned
+          className="mt-3"
+        >
           {secondary.map((t) => (
             <a
               key={t.id}
@@ -443,92 +477,97 @@ export default function Home({ onOpenAuth, onOpenData }) {
               <ArrowUpRight className="size-4 shrink-0 text-zinc-600 transition-colors group-hover:text-white" />
             </a>
           ))}
-        </div>
-      </section>
+        </AdaptiveGrid>
+      </PageContainer>
 
       {/* Rates + Cloud Sync, Security & Export */}
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pb-28 sm:px-6 sm:pb-24 lg:grid-cols-[1.35fr_1fr] lg:pb-20">
-        <RateSnapshot />
-        <Card className="flex flex-col justify-between gap-5 p-4 sm:p-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/20">
-                <ShieldCheck className="size-[18px] text-emerald-300" />
-              </span>
-              <Badge tone="success">{tx('Miễn phí · Đa thiết bị', 'Free · Cross-Device', '無料・マルチデバイス')}</Badge>
-            </div>
-            <div>
-              <h2 className="text-[15px] font-semibold text-white">
-                {tx('Bảo mật, Đồng bộ Cloud & Báo cáo', 'Privacy, Cloud Sync & Reports', 'セキュリティ・クラウド同期・レポート')}
-              </h2>
-              <ul className="mt-3 space-y-2.5 text-xs leading-relaxed text-zinc-400">
-                <li className="flex items-start gap-2.5">
-                  <Lock className="mt-0.5 size-3.5 shrink-0 text-emerald-300" />
-                  <span>
-                    <strong className="text-zinc-200">{tx('Dùng ngay & Mã hoá cục bộ:', 'Instant Access & Local Encryption:', '登録不要・端末暗号化：')}</strong>{' '}
-                    {tx(
-                      'Dùng mọi công cụ miễn phí không bắt buộc tạo tài khoản; dữ liệu lưu trên thiết bị luôn được mã hoá cục bộ.',
-                      'Every tool runs free with zero mandatory sign-up; local browser state is encrypted on your device.',
-                      'アカウント登録なしですべての試算機能を無料利用可能。端末保存データは暗号化されます。'
-                    )}
+      <PageContainer className="pb-16 sm:pb-20">
+        <DualPaneSection
+          ratio="wide-left"
+          left={<RateSnapshot />}
+          right={
+            <Card className="flex flex-col justify-between gap-5 p-4 sm:p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-inset ring-emerald-400/20">
+                    <ShieldCheck className="size-[18px] text-emerald-300" />
                   </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <Cloud className="mt-0.5 size-3.5 shrink-0 text-indigo-300" />
-                  <span>
-                    <strong className="text-zinc-200">{tx('Đồng bộ Cloud & Tài khoản (Tuỳ chọn):', 'Optional Google & Cloud Sync:', 'クラウド保存・Google連携（任意）：')}</strong>{' '}
-                    {tx(
-                      'Đăng nhập nhanh bằng Google / Email (hoặc mã chia sẻ 6 ký tự) để lưu nhiều kịch bản trên Supabase Cloud giữa Mobile, Tablet và PC.',
-                      'Sign in with Google/Email or use a 6-character share code to sync scenarios across Mobile, Tablet, and Desktop via Supabase.',
-                      'Google / メールログインまたは6桁コードで、スマホ・タブレット・PC間のプランをSupabaseに保存同期できます。'
-                    )}
-                  </span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <FileSpreadsheet className="mt-0.5 size-3.5 shrink-0 text-sky-300" />
-                  <span>
-                    <strong className="text-zinc-200">{tx('API bảo mật & Xuất báo cáo:', 'Protected API & Multi-Format Export:', '安全API計算・多形式出力：')}</strong>{' '}
-                    {tx(
-                      'Tính toán chạy qua Serverless API an toàn; xuất báo cáo lộ trình sang Google Docs, .DOC và .CSV.',
-                      'Calculations execute through our secured Serverless API; export reports to Google Docs, .DOC, and .CSV.',
-                      '計算ロジックは安全なサーバーレスAPIで実行。Googleドキュメント、.DOC、.CSV形式で帳票出力が可能です。'
-                    )}
-                  </span>
-                </li>
-              </ul>
-            </div>
+                  <Badge tone="success">{tx('Miễn phí · Đa thiết bị', 'Free · Multi-Screen', '無料・全画面対応')}</Badge>
+                </div>
+                <div>
+                  <h2 className="text-[15px] font-semibold text-white">
+                    {tx('Bảo mật, Đồng bộ Cloud & Giao diện đa màn hình', 'Privacy, Cloud Sync & Adaptive Screens', 'セキュリティ・クラウド同期・マルチ画面')}
+                  </h2>
+                  <ul className="mt-3 space-y-2.5 text-xs leading-relaxed text-zinc-400">
+                    <li className="flex items-start gap-2.5">
+                      <Lock className="mt-0.5 size-3.5 shrink-0 text-emerald-300" />
+                      <span>
+                        <strong className="text-zinc-200">{tx('Dùng ngay & Mã hoá cục bộ:', 'Instant Access & Local Encryption:', '登録不要・端末暗号化：')}</strong>{' '}
+                        {tx(
+                          'Dùng mọi công cụ miễn phí không bắt buộc tạo tài khoản; dữ liệu lưu trên thiết bị luôn được mã hoá cục bộ.',
+                          'Every tool runs free with zero mandatory sign-up; local browser state is encrypted on your device.',
+                          'アカウント登録なしですべての試算機能を無料利用可能。端末保存データは暗号化されます。'
+                        )}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <Cloud className="mt-0.5 size-3.5 shrink-0 text-indigo-300" />
+                      <span>
+                        <strong className="text-zinc-200">{tx('Đồng bộ Mobile · Tablet · Duo/Fold · PC:', 'Sync across Mobile, Tablet, Duo/Fold & PC:', 'Mobile・Tablet・Duo/Fold・PC対応：')}</strong>{' '}
+                        {tx(
+                          'Đăng nhập Google / Email hoặc mã chia sẻ 6 ký tự trên Supabase Cloud, kèm tuỳ chọn chuyển layout cho iPhone Duo, Galaxy Z Fold, Tablet và Desktop.',
+                          'Sign in with Google/Email or a 6-char share code via Supabase Cloud, paired with adaptive layout modes for iPhone Duo, Galaxy Fold, Tablet, and Desktop.',
+                          'Google/メール認証または6桁コードでSupabase同期。iPhone Duo・Galaxy Fold・Tablet・PCに最適レイアウトで自動対応します。'
+                        )}
+                      </span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <FileSpreadsheet className="mt-0.5 size-3.5 shrink-0 text-sky-300" />
+                      <span>
+                        <strong className="text-zinc-200">{tx('API bảo mật & Xuất báo cáo:', 'Protected API & Multi-Format Export:', '安全API計算・多形式出力：')}</strong>{' '}
+                        {tx(
+                          'Tính toán chạy qua Serverless API an toàn; xuất báo cáo lộ trình sang Google Docs, .DOC và .CSV.',
+                          'Calculations execute through our secured Serverless API; export reports to Google Docs, .DOC, and .CSV.',
+                          '計算ロジックは安全なサーバーレスAPIで実行。Googleドキュメント、.DOC、.CSV形式で帳票出力が可能です。'
+                        )}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              {user ? (
-                <Button as="a" href={href('profile')} variant="primary" size="sm">
-                  <User className="size-3.5" /> {tx('Mở Hồ sơ & Kịch bản đã lưu', 'Open Profile & Saved Plans', 'プロフィールを開く')}
-                </Button>
-              ) : (
-                authConfigured &&
-                onOpenAuth && (
-                  <Button type="button" variant="primary" size="sm" onClick={onOpenAuth}>
-                    <LogIn className="size-3.5" /> {tx('Đăng nhập Google / Email', 'Sign in with Google / Email', 'Google / メールでログイン')}
-                  </Button>
-                )
-              )}
-              {onOpenData && (
-                <Button type="button" variant="secondary" size="sm" onClick={onOpenData}>
-                  <Cloud className="size-3.5" /> {tx('Sao lưu / Mã Cloud', 'Backup / Cloud Code', 'バックアップ / コード')}
-                </Button>
-              )}
-            </div>
-          </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {user ? (
+                    <Button as="a" href={href('profile')} variant="primary" size="sm">
+                      <User className="size-3.5" /> {tx('Mở Hồ sơ & Kịch bản đã lưu', 'Open Profile & Saved Plans', 'プロフィールを開く')}
+                    </Button>
+                  ) : (
+                    authConfigured &&
+                    onOpenAuth && (
+                      <Button type="button" variant="primary" size="sm" onClick={onOpenAuth}>
+                        <LogIn className="size-3.5" /> {tx('Đăng nhập Google / Email', 'Sign in with Google / Email', 'Google / メールでログイン')}
+                      </Button>
+                    )
+                  )}
+                  {onOpenData && (
+                    <Button type="button" variant="secondary" size="sm" onClick={onOpenData}>
+                      <Cloud className="size-3.5" /> {tx('Sao lưu / Mã Cloud', 'Backup / Cloud Code', 'バックアップ / コード')}
+                    </Button>
+                  )}
+                </div>
+              </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-500 ring-1 ring-inset ring-white/[0.05]">
-            <RefreshCw className="mt-0.5 size-3.5 shrink-0" />
-            {tx(
-              'Thông tin lãi suất được tổng hợp từ trang chính thức public của từng ngân hàng; chi tiết gói ưu đãi bạn vui lòng tải ứng dụng ngân hàng để tham khảo trực tiếp (kết quả chỉ mang tính tham khảo).',
-              'Interest rates are compiled from public official bank pages; check each bank’s official app for exact promo terms (for reference only).',
-              '金利情報は各銀行の公式公開ページより収集しています。キャンペーン等の正確な適用条件は公式アプリでご確認ください（結果は参考値です）。'
-            )}
-          </div>
-        </Card>
-      </section>
+              <div className="flex items-start gap-2 rounded-xl bg-white/[0.02] p-3 text-xs leading-relaxed text-zinc-500 ring-1 ring-inset ring-white/[0.05]">
+                <RefreshCw className="mt-0.5 size-3.5 shrink-0" />
+                {tx(
+                  'Thông tin lãi suất được tổng hợp từ trang chính thức public của từng ngân hàng; chi tiết gói ưu đãi bạn vui lòng tải ứng dụng ngân hàng để tham khảo trực tiếp (kết quả chỉ mang tính tham khảo).',
+                  'Interest rates are compiled from public official bank pages; check each bank’s official app for exact promo terms (for reference only).',
+                  '金利情報は各銀行の公式公開ページより収集しています。キャンペーン等の正確な適用条件は公式アプリでご確認ください（結果は参考値です）。'
+                )}
+              </div>
+            </Card>
+          }
+        />
+      </PageContainer>
     </>
   );
 }

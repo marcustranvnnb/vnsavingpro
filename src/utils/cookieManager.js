@@ -126,9 +126,9 @@ export function getActiveCookiesList(lang = 'vi') {
     [PREFS_COOKIE]: {
       category: t('Tuỳ chọn', 'Preferences', '環境設定'),
       desc: t(
-        'Ghi nhớ ngân hàng, kỳ hạn, ngôn ngữ & chế độ nhập liệu',
-        'Remembers selected bank, tenure, language & input mode',
-        '銀行・預入期間・言語・入力モードを記憶します'
+        'Ghi nhớ ngân hàng, kỳ hạn, ngôn ngữ, chế độ màn hình & nhập liệu',
+        'Remembers selected bank, tenure, language, display layout & input mode',
+        '銀行・預入期間・言語・画面レイアウト・入力モードを記憶します'
       ),
       ttl: t('90 ngày', '90 days', '90日間'),
     },

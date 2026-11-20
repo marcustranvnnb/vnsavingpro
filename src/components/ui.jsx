@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Info, X } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
+import { useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { fmt } from '../utils/format.js';
 
 export const cx = (...c) => c.filter(Boolean).join(' ');
@@ -34,19 +35,51 @@ export function CardHeader({ title, description, right, className }) {
 }
 
 export function PageHeader({ icon: Icon, eyebrow, title, description, actions }) {
+  const { mode, duoPosture } = useDisplayMode();
+  const compactFlex = mode === 'duo' && duoPosture === 'tabletop';
+  const isMobileMode = mode === 'mobile';
+
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+    <div
+      className={cx(
+        'flex flex-col justify-between',
+        compactFlex
+          ? 'mb-4 gap-2 sm:flex-row sm:items-center'
+          : isMobileMode
+            ? 'mb-5 gap-3'
+            : 'mb-6 gap-4 sm:mb-8 sm:flex-row sm:items-end'
+      )}
+    >
       <div className="max-w-2xl">
         {eyebrow && (
-          <div className="mb-3 inline-flex items-center gap-2 text-xs font-medium text-indigo-300">
+          <div className="mb-2 inline-flex items-center gap-2 text-xs font-medium text-indigo-300 sm:mb-3">
             {Icon && <Icon className="size-3.5" />}
             {eyebrow}
           </div>
         )}
-        <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-[32px] sm:leading-tight">{title}</h1>
-        {description && <p className="mt-2 text-sm leading-relaxed text-zinc-400 sm:text-[15px]">{description}</p>}
+        <h1
+          className={cx(
+            'font-semibold tracking-tight text-white',
+            compactFlex
+              ? 'text-xl sm:text-2xl'
+              : isMobileMode
+                ? 'text-2xl leading-tight'
+                : 'text-2xl sm:text-[32px] sm:leading-tight'
+          )}
+        >
+          {title}
+        </h1>
+        {description && !compactFlex && (
+          <p className={cx('mt-2 leading-relaxed text-zinc-400', isMobileMode ? 'text-sm' : 'text-sm sm:text-[15px]')}>
+            {description}
+          </p>
+        )}
       </div>
-      {actions && <div className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto">{actions}</div>}
+      {actions && (
+        <div className={cx('flex shrink-0 flex-wrap gap-2', isMobileMode ? 'w-full' : 'w-full sm:w-auto')}>
+          {actions}
+        </div>
+      )}
     </div>
   );
 }
@@ -230,11 +263,20 @@ export function DecimalInput({ value, onChange, suffix, min = 0, max = 100, step
 
 /** Label + formatted number input + slider + quick presets. */
 export function MoneyField({ label, hint, value, onChange, min, max, step, presets, suffix = '₫', inputMax }) {
+  const { mode } = useDisplayMode();
+  const isMobile = mode === 'mobile';
   return (
     <div className="space-y-2.5">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className={cx('flex flex-col gap-2', !isMobile && 'sm:flex-row sm:items-center sm:justify-between sm:gap-3')}>
         <label className="text-[13px] font-medium text-zinc-300">{label}</label>
-        <NumberInput value={value} onChange={onChange} suffix={suffix} max={inputMax} className="w-full sm:w-44" ariaLabel={label} />
+        <NumberInput
+          value={value}
+          onChange={onChange}
+          suffix={suffix}
+          max={inputMax}
+          className={isMobile ? 'w-full' : 'w-full sm:w-44'}
+          ariaLabel={label}
+        />
       </div>
       <Range value={value} min={min} max={max} step={step} onChange={onChange} ariaLabel={label} />
       {presets && (
@@ -363,6 +405,8 @@ export function BankMark({ bank, size = 'md' }) {
 
 export function Modal({ open, onClose, title, children, className }) {
   const { tx } = useI18n();
+  const { mode, duoPosture, width } = useDisplayMode();
+
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => e.key === 'Escape' && onClose();
@@ -376,18 +420,36 @@ export function Modal({ open, onClose, title, children, className }) {
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const isMobileSheet = mode === 'mobile';
+  const isDuoBook = mode === 'duo' && duoPosture === 'book' && width >= 560;
+
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center sm:p-4">
+    <div
+      className={cx(
+        'fixed inset-0 z-[60] flex',
+        isMobileSheet
+          ? 'items-end justify-center'
+          : isDuoBook
+            ? 'items-center justify-end p-4 pr-5'
+            : 'items-center justify-center p-4'
+      )}
+    >
       <div className="absolute inset-0 animate-fade bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         className={cx(
-          'relative max-h-[90dvh] w-full animate-pop overflow-y-auto rounded-t-2xl border border-white/10 bg-elevated p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-2xl sm:pb-5',
+          'relative max-h-[90dvh] w-full animate-pop overflow-y-auto border border-white/10 bg-elevated p-5 shadow-2xl',
+          isMobileSheet
+            ? 'max-w-[460px] rounded-t-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom))]'
+            : isDuoBook
+              ? 'max-w-[min(460px,calc(50vw-28px))] rounded-2xl'
+              : 'max-w-md rounded-2xl',
           className
         )}
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15 sm:hidden" aria-hidden="true" />
+        {isMobileSheet && <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-white/15" aria-hidden="true" />}
         <div className="mb-4 flex items-center justify-between gap-4">
           <h3 className="text-base font-semibold text-white">{title}</h3>
           <button
@@ -412,6 +474,7 @@ export function Skeleton({ className }) {
 
 export function ResultsSkeleton() {
   const { tx } = useI18n();
+  const { mode } = useDisplayMode();
   return (
     <div className="space-y-5 animate-fade" aria-busy="true" aria-label={tx('Đang tải kết quả', 'Loading results', '結果を読み込み中')}>
       <Card className="p-5 sm:p-7">
@@ -420,7 +483,7 @@ export function ResultsSkeleton() {
         <Skeleton className="mt-3 h-4 w-96 max-w-full" />
         <Skeleton className="mt-6 h-2 w-full rounded-full" />
       </Card>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className={cx('grid gap-3', mode === 'desktop' ? 'grid-cols-4' : 'grid-cols-2')}>
         {[0, 1, 2, 3].map((i) => (
           <Card key={i} className="p-4">
             <Skeleton className="h-3.5 w-24" />
@@ -438,14 +501,25 @@ export function ResultsSkeleton() {
 }
 
 export function PageSkeleton() {
+  const { mode, duoPosture, width } = useDisplayMode();
+  const maxWClass =
+    mode === 'mobile'
+      ? 'max-w-[460px]'
+      : mode === 'tablet'
+        ? 'max-w-[940px]'
+        : mode === 'duo'
+          ? 'max-w-[1360px]'
+          : 'max-w-[1280px]';
+  const isTwoCol = mode === 'desktop' || (mode === 'tablet' && width >= 768) || (mode === 'duo' && duoPosture === 'book' && width >= 560);
+
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6 animate-fade" aria-busy="true">
+    <div className={cx('mx-auto w-full space-y-6 px-4 py-10 sm:px-6 animate-fade', maxWClass)} aria-busy="true">
       <div className="space-y-3">
         <Skeleton className="h-4 w-36 rounded-full" />
         <Skeleton className="h-9 w-80 max-w-full" />
         <Skeleton className="h-4 w-[480px] max-w-full" />
       </div>
-      <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
+      <div className={cx('grid items-start gap-5', isTwoCol && 'grid-cols-[380px_minmax(0,1fr)]')}>
         <Card className="space-y-4 p-5 sm:p-6">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-24 w-full" />

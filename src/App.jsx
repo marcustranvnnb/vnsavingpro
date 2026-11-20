@@ -3,8 +3,10 @@ import { RotateCcw, ShieldAlert } from 'lucide-react';
 import { AppProvider, href, navigate, useRoute } from './state.jsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { I18nProvider, LANG_STORAGE_KEY } from './i18n/index.jsx';
+import { DisplayModeProvider, useDisplayMode } from './layout/DisplayModeContext.jsx';
 import { cryptoStorage } from './utils/cryptoStorage.js';
-import { TopNav, MobileTabBar, Footer } from './components/Layout.jsx';
+import { TopNav, LayoutModeBanner, MobileTabBar, Footer } from './components/Layout.jsx';
+import { PageContainer } from './components/AdaptiveLayout.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
 import { DataModal } from './components/DataModal.jsx';
 import { CookieBanner } from './components/CookieBanner.jsx';
@@ -28,6 +30,7 @@ const pages = {
 function Shell() {
   const { route, params } = useRoute();
   const { passwordRecoveryMode } = useAuth();
+  const { mode, duoPosture, isTabletSplit, isPreviewConstrained } = useDisplayMode();
   const [dataOpen, setDataOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [cookieOpen, setCookieOpen] = useState(false);
@@ -64,15 +67,37 @@ function Shell() {
     }
   }, [passwordRecoveryMode, route]);
 
+  const pageVerticalClass =
+    mode === 'duo' && duoPosture === 'tabletop'
+      ? 'pt-4 pb-8'
+      : mode === 'duo'
+        ? 'pt-5 pb-10'
+        : mode === 'mobile'
+          ? 'pt-5 pb-28'
+          : mode === 'tablet'
+            ? isTabletSplit
+              ? 'pt-7 pb-12'
+              : 'pt-7 pb-24'
+            : 'pt-10 pb-16';
+
+  const previewFrameClass = isPreviewConstrained
+    ? mode === 'mobile'
+      ? 'mx-auto w-full max-w-[460px] border-x border-white/[0.07] bg-canvas shadow-[0_0_80px_-20px_rgba(0,0,0,0.9)]'
+      : mode === 'tablet'
+        ? 'mx-auto w-full max-w-[940px] border-x border-white/[0.07] bg-canvas shadow-[0_0_80px_-20px_rgba(0,0,0,0.9)]'
+        : ''
+    : '';
+
   return (
     <div className="flex min-h-dvh flex-col">
       <TopNav route={route} onOpenData={() => setDataOpen(true)} onOpenAuth={() => setAuthOpen(true)} />
-      <main className="flex-1">
+      <LayoutModeBanner />
+      <main className={`flex-1 ${previewFrameClass}`}>
         {Page ? (
           <Suspense fallback={<PageSkeleton />}>
-            <div key={route} className="mx-auto max-w-6xl animate-rise px-3.5 pb-24 pt-6 sm:px-6 sm:pb-20 sm:pt-10 lg:pb-16 lg:pt-12">
+            <PageContainer key={route} className={`animate-rise ${pageVerticalClass}`}>
               <Page params={params} />
-            </div>
+            </PageContainer>
           </Suspense>
         ) : (
           <Home onOpenAuth={() => setAuthOpen(true)} onOpenData={() => setDataOpen(true)} />
@@ -176,11 +201,13 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <I18nProvider>
-        <AppProvider>
-          <AuthProvider>
-            <Shell />
-          </AuthProvider>
-        </AppProvider>
+        <DisplayModeProvider>
+          <AppProvider>
+            <AuthProvider>
+              <Shell />
+            </AuthProvider>
+          </AppProvider>
+        </DisplayModeProvider>
       </I18nProvider>
     </AppErrorBoundary>
   );

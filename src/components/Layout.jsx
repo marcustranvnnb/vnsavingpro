@@ -3,6 +3,7 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
+  Columns2,
   Cookie,
   Globe,
   Home,
@@ -10,7 +11,13 @@ import {
   LayoutGrid,
   LogIn,
   LogOut,
+  Monitor,
+  MonitorSmartphone,
+  RotateCcw,
+  Rows2,
   ShieldCheck,
+  Smartphone,
+  Tablet,
   User,
 } from 'lucide-react';
 import {
@@ -21,9 +28,19 @@ import {
   getLocalizedVersionLabel,
 } from '../tools.js';
 import { SUPPORTED_LANGS, useI18n } from '../i18n/index.jsx';
+import { DISPLAY_MODES, DUO_POSTURES, useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
+import { PageContainer } from './AdaptiveLayout.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
+
+const MODE_ICONS = {
+  auto: MonitorSmartphone,
+  mobile: Smartphone,
+  tablet: Tablet,
+  duo: Columns2,
+  desktop: Monitor,
+};
 
 export function LanguageSwitcher({ compact = false, className }) {
   const { lang, setLang, tx } = useI18n();
@@ -73,6 +90,205 @@ export function LanguageSwitcher({ compact = false, className }) {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+export function DisplayModeSwitcher({ compact = false, className }) {
+  const { lang, tx } = useI18n();
+  const {
+    mode,
+    autoMode,
+    preference,
+    duoPosture,
+    duoPosturePref,
+    width,
+    height,
+    hardwareFoldable,
+    isFoldableInner,
+    isForced,
+    setPreference,
+    setDuoPosture,
+  } = useDisplayMode();
+  const [open, setOpen] = useState(false);
+
+  const activeMeta = DISPLAY_MODES.find((m) => m.id === preference) || DISPLAY_MODES[0];
+  const resolvedMeta = DISPLAY_MODES.find((m) => m.id === mode) || DISPLAY_MODES[0];
+  const ActiveIcon = MODE_ICONS[isForced ? mode : 'auto'] || MonitorSmartphone;
+
+  return (
+    <div className={cx('relative', className)}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={tx('Chọn chế độ màn hình', 'Select display layout mode', '画面レイアウトを選択')}
+        title={tx(
+          'Chế độ hiển thị: Mobile · Tablet · Duo/Fold · Desktop',
+          'Display Layout: Mobile · Tablet · Duo/Fold · Desktop',
+          '画面表示切替：Mobile · Tablet · Duo/Fold · PC'
+        )}
+        className={cx(
+          'flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-medium transition',
+          isForced
+            ? 'border-indigo-400/40 bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/25'
+            : 'border-white/10 bg-white/[0.04] text-zinc-200 hover:bg-white/[0.08] hover:text-white'
+        )}
+      >
+        <ActiveIcon className="size-3.5 text-indigo-300" />
+        <span className={compact ? 'hidden sm:inline' : ''}>
+          {isForced ? resolvedMeta.shortLabel[lang] : activeMeta.shortLabel[lang]}
+        </span>
+        <ChevronDown className={cx('size-3 text-zinc-400 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[92vw] animate-pop rounded-2xl border border-white/10 bg-elevated p-2 shadow-2xl">
+            <div className="mb-1.5 flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-[11px]">
+              <span className="text-zinc-400">
+                {tx('Màn hình thực:', 'Viewport:', '検出画面：')}{' '}
+                <strong className="font-mono text-zinc-200">
+                  {width}×{height}
+                </strong>
+              </span>
+              <Badge tone={hardwareFoldable || isFoldableInner ? 'brand' : 'neutral'}>
+                {hardwareFoldable || isFoldableInner
+                  ? tx('Duo / Fold', 'Foldable', '折りたたみ')
+                  : autoMode.toUpperCase()}
+              </Badge>
+            </div>
+
+            <div className="space-y-1">
+              {DISPLAY_MODES.map((item) => {
+                const Icon = MODE_ICONS[item.id] || MonitorSmartphone;
+                const active = preference === item.id;
+                const isEffective = mode === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setPreference(item.id);
+                      if (item.id !== 'duo') setOpen(false);
+                    }}
+                    className={cx(
+                      'flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left transition',
+                      active
+                        ? 'bg-indigo-500/15 ring-1 ring-inset ring-indigo-400/35'
+                        : 'hover:bg-white/[0.05]'
+                    )}
+                  >
+                    <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-indigo-300">
+                      <Icon className="size-3.5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-white">{item.label[lang]}</span>
+                        <span className="flex items-center gap-1">
+                          {item.id !== 'auto' && isEffective && preference === 'auto' && (
+                            <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-zinc-300">
+                              {tx('Đang dùng', 'Active', '現在')}
+                            </span>
+                          )}
+                          {active && <Check className="size-3.5 text-emerald-400" />}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-zinc-400">{item.desc[lang]}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {mode === 'duo' && (
+              <div className="mt-2 border-t border-white/[0.08] pt-2">
+                <div className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
+                  {tx('Tư thế Duo / Màn hình gập', 'Duo / Fold Posture', 'Duo / 折りたたみ姿勢')}
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {DUO_POSTURES.map((p) => {
+                    const active = duoPosturePref === p.id;
+                    const Icon = p.id === 'tabletop' ? Rows2 : p.id === 'book' ? Columns2 : MonitorSmartphone;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setDuoPosture(p.id);
+                          setOpen(false);
+                        }}
+                        className={cx(
+                          'flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium ring-1 ring-inset transition',
+                          active
+                            ? 'bg-indigo-500/20 text-white ring-indigo-400/40'
+                            : 'bg-white/[0.03] text-zinc-400 ring-white/[0.07] hover:text-white'
+                        )}
+                        title={p.desc[lang]}
+                      >
+                        <Icon className="size-3.5 text-indigo-300" />
+                        <span className="truncate">{p.id === 'auto' ? 'Auto' : p.id === 'book' ? 'Book' : 'Flex'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 px-1 text-[10px] text-zinc-500">
+                  {duoPosture === 'book'
+                    ? tx('Đang hiển thị Book 2 nửa Trái | Phải.', 'Active: Side-by-side Book posture.', '現在：左右 Book モード')
+                    : tx('Đang hiển thị Flex Trên / Dưới.', 'Active: Top/Bottom Flex posture.', '現在：上下 Flex モード')}
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function LayoutModeBanner() {
+  const { lang, tx } = useI18n();
+  const { mode, width, duoPosture, isForced, setDuoPosture, resetAuto } = useDisplayMode();
+  if (!isForced) return null;
+
+  const activeLabel = (DISPLAY_MODES.find((m) => m.id === mode) || DISPLAY_MODES[0]).label[lang];
+
+  return (
+    <div className="print-hidden border-b border-indigo-400/20 bg-indigo-500/[0.07] text-xs text-indigo-100">
+      <PageContainer className="flex flex-wrap items-center justify-between gap-2 py-1.5">
+        <span className="flex items-center gap-2">
+          <MonitorSmartphone className="size-3.5 text-indigo-300" />
+          <span>
+            {tx('Đang xem chế độ:', 'Layout preview:', '表示レイアウト：')}{' '}
+            <strong className="text-white">{activeLabel}</strong>
+            {mode === 'duo' && (
+              <span className="ml-1 text-indigo-300">
+                ({duoPosture === 'book' ? 'Book' : 'Flex/Tabletop'})
+              </span>
+            )}
+          </span>
+        </span>
+        <div className="flex items-center gap-2">
+          {mode === 'duo' && width >= 560 && (
+            <button
+              type="button"
+              onClick={() => setDuoPosture(duoPosture === 'book' ? 'tabletop' : 'book')}
+              className="rounded-lg bg-white/[0.07] px-2 py-0.5 text-[11px] font-medium text-white transition hover:bg-white/[0.14]"
+            >
+              {duoPosture === 'book'
+                ? tx('Đổi Flex (Trên/Dưới)', 'Flex (Top/Bottom)', 'Flex(上下)へ')
+                : tx('Đổi Book (Trái/Phải)', 'Book (Left/Right)', 'Book(左右)へ')}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={resetAuto}
+            className="inline-flex items-center gap-1 rounded-lg bg-indigo-500/25 px-2.5 py-0.5 text-[11px] font-medium text-white transition hover:bg-indigo-500/40"
+          >
+            <RotateCcw className="size-3" /> {tx('Về Tự động', 'Reset Auto', '自動に戻す')}
+          </button>
+        </div>
+      </PageContainer>
     </div>
   );
 }
@@ -233,7 +449,7 @@ function MoreMenu({ route }) {
   );
 }
 
-function UserMenu({ onOpenAuth }) {
+function UserMenu({ onOpenAuth, compact = false }) {
   const { user, profile, authConfigured, signOut } = useAuth();
   const { tx } = useI18n();
   const notify = useToast();
@@ -245,7 +461,7 @@ function UserMenu({ onOpenAuth }) {
     return (
       <Button variant="secondary" size="sm" onClick={onOpenAuth} aria-label={tx('Đăng nhập', 'Sign in', 'ログイン')}>
         <LogIn className="size-4" />
-        <span className="hidden sm:inline">{tx('Đăng nhập', 'Sign in', 'ログイン')}</span>
+        {!compact && <span className="hidden sm:inline">{tx('Đăng nhập', 'Sign in', 'ログイン')}</span>}
       </Button>
     );
   }
@@ -259,7 +475,7 @@ function UserMenu({ onOpenAuth }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-8 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] pl-1.5 pr-2.5 text-xs font-medium text-white transition hover:bg-white/[0.08]"
+        className="flex h-8 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] pl-1.5 pr-2 text-xs font-medium text-white transition hover:bg-white/[0.08]"
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="size-5 rounded-lg object-cover" />
@@ -268,7 +484,7 @@ function UserMenu({ onOpenAuth }) {
             {initials}
           </span>
         )}
-        <span className="hidden max-w-[100px] truncate sm:inline">{displayName}</span>
+        {!compact && <span className="hidden max-w-[100px] truncate sm:inline">{displayName}</span>}
         <ChevronDown className={cx('size-3 text-zinc-400 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
@@ -305,24 +521,180 @@ function UserMenu({ onOpenAuth }) {
   );
 }
 
-export function TopNav({ route, onOpenData, onOpenAuth }) {
+function TabletToolBar({ route }) {
   const { lang, tx } = useI18n();
-  const primary = getLocalizedTools(lang).filter((t) => t.primary);
+  const all = [{ id: 'home', short: tx('Trang chủ', 'Home', 'ホーム'), icon: Home }, ...getLocalizedTools(lang)];
 
   return (
+    <div className="border-t border-white/[0.05] bg-canvas/60">
+      <PageContainer>
+        <nav className="no-scrollbar flex items-center gap-1.5 overflow-x-auto py-1.5">
+          {all.map((t) => {
+            const active = route === t.id;
+            return (
+              <a
+                key={t.id}
+                href={href(t.id)}
+                className={cx(
+                  'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                  active
+                    ? 'bg-indigo-500/20 text-white ring-1 ring-inset ring-indigo-400/35'
+                    : 'text-zinc-400 hover:bg-white/[0.05] hover:text-white'
+                )}
+              >
+                <t.icon className="size-3.5 text-indigo-300" />
+                {t.short}
+              </a>
+            );
+          })}
+        </nav>
+      </PageContainer>
+    </div>
+  );
+}
+
+export function TopNav({ route, onOpenData, onOpenAuth }) {
+  const { lang, tx } = useI18n();
+  const { mode, duoPosture, width, isCoverScreen } = useDisplayMode();
+  const primary = getLocalizedTools(lang).filter((t) => t.primary);
+
+  if (mode === 'mobile') {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/85 backdrop-blur-xl">
+        <PageContainer className="flex h-13 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <Logo />
+            {!isCoverScreen && <VersionBadge compact />}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <DisplayModeSwitcher compact />
+            <LanguageSwitcher compact />
+            <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
+              <ShieldCheck className="size-4" />
+            </Button>
+            <UserMenu onOpenAuth={onOpenAuth} compact />
+          </div>
+        </PageContainer>
+      </header>
+    );
+  }
+
+  if (mode === 'tablet') {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/80 backdrop-blur-xl">
+        <PageContainer className="flex h-14 items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Logo />
+            <VersionBadge compact />
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <DisplayModeSwitcher compact />
+            <LanguageSwitcher compact />
+            <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
+              <ShieldCheck className="size-4" />
+              <span className="hidden sm:inline">{tx('Dữ liệu', 'Data', 'データ')}</span>
+            </Button>
+            <UserMenu onOpenAuth={onOpenAuth} />
+          </div>
+        </PageContainer>
+        <TabletToolBar route={route} />
+      </header>
+    );
+  }
+
+  if (mode === 'duo' && duoPosture === 'book' && width >= 560) {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/85 backdrop-blur-xl">
+        <PageContainer>
+          <div className="duo-book-grid min-h-14 py-1.5">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="flex shrink-0 items-center gap-2">
+                <Logo />
+                <VersionBadge compact className="hidden xl:inline-flex" />
+              </div>
+              <nav className="no-scrollbar flex items-center gap-0.5 overflow-x-auto">
+                {primary.map((t) => (
+                  <a
+                    key={t.id}
+                    href={href(t.id)}
+                    className={cx(
+                      'shrink-0 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium transition-colors',
+                      route === t.id ? 'bg-indigo-500/20 text-white' : 'text-zinc-400 hover:text-white'
+                    )}
+                  >
+                    {t.short}
+                  </a>
+                ))}
+              </nav>
+            </div>
+            <div className="duo-hinge-vertical" aria-hidden="true" />
+            <div className="flex min-w-0 items-center justify-between gap-1.5">
+              <MoreMenu route={route} />
+              <div className="flex shrink-0 items-center gap-1.5">
+                <DisplayModeSwitcher compact />
+                <LanguageSwitcher compact />
+                <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
+                  <ShieldCheck className="size-4" />
+                </Button>
+                <UserMenu onOpenAuth={onOpenAuth} compact />
+              </div>
+            </div>
+          </div>
+        </PageContainer>
+      </header>
+    );
+  }
+
+  if (mode === 'duo') {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/85 backdrop-blur-xl">
+        <PageContainer className="flex h-11 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <Logo />
+            <nav className="no-scrollbar hidden items-center gap-0.5 overflow-x-auto sm:flex">
+              {primary.map((t) => (
+                <a
+                  key={t.id}
+                  href={href(t.id)}
+                  className={cx(
+                    'shrink-0 whitespace-nowrap rounded-lg px-2 py-1 text-xs transition-colors',
+                    route === t.id ? 'bg-white/[0.08] text-white' : 'text-zinc-400 hover:text-white'
+                  )}
+                >
+                  {t.short}
+                </a>
+              ))}
+              <MoreMenu route={route} />
+            </nav>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <DisplayModeSwitcher compact />
+            <LanguageSwitcher compact />
+            <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
+              <ShieldCheck className="size-4" />
+            </Button>
+            <UserMenu onOpenAuth={onOpenAuth} compact />
+          </div>
+        </PageContainer>
+      </header>
+    );
+  }
+
+  // Desktop mode
+  return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/75 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-3 sm:gap-4 sm:px-6 lg:gap-5">
-        <div className="flex min-w-0 items-center gap-2">
+      <PageContainer className="flex h-14 items-center gap-4">
+        <div className="flex min-w-0 items-center gap-2.5">
           <Logo />
-          <VersionBadge compact className="hidden min-[400px]:inline-flex md:hidden xl:inline-flex" />
+          <VersionBadge compact />
         </div>
-        <nav className="hidden items-center gap-0.5 md:flex">
+        <nav className="flex items-center gap-0.5">
           {primary.map((t) => (
             <a
               key={t.id}
               href={href(t.id)}
               className={cx(
-                'whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[13px] transition-colors lg:px-3 lg:text-sm',
+                'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors',
                 route === t.id ? 'bg-white/[0.06] text-white' : 'text-zinc-400 hover:text-white'
               )}
             >
@@ -331,20 +703,21 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
           ))}
           <MoreMenu route={route} />
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <DisplayModeSwitcher compact />
           <LanguageSwitcher compact />
           <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
             <ShieldCheck className="size-4" />
-            <span className="hidden lg:inline">{tx('Dữ liệu', 'Data', 'データ')}</span>
+            <span>{tx('Dữ liệu', 'Data', 'データ')}</span>
           </Button>
           <UserMenu onOpenAuth={onOpenAuth} />
           {route !== 'plan' && (
-            <Button as="a" href={href('plan')} variant="primary" size="sm" className="hidden xl:inline-flex">
+            <Button as="a" href={href('plan')} variant="primary" size="sm">
               {tx('Lập kế hoạch', 'Start Planning', 'プラン作成')}
             </Button>
           )}
         </div>
-      </div>
+      </PageContainer>
     </header>
   );
 }
@@ -353,7 +726,11 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
   const [sheet, setSheet] = useState(false);
   const { user, authConfigured } = useAuth();
   const { lang, setLang, tx } = useI18n();
+  const { mode, duoPosture, duoPosturePref, width, preference, setPreference, setDuoPosture } = useDisplayMode();
   useEffect(() => setSheet(false), [route]);
+
+  const showMobileBar = mode === 'mobile' || (mode === 'duo' && duoPosture === 'tabletop' && width < 640);
+  if (!showMobileBar) return null;
 
   const localizedTools = getLocalizedTools(lang);
   const primary = localizedTools.filter((t) => t.primary);
@@ -362,8 +739,8 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-canvas/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-5">
+      <nav className="print-hidden fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.07] bg-canvas/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
+        <div className="mx-auto grid max-w-[460px] grid-cols-5">
           {items.map((t) => {
             const active = route === t.id;
             return (
@@ -393,7 +770,7 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
           </button>
         </div>
       </nav>
-      <Modal open={sheet} onClose={() => setSheet(false)} title={tx('Công cụ & Tài khoản', 'Tools & Account', 'ツール・アカウント')}>
+      <Modal open={sheet} onClose={() => setSheet(false)} title={tx('Công cụ & Hiển thị', 'Tools & Display', 'ツール・画面設定')}>
         <div className="space-y-4">
           <div className="grid gap-1.5">
             {localizedTools.slice(3).map((t) => (
@@ -418,13 +795,7 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
 
           <div className="grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3">
             {user ? (
-              <Button
-                as="a"
-                href={href('profile')}
-                variant="secondary"
-                size="sm"
-                onClick={() => setSheet(false)}
-              >
+              <Button as="a" href={href('profile')} variant="secondary" size="sm" onClick={() => setSheet(false)}>
                 <User className="size-3.5 text-indigo-300" /> {tx('Hồ sơ & Kịch bản', 'Profile & Plans', 'プロフィール')}
               </Button>
             ) : (
@@ -455,6 +826,49 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
               >
                 <ShieldCheck className="size-3.5 text-emerald-300" /> {tx('Dữ liệu & Cloud', 'Data & Cloud', 'データ管理')}
               </Button>
+            )}
+          </div>
+
+          <div className="space-y-2 border-t border-white/[0.06] pt-3 text-xs text-zinc-400">
+            <span className="flex items-center gap-1.5 font-medium text-zinc-300">
+              <MonitorSmartphone className="size-3.5 text-indigo-300" />
+              {tx('Chế độ màn hình:', 'Display layout:', '画面レイアウト：')}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {DISPLAY_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setPreference(m.id)}
+                  className={cx(
+                    'rounded-lg px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition',
+                    preference === m.id
+                      ? 'bg-indigo-500/20 text-white ring-indigo-400/40'
+                      : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08] hover:text-white'
+                  )}
+                >
+                  {m.shortLabel[lang]}
+                </button>
+              ))}
+            </div>
+            {mode === 'duo' && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {DUO_POSTURES.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setDuoPosture(p.id)}
+                    className={cx(
+                      'rounded-lg px-2 py-1 text-[11px] font-medium ring-1 ring-inset transition',
+                      duoPosturePref === p.id
+                        ? 'bg-emerald-500/20 text-emerald-200 ring-emerald-400/40'
+                        : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08]'
+                    )}
+                  >
+                    {p.label[lang]}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
@@ -494,11 +908,24 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
 
 export function Footer({ onOpenCookies }) {
   const { lang, setLang, tx } = useI18n();
+  const { mode, isTabletSplit, preference, setPreference } = useDisplayMode();
   const localizedTools = getLocalizedTools(lang);
 
+  const bottomPadClass =
+    mode === 'mobile'
+      ? 'pb-36'
+      : mode === 'tablet' && !isTabletSplit
+        ? 'pb-20'
+        : 'pb-6';
+
   return (
-    <footer className="border-t border-white/[0.06] pb-36 md:pb-20 lg:pb-0">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-start md:justify-between">
+    <footer className={cx('border-t border-white/[0.06]', bottomPadClass)}>
+      <PageContainer
+        className={cx(
+          'flex flex-col gap-6 py-10',
+          (mode === 'desktop' || mode === 'tablet' || mode === 'duo') && 'sm:flex-row sm:items-start sm:justify-between'
+        )}
+      >
         <div className="max-w-md">
           <Logo />
           <p className="mt-3 text-xs leading-relaxed text-zinc-500">
@@ -516,9 +943,9 @@ export function Footer({ onOpenCookies }) {
             </a>
           ))}
         </div>
-      </div>
+      </PageContainer>
       <div className="border-t border-white/[0.04]">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-xs text-zinc-600 sm:px-6">
+        <PageContainer className="flex flex-wrap items-center justify-between gap-3 py-5 text-xs text-zinc-600">
           <div className="flex flex-wrap items-center gap-2">
             <span>© 2026 VnSavingPro</span>
             <VersionBadge />
@@ -546,6 +973,21 @@ export function Footer({ onOpenCookies }) {
                 </button>
               ))}
             </div>
+            <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-white/[0.03] p-0.5 ring-1 ring-inset ring-white/[0.08]">
+              {DISPLAY_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setPreference(m.id)}
+                  className={cx(
+                    'rounded-full px-2 py-0.5 text-[11px] font-medium transition',
+                    preference === m.id ? 'bg-indigo-500/25 text-indigo-200' : 'text-zinc-400 hover:text-white'
+                  )}
+                >
+                  {m.shortLabel[lang]}
+                </button>
+              ))}
+            </div>
           </div>
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="size-3.5 shrink-0" />{' '}
@@ -555,7 +997,7 @@ export function Footer({ onOpenCookies }) {
               'サーバーAPIで安全に計算 — 個人データは許可なくサーバーへ保存されません。'
             )}
           </span>
-        </div>
+        </PageContainer>
       </div>
     </footer>
   );

@@ -8,6 +8,15 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v1.8.0.0',
+    date: '20/11/2026',
+    title: 'Hệ thống Layout đa màn hình đồng nhất (Mobile · Tablet · Duo/Fold · Desktop)',
+    items: [
+      'Chuẩn hoá kiến trúc layout Adaptive dùng chung cho toàn bộ trang (PageContainer, WorkspaceSplit, DualPaneSection, AdaptiveGrid): chỉnh sửa 1 nơi tự động đồng bộ khắp mọi màn hình.',
+      'Thêm tuỳ chọn chế độ màn hình Auto / Mobile / Tablet / Duo & Fold / PC cùng 2 tư thế Book (2 cột né nếp gấp) và Flex / Tabletop (trên-dưới) cho Galaxy Fold, iPhone Duo, Pixel Fold và Surface Duo (hỗ trợ chuẩn W3C Viewport Segments).',
+    ],
+  },
+  {
     version: 'v1.7.0.0',
     date: '19/11/2026',
     title: 'Đa ngôn ngữ Việt · Anh · Nhật (VI · EN · JA)',
@@ -334,12 +343,28 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Multilingual (VI · EN · JA) · Household Planning · Daily Sync';
-  if (lang === 'ja') return '多言語対応（VI · EN · JA）・世帯別設計・毎日金利自動同期';
+  if (lang === 'en') return 'Adaptive Multi-Screen Layout (Mobile · Tablet · Duo/Fold · Desktop) · Daily Sync';
+  if (lang === 'ja') return 'マルチ画面統合レイアウト（Mobile · Tablet · Duo/Fold · PC）・毎日自動同期';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v1.8.0.0': {
+    en: {
+      title: 'Unified Multi-Screen Adaptive Layout (Mobile · Tablet · Duo/Fold · Desktop)',
+      items: [
+        'Unified PageContainer, WorkspaceSplit, DualPaneSection, and AdaptiveGrid primitives across every page so layout updates propagate consistently to all screen types.',
+        'Added Auto / Mobile / Tablet / Duo & Fold / Desktop switcher plus hinge-safe Book (side-by-side) and Flex/Tabletop (top-bottom) postures for Galaxy Fold, iPhone Duo, Pixel Fold & W3C Viewport Segments.',
+      ],
+    },
+    ja: {
+      title: 'マルチ画面統合レイアウト（Mobile · Tablet · Duo/Fold · Desktop）',
+      items: [
+        '全ページ共通の PageContainer / WorkspaceSplit / DualPaneSection / AdaptiveGrid を導入し、どの画面サイズでも一貫したレイアウト更新を実現しました。',
+        'Auto / Mobile / Tablet / Duo・Fold / PC 切替および Galaxy Fold・iPhone Duo 等向けのヒンジ回避 Book（左右2画面）・Flex/Tabletop（上下2画面）モードに対応しました。',
+      ],
+    },
+  },
   'v1.7.0.0': {
     en: {
       title: 'Full 3-Language Support (Vietnamese · English · Japanese)',

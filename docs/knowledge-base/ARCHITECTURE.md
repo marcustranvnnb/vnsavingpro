@@ -59,12 +59,14 @@ flowchart TD
 ## 4. Design System, Responsive Layout & App Versioning (`src/index.css`, `src/components/ui.jsx`, `src/version.json`)
 
 - **Theme**: Dark-first financial dashboard (`bg-canvas` `#08090b`, `bg-surface` `#0e0f13`, `bg-elevated` `#16181d`, indigo/emerald accents, `Inter` font with `tabular-nums`).
+- **Unified Multi-Screen Adaptive Layout Engine (`src/layout/DisplayModeContext.jsx` & `src/components/AdaptiveLayout.jsx`, `src/index.css`)**:
+  - `DisplayModeProvider` + pure `detectViewportMetrics()` automatically classifies devices into `mobile` (`<640px`), `tablet` (`640–1024px`, portrait stack vs. split `>=768px`), `duo` (Galaxy Z Fold, iPhone Duo/Fold, Pixel Fold, Surface Duo via W3C Viewport Segments API / `@media (horizontal-viewport-segments: 2)` & `(vertical-viewport-segments: 2)` plus near-square touch inner screen heuristic), or `desktop` (`>=1024px`).
+  - Users can switch layout explicitly via **Auto | Mobile | Tablet | Duo / Fold | PC/Desktop** (`DisplayModeSwitcher` in `TopNav`, `MobileTabBar` sheet, `Footer`, and `Profile`) and toggle Duo postures between **Book** (side-by-side 2 panes avoiding vertical fold crease `--duo-hinge-gap`) and **Flex / Tabletop** (results pinned on top pane, controls on bottom pane).
+  - Every page (`Home`, `Planner`, `Calculator`, `Ladder`, `Career`, `Inflation`, `Rates`, `Profile`) composes from unified primitives `PageContainer`, `WorkspaceSplit`, `DualPaneSection`, `AdaptiveGrid`, and `StickyResultBar` so layout changes propagate uniformly across all screen types.
+  - `overflow-x: clip` prevents horizontal overflow; Modals & Toasts dock into the right screen in Duo Book mode, anchor as bottom sheets in Mobile mode, and center on Tablet/Desktop.
 - **4-Part App Versioning (`src/version.json` + `scripts/bump-version.js` + `AGENTS.md`)**:
-  - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0`, synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part).
+  - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0` (currently `1.8.0.0`), synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part).
   - Run `npm run version:bump` (or `node scripts/bump-version.js [build|patch|minor|major]`) on every committed update.
-- **Responsive Breakpoints (Mobile `<640px`, Tablet `640px–1024px`, PC/Desktop `>=1024px`)**:
-  - `overflow-x: clip` on `html, body` prevents horizontal scroll while preserving sticky sidebars on Desktop (`lg:sticky lg:top-20`).
-  - Mobile & touch devices: `text-base sm:text-sm` on text inputs (prevents iOS focus zoom), `@media (pointer: coarse)` 22px slider thumbs, `min-h-[44px]`/`min-h-[52px]` tap targets, bottom-sheet modal grab handles, `MobileTabBar` quick account/data/version sheet, and tablet-centered (`md:max-w-xl`) sticky result bars that clear both `MobileTabBar` and `Footer` (`pb-36 md:pb-20 lg:pb-0`).
 - **Reusable Primitives (`src/components/ui.jsx`)**:
   - `NumberInput` manages `focused` + `draft` state so typing or clearing digits never jumps the cursor or locks on `0`.
   - `@media print` in `src/index.css` expands scrollable tables and hides navigation/action controls for clean PDF printing.

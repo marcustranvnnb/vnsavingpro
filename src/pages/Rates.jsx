@@ -30,6 +30,7 @@ import {
   Table,
   cx,
 } from '../components/ui.jsx';
+import { AdaptiveGrid } from '../components/AdaptiveLayout.jsx';
 
 const TENURES = ['1W', '2W', '3W', '1M', '3M', '6M', '9M', '12M', '18M', '24M', '36M'];
 const KEY_TENURES = ['1M', '3M', '6M', '9M', '12M', '18M', '24M'];
@@ -305,7 +306,7 @@ export default function Rates() {
           </Card>
 
           {/* Ranked cards for selected tenure */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 4 }} hingeAligned>
             {sorted.map(({ bank, rate, custom }, idx) => {
               const copy = getBankCopy(bank, lang);
               return (
@@ -404,7 +405,7 @@ export default function Rates() {
                 </Card>
               );
             })}
-          </div>
+          </AdaptiveGrid>
 
           {/* Full cross-tenure matrix */}
           <Card className="p-5 sm:p-6">
@@ -455,7 +456,7 @@ export default function Rates() {
         </div>
       ) : (
         /* Detailed bank packages view */
-        <div className="grid gap-5 lg:grid-cols-2">
+        <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 2 }} hingeAligned gap="gap-5">
           {Object.values(DIGITAL_BANKS).map((b) => {
             const matched = banks.find((x) => x.id === b.id) || { color: b.color, logoText: b.shortName };
             return (
@@ -491,7 +492,7 @@ export default function Rates() {
               </Card>
             );
           })}
-        </div>
+        </AdaptiveGrid>
       )}
 
       <RateDisclaimer className="mt-6" />

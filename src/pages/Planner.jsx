@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
-  ArrowDown,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -31,6 +30,7 @@ import { copyReportForGoogleDocs, downloadGoogleDocsFile } from '../utils/google
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
 import { compact, chip, duration, fmt, pct, vnd } from '../utils/format.js';
+import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { HouseholdInsightsCard } from '../components/HouseholdInsightsCard.jsx';
 import {
@@ -1163,9 +1163,35 @@ export default function Planner({ params = {} }) {
         }
       />
 
-      <div className="grid items-start gap-5 lg:grid-cols-[380px_minmax(0,1fr)]">
-        {/* Inputs */}
-        <Card className="space-y-5 p-5 sm:p-6 lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+      <WorkspaceSplit
+        resultsId="planner-results"
+        mobileSummary={{
+          eyebrow: isSavingSolver
+            ? tx(
+                `Cần gửi / tháng (${targetYears} năm)`,
+                `Save / month (${targetYears} yrs)`,
+                `毎月積立 (${targetYears}年)`
+              )
+            : tx(
+                `Đích đến (${pct(rate, undefined, lang)}/năm)`,
+                `Goal (${pct(rate, undefined, lang)}/yr)`,
+                `目標 (年利 ${pct(rate, undefined, lang)})`
+              ),
+          value: (
+            <>
+              {roadmap.isAlreadyReached
+                ? tx('Đã đạt mục tiêu', 'Goal reached', '目標達成済み')
+                : isSavingSolver
+                  ? `${compact(roadmap.requiredMonthlyDeposit, lang)}${tx('/th', '/mo', '/月')}`
+                  : reachable
+                    ? roadmap.timeText
+                    : tx('> 60 năm', '> 60 yrs', '60年超')}{' '}
+              · <span className="text-emerald-300">{compact(roadmap.requiredPrincipal, lang)}</span>
+            </>
+          ),
+        }}
+        controls={
+          <div className="space-y-5">
           <div className="space-y-2 border-b border-white/[0.06] pb-4">
             <div className="flex items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
@@ -1695,10 +1721,10 @@ export default function Planner({ params = {} }) {
               </div>
             </div>
           )}
-        </Card>
-
-        {/* ── Results ── */}
-        <div id="planner-results" className="min-w-0 space-y-5">
+          </div>
+        }
+        results={
+          <div className="space-y-5">
           {!initialized && loading ? (
             <ResultsSkeleton />
           ) : (
@@ -1913,7 +1939,7 @@ export default function Planner({ params = {} }) {
           </Card>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <AdaptiveGrid cols={{ mobile: 2, tablet: 2, duo: 2, desktop: 4 }}>
             {isTargetAmount ? (
               <Stat
                 icon={Coins}
@@ -1986,7 +2012,7 @@ export default function Planner({ params = {} }) {
               hint={feasibility.ratingLabel}
               className="card-interactive"
             />
-          </div>
+          </AdaptiveGrid>
 
           {/* Insights right below Stats */}
           {(feasibility.strengths.length > 0 || feasibility.warnings.length > 0) && (
@@ -2129,7 +2155,7 @@ export default function Planner({ params = {} }) {
               }
               description={tx('So với kế hoạch hiện tại của bạn.', 'Compared to your current baseline plan.', '現在のプランとの比較。')}
             />
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <AdaptiveGrid cols={{ mobile: 1, tablet: 3, duo: 1, desktop: 3 }} className="mt-5">
               {scenarios.map((s) => {
                 const saved = reachable ? roadmap.monthsNeeded - (s.r.monthsNeeded || 0) : 0;
                 const savedMonthly = s.r.savedMonthly || 0;
@@ -2167,7 +2193,7 @@ export default function Planner({ params = {} }) {
                   </div>
                 );
               })}
-            </div>
+            </AdaptiveGrid>
           </Card>
 
           {/* Stage Passbook Shelf & Expandable Matrix (Option 4) */}
@@ -2199,8 +2225,9 @@ export default function Planner({ params = {} }) {
           />
             </div>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* Google Docs Modal */}
       <Modal
@@ -2289,43 +2316,6 @@ export default function Planner({ params = {} }) {
           </p>
         </div>
       </Modal>
-      {/* Mobile / Tablet sticky live summary bar */}
-      <div className="print-hidden fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 md:inset-x-auto md:bottom-4 md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2 md:px-4 lg:hidden">
-        <button
-          type="button"
-          onClick={() => document.getElementById('planner-results')?.scrollIntoView({ behavior: 'smooth' })}
-          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-indigo-400/25 bg-elevated/95 px-4 py-2.5 text-left shadow-2xl backdrop-blur"
-        >
-          <div className="min-w-0">
-            <div className="text-[11px] text-zinc-400">
-              {isSavingSolver
-                ? tx(
-                    `Cần gửi / tháng (${targetYears} năm)`,
-                    `Save / month (${targetYears} yrs)`,
-                    `毎月積立 (${targetYears}年)`
-                  )
-                : tx(
-                    `Đích đến (${pct(rate, undefined, lang)}/năm)`,
-                    `Goal (${pct(rate, undefined, lang)}/yr)`,
-                    `目標 (年利 ${pct(rate, undefined, lang)})`
-                  )}
-            </div>
-            <div className="truncate text-sm font-semibold tabular-nums text-white">
-              {roadmap.isAlreadyReached
-                ? tx('Đã đạt mục tiêu', 'Goal reached', '目標達成済み')
-                : isSavingSolver
-                  ? `${compact(roadmap.requiredMonthlyDeposit, lang)}${tx('/th', '/mo', '/月')}`
-                  : reachable
-                    ? roadmap.timeText
-                    : tx('> 60 năm', '> 60 yrs', '60年超')}{' '}
-              · <span className="text-emerald-300">{compact(roadmap.requiredPrincipal, lang)}</span>
-            </div>
-          </div>
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/20 px-2.5 py-1 text-xs font-medium text-indigo-200">
-            {tx('Kết quả', 'Results', '結果')} <ArrowDown className="size-3" />
-          </span>
-        </button>
-      </div>
     </>
   );
 }

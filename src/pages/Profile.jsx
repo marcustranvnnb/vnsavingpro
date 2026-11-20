@@ -6,13 +6,16 @@ import {
   ExternalLink,
   KeyRound,
   LogOut,
+  MonitorSmartphone,
   Plus,
   Save,
   Shield,
   Trash2,
   User as UserIcon,
 } from 'lucide-react';
-import { Badge, Button, Card, CardHeader, PageHeader } from '../components/ui.jsx';
+import { Badge, Button, Card, CardHeader, PageHeader, cx } from '../components/ui.jsx';
+import { DualPaneSection } from '../components/AdaptiveLayout.jsx';
+import { DISPLAY_MODES, DUO_POSTURES, useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
@@ -35,6 +38,7 @@ export default function Profile() {
   } = useAuth();
   const { banks, replaceAll } = useRates();
   const { lang, tx } = useI18n();
+  const { mode, preference, duoPosturePref, setPreference, setDuoPosture } = useDisplayMode();
   const notify = useToast();
 
   const [fullName, setFullName] = useState('');
@@ -262,141 +266,196 @@ export default function Profile() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Left Column: Account & Profile Settings */}
-        <div className="space-y-6 lg:col-span-5">
-          <Card className="p-5">
-            <div className="flex items-center gap-4">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={displayName}
-                  referrerPolicy="no-referrer"
-                  className="size-14 rounded-2xl object-cover ring-1 ring-white/15"
-                />
-              ) : (
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-indigo-500/20 text-base font-semibold text-indigo-200 ring-1 ring-indigo-400/30">
-                  {initials}
+      <DualPaneSection
+        ratio="wide-right"
+        left={
+          <div className="space-y-6">
+            <Card className="p-5">
+              <div className="flex items-center gap-4">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    referrerPolicy="no-referrer"
+                    className="size-14 rounded-2xl object-cover ring-1 ring-white/15"
+                  />
+                ) : (
+                  <div className="flex size-14 items-center justify-center rounded-2xl bg-indigo-500/20 text-base font-semibold text-indigo-200 ring-1 ring-indigo-400/30">
+                    {initials}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h2 className="truncate text-base font-semibold text-white">{displayName}</h2>
+                  <p className="truncate text-xs text-zinc-400">{user.email}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Badge tone="brand">{provider}</Badge>
+                    <Badge tone="success">{tx('Đã xác thực', 'Verified', '認証済み')}</Badge>
+                  </div>
                 </div>
-              )}
-              <div className="min-w-0">
-                <h2 className="truncate text-base font-semibold text-white">{displayName}</h2>
-                <p className="truncate text-xs text-zinc-400">{user.email}</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <Badge tone="brand">{provider}</Badge>
-                  <Badge tone="success">{tx('Đã xác thực', 'Verified', '認証済み')}</Badge>
-                </div>
               </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-5">
-            <CardHeader
-              title={tx('Tuỳ chọn cá nhân', 'Preferences', '個人設定')}
-              description={tx('Đồng bộ tự động trên Supabase Postgres.', 'Auto-synced via Supabase Postgres.', 'Supabase Postgres に自動同期されます。')}
-            />
-            <form onSubmit={handleSaveProfile} className="mt-4 space-y-3.5">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-300">
-                  {tx('Tên hiển thị', 'Display Name', '表示名')}
-                </label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  maxLength={80}
-                  className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-300">
-                  {tx('Ngân hàng số ưu tiên', 'Preferred Digital Bank', '優先ネット銀行')}
-                </label>
-                <select
-                  value={defaultBankId}
-                  onChange={(e) => setDefaultBankId(e.target.value)}
-                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
-                >
-                  {banks.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-300">
-                  {tx('Mục tiêu mặc định', 'Default Goal Type', 'デフォルト目標タイプ')}
-                </label>
-                <select
-                  value={preferredGoalType}
-                  onChange={(e) => setPreferredGoalType(e.target.value)}
-                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
-                >
-                  <option value="PASSIVE_INCOME">
-                    {tx('Thu nhập thụ động hàng tháng', 'Monthly Passive Income', '毎月の不労所得')}
-                  </option>
-                  <option value="TARGET_AMOUNT">
-                    {tx('Số tiền mục tiêu cụ thể', 'Target Savings Capital', '目標積立元本')}
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-300">
-                  {tx('Chế độ tài chính mặc định', 'Default Household Mode', 'デフォルト世帯モデル')}
-                </label>
-                <select
-                  value={defaultHouseholdMode}
-                  onChange={(e) => setDefaultHouseholdMode(e.target.value)}
-                  className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
-                >
-                  <option value="INDIVIDUAL">{tx('Cá nhân', 'Individual', '個人')}</option>
-                  <option value="COUPLE">{tx('Cặp đôi (2 người có thu nhập)', 'Couple (2 Earners)', 'カップル（2人収入）')}</option>
-                  <option value="FAMILY">{tx('Gia đình (Có người phụ thuộc)', 'Family (With Dependents)', 'ファミリー（扶養家族あり）')}</option>
-                </select>
-              </div>
-
-              <Button type="submit" variant="primary" className="w-full" disabled={savingProfile}>
-                <Save className="size-4" />
-                {savingProfile
-                  ? tx('Đang lưu...', 'Saving...', '保存中...')
-                  : tx('Lưu thông tin hồ sơ', 'Save Profile', 'プロフィールを保存')}
-              </Button>
-            </form>
-          </Card>
-
-          <Card className="p-5">
-            <CardHeader
-              title={tx('Bảo mật & Mật khẩu', 'Security & Password', 'セキュリティ・パスワード')}
-              description={tx('Đặt hoặc cập nhật mật khẩu đăng nhập bằng Email.', 'Set or change your Email sign-in password.', 'メールログイン用のパスワードを設定・更新します。')}
-              right={<Shield className="size-4 text-zinc-500" />}
-            />
-            <form onSubmit={handleUpdatePassword} className="mt-4 space-y-3">
-              <input
-                type="password"
-                minLength={6}
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={tx('Nhập mật khẩu mới (tối thiểu 6 ký tự)', 'Enter new password (min 6 chars)', '新しいパスワード（6文字以上）')}
-                autoComplete="new-password"
-                className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
+            <Card className="p-5">
+              <CardHeader
+                title={tx('Giao diện & Chế độ màn hình', 'Screen & Display Layout', '画面レイアウト設定')}
+                description={tx(
+                  'Chọn bố cục tối ưu cho Mobile, Tablet, Duo / Màn hình gập (Galaxy Fold, iPhone Duo) hoặc PC.',
+                  'Pick an optimized layout for Mobile, Tablet, Duo / Foldable (Galaxy Fold, iPhone Duo), or Desktop.',
+                  'Mobile・Tablet・Duo/折りたたみ（Galaxy Fold、iPhone Duo）・PC向けレイアウトを選択できます。'
+                )}
+                right={<MonitorSmartphone className="size-4 text-indigo-300" />}
               />
-              <Button type="submit" variant="secondary" className="w-full" disabled={savingPass}>
-                <KeyRound className="size-4" />
-                {savingPass
-                  ? tx('Đang cập nhật...', 'Updating...', '更新中...')
-                  : tx('Cập nhật mật khẩu', 'Update Password', 'パスワードを更新')}
-              </Button>
-            </form>
-          </Card>
-        </div>
+              <div className="mt-4 space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {DISPLAY_MODES.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setPreference(item.id)}
+                      className={cx(
+                        'rounded-xl px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition',
+                        preference === item.id
+                          ? 'bg-indigo-500/20 text-white ring-indigo-400/45'
+                          : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08] hover:text-white'
+                      )}
+                    >
+                      {item.label[lang]}
+                    </button>
+                  ))}
+                </div>
+                {mode === 'duo' && (
+                  <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3">
+                    <p className="mb-2 text-[11px] font-medium text-indigo-200">
+                      {tx('Tư thế Duo / Màn hình gập:', 'Duo / Fold Posture:', 'Duo / 折りたたみ姿勢：')}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DUO_POSTURES.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setDuoPosture(p.id)}
+                          className={cx(
+                            'rounded-lg px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition',
+                            duoPosturePref === p.id
+                              ? 'bg-emerald-500/20 text-emerald-200 ring-emerald-400/40'
+                              : 'bg-white/[0.04] text-zinc-300 ring-white/[0.08] hover:text-white'
+                          )}
+                        >
+                          {p.label[lang]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
 
-        {/* Right Column: User Saved Plans */}
-        <div className="lg:col-span-7">
+            <Card className="p-5">
+              <CardHeader
+                title={tx('Tuỳ chọn cá nhân', 'Preferences', '個人設定')}
+                description={tx('Đồng bộ tự động trên Supabase Postgres.', 'Auto-synced via Supabase Postgres.', 'Supabase Postgres に自動同期されます。')}
+              />
+              <form onSubmit={handleSaveProfile} className="mt-4 space-y-3.5">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+                    {tx('Tên hiển thị', 'Display Name', '表示名')}
+                  </label>
+                  <input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    maxLength={80}
+                    className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+                    {tx('Ngân hàng số ưu tiên', 'Preferred Digital Bank', '優先ネット銀行')}
+                  </label>
+                  <select
+                    value={defaultBankId}
+                    onChange={(e) => setDefaultBankId(e.target.value)}
+                    className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
+                  >
+                    {banks.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+                    {tx('Mục tiêu mặc định', 'Default Goal Type', 'デフォルト目標タイプ')}
+                  </label>
+                  <select
+                    value={preferredGoalType}
+                    onChange={(e) => setPreferredGoalType(e.target.value)}
+                    className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
+                  >
+                    <option value="PASSIVE_INCOME">
+                      {tx('Thu nhập thụ động hàng tháng', 'Monthly Passive Income', '毎月の不労所得')}
+                    </option>
+                    <option value="TARGET_AMOUNT">
+                      {tx('Số tiền mục tiêu cụ thể', 'Target Savings Capital', '目標積立元本')}
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-zinc-300">
+                    {tx('Chế độ tài chính mặc định', 'Default Household Mode', 'デフォルト世帯モデル')}
+                  </label>
+                  <select
+                    value={defaultHouseholdMode}
+                    onChange={(e) => setDefaultHouseholdMode(e.target.value)}
+                    className="select h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white focus:border-indigo-400/60 focus:outline-none sm:text-sm"
+                  >
+                    <option value="INDIVIDUAL">{tx('Cá nhân', 'Individual', '個人')}</option>
+                    <option value="COUPLE">{tx('Cặp đôi (2 người có thu nhập)', 'Couple (2 Earners)', 'カップル（2人収入）')}</option>
+                    <option value="FAMILY">{tx('Gia đình (Có người phụ thuộc)', 'Family (With Dependents)', 'ファミリー（扶養家族あり）')}</option>
+                  </select>
+                </div>
+
+                <Button type="submit" variant="primary" className="w-full" disabled={savingProfile}>
+                  <Save className="size-4" />
+                  {savingProfile
+                    ? tx('Đang lưu...', 'Saving...', '保存中...')
+                    : tx('Lưu thông tin hồ sơ', 'Save Profile', 'プロフィールを保存')}
+                </Button>
+              </form>
+            </Card>
+
+            <Card className="p-5">
+              <CardHeader
+                title={tx('Bảo mật & Mật khẩu', 'Security & Password', 'セキュリティ・パスワード')}
+                description={tx('Đặt hoặc cập nhật mật khẩu đăng nhập bằng Email.', 'Set or change your Email sign-in password.', 'メールログイン用のパスワードを設定・更新します。')}
+                right={<Shield className="size-4 text-zinc-500" />}
+              />
+              <form onSubmit={handleUpdatePassword} className="mt-4 space-y-3">
+                <input
+                  type="password"
+                  minLength={6}
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={tx('Nhập mật khẩu mới (tối thiểu 6 ký tự)', 'Enter new password (min 6 chars)', '新しいパスワード（6文字以上）')}
+                  autoComplete="new-password"
+                  className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-base text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:text-sm"
+                />
+                <Button type="submit" variant="secondary" className="w-full" disabled={savingPass}>
+                  <KeyRound className="size-4" />
+                  {savingPass
+                    ? tx('Đang cập nhật...', 'Updating...', '更新中...')
+                    : tx('Cập nhật mật khẩu', 'Update Password', 'パスワードを更新')}
+                </Button>
+              </form>
+            </Card>
+          </div>
+        }
+        right={
           <Card className="p-5">
             <CardHeader
               title={tx('Kịch bản tiết kiệm đã lưu', 'Saved Savings Scenarios', '保存済み貯蓄プラン')}
@@ -483,8 +542,8 @@ export default function Profile() {
               )}
             </div>
           </Card>
-        </div>
-      </div>
+        }
+      />
     </div>
   );
 }
