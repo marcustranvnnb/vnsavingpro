@@ -935,6 +935,22 @@ export function Footer({ onOpenCookies }) {
               'ベトナムのネット銀行向け個人・カップル・家族用貯蓄プランナー。金利情報は各銀行の公式公開ページから取得しています。キャンペーン等の詳細は必ず各行公式アプリにてご確認ください。試算結果は参考値です。'
             )}
           </p>
+          <a
+            href="https://unikorn.vn/p/vnsavingpro?ref=embed-vnsavingpro"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-xl transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          >
+            <img
+              src="https://unikorn.vn/api/widgets/badge/vnsavingpro?theme=light"
+              alt="VnSavingPro trên Unikorn.vn"
+              style={{ width: '256px', height: '64px' }}
+              width={256}
+              height={64}
+              loading="lazy"
+              className="max-w-full rounded-xl shadow-sm"
+            />
+          </a>
         </div>
         <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm sm:gap-x-10">
           {localizedTools.map((t) => (

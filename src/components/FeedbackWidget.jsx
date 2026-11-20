@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Download, MessageSquarePlus, Send, Star } from 'lucide-react';
+import { Award, CheckCircle2, Download, ExternalLink, MessageSquarePlus, Send, Star } from 'lucide-react';
 import { cryptoStorage, sanitizeText } from '../utils/cryptoStorage.js';
 import { getFormatLang } from '../utils/format.js';
+import { UNIKORN_PRODUCT_URL } from '../data/contributorsData.js';
 import { useI18n } from '../i18n/index.jsx';
-import { useToast } from '../state.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import { href, useToast } from '../state.jsx';
 import { Badge, Button, Card, CardHeader, Chip, cx } from './ui.jsx';
 
 const FEEDBACK_TAGS = [
@@ -21,15 +23,16 @@ export function exportFeedbackCSV(langOverride) {
   const escCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const head =
     lang === 'en'
-      ? ['Timestamp', 'Tool', 'Rating (Stars)', 'Tags', 'Comment', 'Snapshot']
+      ? ['Timestamp', 'Tool', 'Rating (Stars)', 'Tags', 'Contributor', 'Comment', 'Snapshot']
       : lang === 'ja'
-        ? ['日時', 'ツール', '評価（星）', 'タグ', 'コメント', 'スナップショット']
-        : ['Thời gian', 'Công cụ', 'Đánh giá (Sao)', 'Nhãn góp ý', 'Nhận xét chi tiết', 'Thông số'];
+        ? ['日時', 'ツール', '評価（星）', 'タグ', '貢献者名', 'コメント', 'スナップショット']
+        : ['Thời gian', 'Công cụ', 'Đánh giá (Sao)', 'Nhãn góp ý', 'Người đóng góp', 'Nhận xét chi tiết', 'Thông số'];
   const rows = list.map((item) => [
     escCsv(item.createdAt),
     escCsv(item.toolLabel || item.tool),
     escCsv(item.rating),
     escCsv((item.tags || []).join(' | ')),
+    escCsv(item.contributorName || ''),
     escCsv(item.comment || ''),
     escCsv(item.snapshot ? JSON.stringify(item.snapshot) : ''),
   ]);
@@ -45,11 +48,16 @@ export function exportFeedbackCSV(langOverride) {
 
 export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
   const { lang, tx } = useI18n();
+  const { user, profile } = useAuth();
   const notify = useToast();
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [tags, setTags] = useState([]);
   const [comment, setComment] = useState('');
+  const [showPublicly, setShowPublicly] = useState(false);
+  const [contributorName, setContributorName] = useState(
+    () => profile?.full_name || user?.email?.split('@')[0] || ''
+  );
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savedCount, setSavedCount] = useState(() => {
@@ -69,6 +77,7 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
     }
     setSubmitting(true);
 
+    const safeName = sanitizeText(contributorName, 60);
     const entry = {
       id: `${Date.now()}`,
       tool: sanitizeText(toolId, 32),
@@ -76,6 +85,8 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
       rating: Math.min(5, Math.max(1, Math.round(Number(rating) || 1))),
       tags: tags.map((t) => sanitizeText(t, 60)).filter(Boolean),
       comment: sanitizeText(comment, 800),
+      contributorName: showPublicly ? safeName : '',
+      showPublicly: Boolean(showPublicly),
       snapshot: snapshot || null,
       createdAt: new Date().toISOString(),
     };
@@ -97,7 +108,15 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
 
     setSubmitting(false);
     setSubmitted(true);
-    notify(tx('Cảm ơn bạn! Đánh giá đã được sao lưu.', 'Thank you! Feedback has been saved.', 'ご意見ありがとうございます！評価を保存しました。'));
+    notify(
+      showPublicly
+        ? tx(
+            'Cảm ơn bạn! Đánh giá đã được gửi & ghi danh lên Bảng Vinh Danh.',
+            'Thank you! Feedback saved & listed on our Community Hall of Fame.',
+            'ありがとうございます！評価を保存し、貢献者ボードへ掲載しました。'
+          )
+        : tx('Cảm ơn bạn! Đánh giá đã được sao lưu.', 'Thank you! Feedback has been saved.', 'ご意見ありがとうございます！評価を保存しました。')
+    );
   };
 
   const resetForm = () => {
@@ -121,9 +140,9 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
       <CardHeader
         title={tx('Đánh giá & góp ý kết quả này', 'Rate & Share Feedback', '計算結果の評価・フィードバック')}
         description={tx(
-          'Phản hồi của bạn được sao lưu ngay trên thiết bị (có thể xuất JSON/CSV) và gửi ẩn danh để cải thiện thuật toán.',
-          'Your feedback is backed up on your device (exportable as JSON/CSV) and submitted anonymously to refine our models.',
-          'フィードバックは端末に自動保存（JSON/CSV出力可）され、アルゴリズム改善のために匿名送信されます。'
+          'Phản hồi của bạn giúp VnSavingPro cải thiện từng phiên bản — có thể chọn hiển thị tên lên Bảng Vinh Danh hoặc góp ý thêm trên Unikorn.',
+          'Your feedback guides upcoming releases — optionally credit your name on our Hall of Fame or share on Unikorn.',
+          'ご意見は今後の改善に反映されます。希望者は貢献者ボードへお名前を掲載することもできます。'
         )}
         right={
           savedCount > 0 && (
@@ -147,10 +166,16 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
                 )}
               </div>
               <div className="mt-0.5 text-xs text-emerald-300/80">
-                {tx(
-                  'Bạn có thể xem hoặc sao lưu toàn bộ lịch sử đánh giá trong mục "Dữ liệu của bạn".',
-                  'You can export your full feedback log anytime from the Data modal.',
-                  '履歴全体は「データ」メニューからいつでもCSV出力できます。'
+                {showPublicly ? (
+                  <a href={href('contributors')} className="underline hover:text-white">
+                    {tx('Xem Bảng Vinh Danh Cộng Đồng →', 'View Community Hall of Fame →', '貢献者表彰ページを見る →')}
+                  </a>
+                ) : (
+                  tx(
+                    'Bạn có thể xem hoặc sao lưu toàn bộ lịch sử đánh giá trong mục "Dữ liệu của bạn".',
+                    'You can export your full feedback log anytime from the Data modal.',
+                    '履歴全体は「データ」メニューからいつでもCSV出力できます。'
+                  )
                 )}
               </div>
             </div>
@@ -225,6 +250,52 @@ export function FeedbackWidget({ toolId, toolLabel, snapshot }) {
                 : tx('Gửi & Sao lưu', 'Send & Save', '送信して保存')}
             </Button>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-xs">
+            <label className="flex cursor-pointer items-center gap-2 text-zinc-300">
+              <input
+                type="checkbox"
+                checked={showPublicly}
+                onChange={(e) => setShowPublicly(e.target.checked)}
+                className="size-3.5 accent-indigo-500"
+              />
+              <span>
+                {tx(
+                  'Cho phép vinh danh tên tôi trên Bảng Cộng Đồng (chỉ hiển thị tên & nhận xét, ẩn toàn bộ số tiền)',
+                  'Credit my name on Community Hall of Fame (hides all financial numbers)',
+                  '貢献者ボードへの名前掲載を許可（金額などの個人データは完全非公開）'
+                )}
+              </span>
+            </label>
+            <div className="flex items-center gap-3 text-[11px]">
+              <a href={href('contributors')} className="inline-flex items-center gap-1 text-indigo-300 hover:underline">
+                <Award className="size-3" /> {tx('Bảng Vinh Danh', 'Hall of Fame', '表彰ページ')}
+              </a>
+              <a
+                href={UNIKORN_PRODUCT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-amber-300 hover:underline"
+              >
+                Unikorn <ExternalLink className="size-2.5" />
+              </a>
+            </div>
+          </div>
+
+          {showPublicly && (
+            <input
+              type="text"
+              value={contributorName}
+              onChange={(e) => setContributorName(e.target.value)}
+              maxLength={60}
+              placeholder={tx(
+                'Tên / Biệt danh của bạn (VD: Minh Anh · Unikorn Explorer)',
+                'Your display name or handle (e.g. Alex · Unikorn Explorer)',
+                '表示名 / ニックネーム（例：Kenji · Unikorn Explorer）'
+              )}
+              className="h-9 w-full rounded-xl bg-black/30 px-3 text-base text-white placeholder:text-zinc-600 ring-1 ring-inset ring-indigo-400/30 outline-none focus:ring-indigo-400/70 sm:text-xs"
+            />
+          )}
         </form>
       )}
     </Card>

@@ -14,6 +14,27 @@ function getSummary(list = feedbackStore) {
   return { count, averageRating };
 }
 
+function sanitizeText(raw, maxLen = 120) {
+  return String(raw || '')
+    .replace(/[\u0000-\u001F\u007F<>]/g, '')
+    .trim()
+    .slice(0, maxLen);
+}
+
+function sanitizePublicUrl(raw) {
+  const clean = String(raw || '').trim().slice(0, 200);
+  if (!clean) return '';
+  try {
+    const parsed = new URL(clean);
+    if (parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch {
+    // Reject invalid URLs
+  }
+  return '';
+}
+
 function normalizeRemoteEntry(row) {
   return {
     id: row.id,
@@ -26,6 +47,28 @@ function normalizeRemoteEntry(row) {
   };
 }
 
+/**
+ * Maps stored row/entry into strictly sanitized public contributor entry.
+ * Never includes financial snapshot figures (capital, salary, target, etc.).
+ */
+function toPublicContributorEntry(raw) {
+  const snapshot = raw?.snapshot;
+  const credit = snapshot && typeof snapshot === 'object' ? snapshot.communityCredit : null;
+  if (!credit || credit.showPublicly !== true) return null;
+
+  return {
+    id: String(raw.id || ''),
+    name: sanitizeText(credit.name, 60) || 'VnSavingPro Contributor',
+    url: sanitizePublicUrl(credit.url),
+    tool: sanitizeText(raw.tool || 'general', 40),
+    toolLabel: sanitizeText(raw.tool_label ?? raw.toolLabel ?? '', 80),
+    rating: Math.min(5, Math.max(1, Math.round(Number(raw.rating) || 5))),
+    tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 6).map((t) => sanitizeText(t, 50)).filter(Boolean) : [],
+    comment: sanitizeText(raw.comment || '', 800),
+    createdAt: raw.created_at || raw.createdAt || new Date().toISOString(),
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
@@ -35,6 +78,35 @@ export default async function handler(req, res) {
   const supabaseConnected = isSupabaseConfigured();
 
   if (req.method === 'GET') {
+    const isPublicMode = /(?:^|[?&])public=1(?:&|$)/.test(String(req.url || ''));
+
+    if (isPublicMode) {
+      let publicEntries = [];
+      if (supabaseConnected) {
+        const sbRes = await sbSelect(
+          'user_feedback',
+          'select=id,tool,tool_label,rating,tags,comment,snapshot,created_at&order=created_at.desc&limit=100'
+        );
+        if (sbRes.ok && Array.isArray(sbRes.data)) {
+          publicEntries = sbRes.data.map(toPublicContributorEntry).filter(Boolean);
+          return res.status(200).json({
+            count: publicEntries.length,
+            entries: publicEntries,
+            storage: 'supabase',
+            supabaseConnected: true,
+          });
+        }
+      }
+
+      publicEntries = feedbackStore.map(toPublicContributorEntry).filter(Boolean).slice(0, 100);
+      return res.status(200).json({
+        count: publicEntries.length,
+        entries: publicEntries,
+        storage: 'memory',
+        supabaseConnected,
+      });
+    }
+
     if (supabaseConnected) {
       const sbRes = await sbSelect(
         'user_feedback',
@@ -75,14 +147,29 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Rating must be between 1 and 5' });
   }
 
+  const showPublicly = Boolean(body?.showPublicly);
+  const contributorName = sanitizeText(body?.contributorName || '', 60);
+  const contributorUrl = sanitizePublicUrl(body?.contributorUrl || '');
+  const baseSnapshot = body?.snapshot && typeof body.snapshot === 'object' ? body.snapshot : {};
+  const snapshotWithCredit = {
+    ...baseSnapshot,
+    communityCredit: showPublicly
+      ? {
+          showPublicly: true,
+          name: contributorName || 'VnSavingPro Contributor',
+          url: contributorUrl,
+        }
+      : { showPublicly: false },
+  };
+
   const entry = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    tool: String(body?.tool || 'unknown').slice(0, 40),
-    toolLabel: String(body?.toolLabel || '').slice(0, 80),
+    tool: sanitizeText(body?.tool || 'unknown', 40),
+    toolLabel: sanitizeText(body?.toolLabel || '', 80),
     rating,
-    tags: Array.isArray(body?.tags) ? body.tags.slice(0, 8).map((t) => String(t).slice(0, 60)) : [],
-    comment: String(body?.comment || '').trim().slice(0, 800),
-    snapshot: body?.snapshot && typeof body.snapshot === 'object' ? body.snapshot : null,
+    tags: Array.isArray(body?.tags) ? body.tags.slice(0, 8).map((t) => sanitizeText(t, 60)).filter(Boolean) : [],
+    comment: sanitizeText(body?.comment || '', 800),
+    snapshot: snapshotWithCredit,
     createdAt: body?.createdAt || new Date().toISOString(),
   };
 
@@ -109,9 +196,15 @@ export default async function handler(req, res) {
   }
 
   const summary = getSummary(feedbackStore);
+  const { snapshot: _omittedSnapshot, ...safeResponseEntry } = entry;
   return res.status(200).json({
     ok: true,
-    entry,
+    entry: {
+      ...safeResponseEntry,
+      showPublicly,
+      contributorName: showPublicly ? snapshotWithCredit.communityCredit.name : '',
+      contributorUrl: showPublicly ? snapshotWithCredit.communityCredit.url : '',
+    },
     persisted,
     supabaseConnected,
     ...summary,

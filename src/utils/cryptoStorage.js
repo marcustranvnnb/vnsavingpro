@@ -349,6 +349,9 @@ export function validateBySchema(key, raw) {
           rating,
           tags: cleanTags,
           comment: sanitizeText(item.comment || '', 800),
+          contributorName: sanitizeText(item.contributorName || '', 60),
+          contributorUrl: item.contributorUrl ? safeExternalUrl(item.contributorUrl) : '',
+          showPublicly: Boolean(item.showPublicly),
           snapshot: validateSnapshot(item.snapshot),
           createdAt: sanitizeText(item.createdAt || new Date().toISOString(), 40),
         });

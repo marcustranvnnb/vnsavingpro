@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v1.7.0.0 Trilingual Serverless + Supabase Free Tier)
+# VnSavingPro — Architecture & Technical Reference (v1.9.0.0 Adaptive Multi-Screen · Community · Serverless)
 
 ## 1. High-Level Architecture
 
@@ -30,7 +30,7 @@ flowchart TD
 - **Endpoints**:
   - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` + `supabaseConnected` status from `getLiveRatesSnapshotAsync()` (60s warm cache over Supabase `bank_rate_snapshots`, fallback to `INITIAL_BANKS_DATA`).
   - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with per-IP in-memory rate limiting (`120 req/min`).
-  - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Persists star ratings, tags, comments, and snapshots into Supabase `user_feedback` (with memory fallback), plus local `USER_FEEDBACK_LOG` mirror via `cryptoStorage`.
+  - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Persists star ratings, tags, comments, optional public contributor opt-in metadata, and snapshots into Supabase `user_feedback` (with memory fallback), plus local `USER_FEEDBACK_LOG` mirror via `cryptoStorage`. `GET /api/feedback?public=1` strictly returns opted-in contributor names, comments, ratings, and optional HTTPS URLs with all financial numbers stripped.
   - `GET`/`POST`/`DELETE /api/plans` ([api/plans.js](../../api/plans.js)): Saves and loads sanitized financial plans (`plan`, `customRates`, `calc`, `ladder`, `career`, `inflation`, `banks`) using 6–12 character share codes (`saved_plans` table in Supabase + user ownership via JWT).
   - `GET /api/quota-status` ([api/quota-status.js](../../api/quota-status.js)) & [quotaGuard.js](../../api/_lib/quotaGuard.js) + [resend.js](../../api/_lib/resend.js): Monitors Free-Tier caps (Vercel API invocations, Supabase DB MB & MAU, Resend daily/monthly emails), sends deduplicated alerts at **80%, 90%, 95%, and 100%** via Resend (`quota_alerts_log`), and locks API endpoints with HTTP `503 POC_QUOTA_REACHED` triggering `PocValidationOverlay.jsx`.
   - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Scheduled via `vercel.json` (`0 2 * * *` UTC = 09:00 AM UTC+7) to live-scrape TNEX, TIMO, LioBank, and Cake, force-refresh Free-Tier quota status, and persist snapshots via `setLiveRatesSnapshotAsync()`.

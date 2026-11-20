@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-20] — Version 1.9.0.0: Swipeable Stage Explorer, Contributors Hall of Fame (`/contributors`) & Unikorn Showcase
+
+- **Request**: Allow users to slide or swipe left/right through yearly milestones inside Stage Details & Portfolio, build a dedicated page honoring community feedback contributors, embed the official Unikorn badge in Footer, and feature a Unikorn community & support section on Home (`https://unikorn.vn/p/vnsavingpro`).
+- **Changes Implemented**:
+  - **Version Bump & Routing (`v1.9.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), and registered `/contributors` (`aliases`: `/vinh-danh`, `/cong-dong`, `/dong-gop`, `/hall-of-fame`) plus trilingual `VERSION_HIGHLIGHTS` in [src/tools.js](../../src/tools.js) and [src/App.jsx](../../src/App.jsx).
+  - **Swipeable / Slidable Stage Timeline**: Created [src/components/StageCarousel.jsx](../../src/components/StageCarousel.jsx) (`StageCarousel` with horizontal snap/touch swipe, desktop pointer drag-scroll, left/right chevron buttons, continuous year scrubber slider & keyboard arrows; plus `SwipeableStageBody` with swipe-safe table guard) and integrated into [Planner.jsx](../../src/pages/Planner.jsx) (`RoadmapPackageExplorer`) and [Ladder.jsx](../../src/pages/Ladder.jsx) (`LadderPackageExplorer`).
+  - **Privacy-Safe Opt-In Public Feedback**: Extended [api/feedback.js](../../api/feedback.js) (`GET /api/feedback?public=1` returning only `{ id, name, url, tool, toolLabel, rating, tags, comment, createdAt }` for `showPublicly === true` rows while stripping all financial figures), [cryptoStorage.js](../../src/utils/cryptoStorage.js), and [FeedbackWidget.jsx](../../src/components/FeedbackWidget.jsx).
+  - **Contributors Hall of Fame & Unikorn Integration**: Created [src/data/contributorsData.js](../../src/data/contributorsData.js) and [src/pages/Contributors.jsx](../../src/pages/Contributors.jsx) (`Contributors` Hall of Fame, feedback-to-shipped timeline, opt-in contribution form, and Unikorn card), embedded the official `256×64` Unikorn badge in `Footer` ([Layout.jsx](../../src/components/Layout.jsx)), and added the **Live on Unikorn.vn** showcase section on [Home.jsx](../../src/pages/Home.jsx) (Feedback input, Clap, Review, Support & Donate).
+
+---
+
 ## [2026-11-20] — Version 1.8.0.0: Unified Adaptive Multi-Screen Layout System (Mobile · Tablet · Duo/Fold · Desktop)
 
 - **Request**: Unify the UI layout across Mobile, Tablet, and PC/Desktop with a shared adaptive layout system that propagates changes consistently across all screens, and add explicit Duo / Foldable support (similar to iPhone Duo/Fold, Samsung Galaxy Z Fold, Pixel Fold, Surface Duo).

@@ -2,19 +2,27 @@ import React, { useState } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
+  Award,
   Cloud,
+  Coffee,
+  ExternalLink,
   FileSpreadsheet,
+  Heart,
   Home as HomeIcon,
   Lock,
   LogIn,
+  MessageSquarePlus,
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Star,
+  ThumbsUp,
   User,
   Users,
   Zap,
 } from 'lucide-react';
 import { APP_VERSION, getLocalizedTools } from '../tools.js';
+import { UNIKORN_BADGE_IMG_URL, UNIKORN_EMBED_URL, UNIKORN_PRODUCT_URL } from '../data/contributorsData.js';
 import { useI18n } from '../i18n/index.jsx';
 import { href, useRates } from '../state.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -478,6 +486,160 @@ export default function Home({ onOpenAuth, onOpenData }) {
             </a>
           ))}
         </AdaptiveGrid>
+      </PageContainer>
+
+      {/* Unikorn Community & Hall of Fame Showcase */}
+      <PageContainer as="section" className="pb-12 sm:pb-16">
+        <Card className="relative overflow-hidden border-indigo-400/20 bg-gradient-to-br from-indigo-500/[0.08] via-surface to-amber-500/[0.05] p-5 sm:p-8">
+          <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-indigo-500/15 blur-3xl" />
+          <DualPaneSection
+            ratio="wide-left"
+            align="center"
+            left={
+              <div className="relative space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="warning">
+                    <Sparkles className="size-3" /> Live on Unikorn.vn
+                  </Badge>
+                  <Badge tone="brand">
+                    <Award className="size-3" /> {tx('Xây dựng cùng cộng đồng', 'Community Built', 'コミュニティ共創')}
+                  </Badge>
+                </div>
+
+                <h2 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                  {tx(
+                    'Theo dõi tiến độ & Tiếp sức VnSavingPro trên Unikorn',
+                    'Track Progress & Support VnSavingPro on Unikorn',
+                    'Unikorn.vn で開発の歩みをチェック＆応援しよう'
+                  )}
+                </h2>
+
+                <p className="text-sm leading-relaxed text-zinc-300">
+                  {tx(
+                    'VnSavingPro hiện đã có mặt chính thức trên nền tảng Unikorn. Mọi người có thể vào trang Unikorn để trực tiếp gửi feedback (input), theo dõi cách từng góp ý được cải thiện thành tính năng mới, cũng như Clap, Review, Support hoặc Donate tiếp sức cho dự án.',
+                    'VnSavingPro is live on Unikorn.vn! Visit our product page to see how community feedback turns into real upgrades, submit new ideas, and Clap, Review, Support, or Donate to keep this toolkit growing.',
+                    'VnSavingProはUnikorn.vnに公式掲載されています。皆様からのフィードバックがどのように改善・新機能へ反映されているかを確認でき、新提案・Clap・レビュー・サポート（寄付）も行えます。'
+                  )}
+                </p>
+
+                <div className="flex flex-col gap-2.5 pt-1 sm:flex-row">
+                  <Button
+                    as="a"
+                    href={UNIKORN_PRODUCT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="primary"
+                    size="md"
+                  >
+                    <ExternalLink className="size-4" />
+                    {tx('Mở VnSavingPro trên Unikorn', 'Visit VnSavingPro on Unikorn', 'Unikorn.vn ページへ')}
+                  </Button>
+                  <Button as="a" href={href('contributors')} variant="secondary" size="md">
+                    <Award className="size-4 text-amber-300" />
+                    {tx('Bảng Vinh Danh Cộng Đồng', 'Contributors Hall of Fame', 'コミュニティ表彰を見る')}
+                  </Button>
+                </div>
+              </div>
+            }
+            right={
+              <div className="relative space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-canvas/70 p-4">
+                  <a
+                    href={UNIKORN_EMBED_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block rounded-xl transition hover:opacity-95"
+                  >
+                    <img
+                      src={UNIKORN_BADGE_IMG_URL}
+                      alt="VnSavingPro trên Unikorn.vn"
+                      style={{ width: '256px', height: '64px' }}
+                      width={256}
+                      height={64}
+                      loading="lazy"
+                      className="max-w-full rounded-xl shadow-md"
+                    />
+                  </a>
+                  <span className="text-[11px] font-medium text-zinc-400">
+                    {tx('Huy hiệu chính thức trên Unikorn', 'Official Unikorn Badge', 'Unikorn 公式バッジ')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5 text-xs">
+                  <a
+                    href={UNIKORN_PRODUCT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="card-interactive rounded-xl border border-white/[0.08] bg-canvas/60 p-3 hover:border-indigo-400/40"
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-white">
+                      <MessageSquarePlus className="size-3.5 text-indigo-300" />
+                      {tx('Góp ý & Theo dõi', 'Input Feedback', '意見投稿・改善追跡')}
+                    </div>
+                    <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+                      {tx('Xem sản phẩm được nâng cấp từ góp ý thế nào', 'Track how suggestions ship live', '要望の反映状況をリアルタイム確認')}
+                    </p>
+                  </a>
+
+                  <a
+                    href={UNIKORN_PRODUCT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="card-interactive rounded-xl border border-white/[0.08] bg-canvas/60 p-3 hover:border-amber-400/40"
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-white">
+                      <ThumbsUp className="size-3.5 text-amber-300" />
+                      {tx('Clap ủng hộ', 'Clap to Support', 'Clap で応援')}
+                    </div>
+                    <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+                      {tx('Giúp nhiều bạn trẻ Việt khám phá công cụ', 'Help more savers find VnSavingPro', 'より多くの利用者へ広める')}
+                    </p>
+                  </a>
+
+                  <a
+                    href={UNIKORN_PRODUCT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="card-interactive rounded-xl border border-white/[0.08] bg-canvas/60 p-3 hover:border-emerald-400/40"
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-white">
+                      <Star className="size-3.5 text-emerald-300" />
+                      {tx('Viết Review', 'Write Review', 'レビュー投稿')}
+                    </div>
+                    <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+                      {tx('Chia sẻ đánh giá trải nghiệm thực tế', 'Share your real savings experience', '実際の体験レビューを共有')}
+                    </p>
+                  </a>
+
+                  <a
+                    href={UNIKORN_PRODUCT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="card-interactive rounded-xl border border-white/[0.08] bg-canvas/60 p-3 hover:border-rose-400/40"
+                  >
+                    <div className="flex items-center gap-1.5 font-semibold text-white">
+                      <Coffee className="size-3.5 text-rose-300" />
+                      {tx('Support / Donate', 'Support / Donate', 'サポート / 寄付')}
+                    </div>
+                    <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+                      {tx('Tiếp sức server & cập nhật lãi suất hằng ngày', 'Back hosting & daily 09:00 sync', 'サーバー維持と毎日09:00同期を支援')}
+                    </p>
+                  </a>
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-400">
+                  <span className="flex items-center gap-1.5">
+                    <Heart className="size-3.5 text-rose-400" />
+                    {tx('Người đóng góp tiêu biểu được vinh danh công khai', 'Contributors credited on Hall of Fame', '協力者の皆様を表彰ページで紹介中')}
+                  </span>
+                  <a href={href('contributors')} className="font-medium text-indigo-300 hover:underline">
+                    {tx('Xem bảng vinh danh →', 'View all →', '一覧へ →')}
+                  </a>
+                </div>
+              </div>
+            }
+          />
+        </Card>
       </PageContainer>
 
       {/* Rates + Cloud Sync, Security & Export */}

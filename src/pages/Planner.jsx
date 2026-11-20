@@ -57,6 +57,7 @@ import {
 } from '../components/ui.jsx';
 import { BankPicker, TENURE_OPTIONS } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { StageCarousel, SwipeableStageBody } from '../components/StageCarousel.jsx';
 import GrowthChart from '../components/GrowthChart.jsx';
 
 const presets = (arr, l) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : chip(v, l) }));
@@ -327,6 +328,11 @@ function RoadmapPackageExplorer({ roadmap, rows, onRowsChange }) {
     return snapshots.find((s) => s.month === selectedMonth) || snapshots.find((s) => s.month === defaultMonth) || snapshots[0];
   }, [snapshots, selectedMonth, defaultMonth]);
 
+  const activeStageIndex = Math.max(
+    0,
+    snapshots.findIndex((s) => s.month === activeStage?.month)
+  );
+
   const activeExpandedMonth = expandedMonth !== null ? expandedMonth : defaultMonth;
 
   const findNearestSnapshot = (targetMonth) => {
@@ -386,18 +392,24 @@ function RoadmapPackageExplorer({ roadmap, rows, onRowsChange }) {
 
       {explorerView === 'shelf' && activeStage ? (
         <div className="mt-5 space-y-5">
-          {/* Timeline stage pills */}
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-            {snapshots.map((s) => {
-              const active = s.month === activeStage.month;
+          {/* Swipeable & Slidable Timeline Stage Rail */}
+          <StageCarousel
+            items={snapshots}
+            activeIndex={activeStageIndex}
+            onSelectIndex={(idx) => snapshots[idx] && setSelectedMonth(snapshots[idx].month)}
+            getLabel={(s) =>
+              s?.isGoal
+                ? `${s.label.replace(/[·・]\s*(Đạt mục tiêu|Goal Reached|目標達成)/, '').trim()} 🎯`
+                : s?.label || ''
+            }
+            renderItem={(s, _idx, active, onClick) => {
               const pillLabel = s.isGoal
                 ? `${s.label.replace(/[·・]\s*(Đạt mục tiêu|Goal Reached|目標達成)/, '').trim()} 🎯`
                 : s.label;
               return (
                 <button
-                  key={s.month}
                   type="button"
-                  onClick={() => setSelectedMonth(s.month)}
+                  onClick={onClick}
                   className={cx(
                     'flex shrink-0 flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5 text-left transition-all',
                     active
@@ -419,10 +431,16 @@ function RoadmapPackageExplorer({ roadmap, rows, onRowsChange }) {
                   </div>
                 </button>
               );
-            })}
-          </div>
+            }}
+          />
 
-          {/* Selected stage summary KPIs & stacked bar */}
+          <SwipeableStageBody
+            activeIndex={activeStageIndex}
+            totalCount={snapshots.length}
+            onChangeIndex={(idx) => snapshots[idx] && setSelectedMonth(snapshots[idx].month)}
+            className="space-y-5"
+          >
+            {/* Selected stage summary KPIs & stacked bar */}
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -519,6 +537,7 @@ function RoadmapPackageExplorer({ roadmap, rows, onRowsChange }) {
           </div>
 
           <StagePackageDetails stage={activeStage} granularity={granularity} />
+          </SwipeableStageBody>
         </div>
       ) : (
         <div className="mt-5 space-y-3">

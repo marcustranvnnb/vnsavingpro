@@ -23,6 +23,7 @@ const pages = {
   ladder: lazy(() => import('./pages/Ladder.jsx')),
   career: lazy(() => import('./pages/Career.jsx')),
   inflation: lazy(() => import('./pages/Inflation.jsx')),
+  contributors: lazy(() => import('./pages/Contributors.jsx')),
   auth: lazy(() => import('./pages/Auth.jsx')),
   profile: lazy(() => import('./pages/Profile.jsx')),
 };

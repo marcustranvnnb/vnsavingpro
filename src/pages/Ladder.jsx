@@ -37,6 +37,7 @@ import {
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { StageCarousel, SwipeableStageBody } from '../components/StageCarousel.jsx';
 
 const CUSTOM_TERMS = ['1M', '3M', '6M', '9M', '12M'];
 
@@ -226,6 +227,11 @@ function LadderPackageExplorer({ rows, splitLabel }) {
     rows.find((r) => r.monthIndex === defaultMonthIdx) ||
     rows[rows.length - 1];
 
+  const activeMilestoneIndex = Math.max(
+    0,
+    stageMilestones.findIndex((r) => r.monthIndex === activeRow?.monthIndex)
+  );
+
   const activeExpandedIdx = expandedMonthIdx !== null ? expandedMonthIdx : rows[rows.length - 1]?.monthIndex;
 
   if (!rows.length) return null;
@@ -265,16 +271,18 @@ function LadderPackageExplorer({ rows, splitLabel }) {
 
       {explorerView === 'shelf' && activeRow ? (
         <div className="mt-5 space-y-5">
-          {/* Timeline stage pills */}
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-            {stageMilestones.map((r) => {
-              const active = r.monthIndex === activeRow.monthIndex;
+          {/* Swipeable & Slidable Timeline Stage Rail */}
+          <StageCarousel
+            items={stageMilestones}
+            activeIndex={activeMilestoneIndex}
+            onSelectIndex={(idx) => stageMilestones[idx] && setSelectedMonthIdx(stageMilestones[idx].monthIndex)}
+            getLabel={(r) => r?.month || ''}
+            renderItem={(r, _idx, active, onClick) => {
               const isLast = r.monthIndex === rows[rows.length - 1].monthIndex;
               return (
                 <button
-                  key={r.monthIndex}
                   type="button"
-                  onClick={() => setSelectedMonthIdx(r.monthIndex)}
+                  onClick={onClick}
                   className={cx(
                     'flex shrink-0 flex-col items-start gap-1 rounded-xl border px-3.5 py-2.5 text-left transition-all',
                     active
@@ -296,10 +304,16 @@ function LadderPackageExplorer({ rows, splitLabel }) {
                   </div>
                 </button>
               );
-            })}
-          </div>
+            }}
+          />
 
-          {/* Stage summary + Stacked Contribution Bar */}
+          <SwipeableStageBody
+            activeIndex={activeMilestoneIndex}
+            totalCount={stageMilestones.length}
+            onChangeIndex={(idx) => stageMilestones[idx] && setSelectedMonthIdx(stageMilestones[idx].monthIndex)}
+            className="space-y-5"
+          >
+            {/* Stage summary + Stacked Contribution Bar */}
           <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -349,6 +363,7 @@ function LadderPackageExplorer({ rows, splitLabel }) {
           </div>
 
           <LadderStageDetails row={activeRow} granularity={granularity} />
+          </SwipeableStageBody>
         </div>
       ) : (
         <div className="mt-5 space-y-3">

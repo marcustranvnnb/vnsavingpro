@@ -1,4 +1,4 @@
-import { Target, BarChart3, Calculator, Layers, Briefcase, TrendingDown, Gift } from 'lucide-react';
+import { Award, Target, BarChart3, Calculator, Layers, Briefcase, TrendingDown, Gift } from 'lucide-react';
 import versionInfo from './version.json';
 
 export const APP_VERSION = versionInfo.displayVersion;
@@ -7,6 +7,15 @@ export const APP_VERSION_DATE = versionInfo.releaseDate;
 export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
+  {
+    version: 'v1.9.0.0',
+    date: '20/11/2026',
+    title: 'Vuốt/Slide lộ trình năm, Trang Vinh Danh Cộng Đồng & Unikorn Showcase',
+    items: [
+      'Nâng cấp Chi tiết lộ trình & Kệ sổ bậc thang cho phép vuốt trái/phải, kéo chuột ngang hoặc kéo thanh trượt năm để duyệt nhanh qua mọi giai đoạn.',
+      'Ra mắt trang Vinh Danh Cộng Đồng (/contributors), tích hợp Unikorn Badge tại Footer và khu vực Unikorn Showcase ngay trên Trang chủ.',
+    ],
+  },
   {
     version: 'v1.8.0.0',
     date: '20/11/2026',
@@ -146,6 +155,16 @@ export const ALL_TOOLS = [
     short: 'Lạm phát',
     desc: 'Lãi suất thực sau lạm phát và sức mua của khoản thu nhập thụ động theo thời gian.',
     icon: TrendingDown,
+  },
+  {
+    id: 'contributors',
+    path: '/contributors',
+    aliases: ['/vinh-danh', '/cong-dong', '/dong-gop', '/hall-of-fame'],
+    pageTitle: 'Vinh Danh Cộng Đồng Đóng Góp — VnSavingPro',
+    label: 'Vinh danh cộng đồng',
+    short: 'Vinh danh',
+    desc: 'Tri ân người dùng và cộng đồng Unikorn đã góp ý, đánh giá & tiếp sức giúp VnSavingPro hoàn thiện qua từng phiên bản.',
+    icon: Award,
   },
   {
     id: 'referral',
@@ -308,6 +327,20 @@ const TOOL_I18N = {
       desc: 'フィッシャー方程式による実質利回りと将来の不労所得の購買力目減りを試算します。',
     },
   },
+  contributors: {
+    en: {
+      label: 'Hall of Fame',
+      short: 'Community',
+      pageTitle: 'Contributors Hall of Fame & Unikorn — VnSavingPro',
+      desc: 'Honoring users and the Unikorn community whose feedback, reviews, and support shape VnSavingPro.',
+    },
+    ja: {
+      label: '貢献者・コミュニティ',
+      short: '貢献者',
+      pageTitle: 'コミュニティ貢献者表彰・Unikorn — VnSavingPro',
+      desc: 'VnSavingProの改善に貢献くださった利用者とUnikornコミュニティの皆様をご紹介します。',
+    },
+  },
 };
 
 const EXTRA_TITLE_I18N = {
@@ -343,12 +376,28 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Adaptive Multi-Screen Layout (Mobile · Tablet · Duo/Fold · Desktop) · Daily Sync';
-  if (lang === 'ja') return 'マルチ画面統合レイアウト（Mobile · Tablet · Duo/Fold · PC）・毎日自動同期';
+  if (lang === 'en') return 'Swipeable Roadmap · Community Hall of Fame · Adaptive Multi-Screen · Daily Sync';
+  if (lang === 'ja') return 'スワイプ式年次スライダー・貢献者表彰・マルチ画面統合・毎日自動同期';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v1.9.0.0': {
+    en: {
+      title: 'Swipeable Stage Timeline, Contributors Showcase & Unikorn Integration',
+      items: [
+        'Added horizontal swipe, mouse drag-scroll, chevron controls, and continuous year scrubber to Planner & Ladder stage shelves.',
+        'Launched the Community Hall of Fame (/contributors), embedded Unikorn badge in Footer, and added a Unikorn Showcase section on Home.',
+      ],
+    },
+    ja: {
+      title: 'スワイプ式年次タイムライン・コミュニティ表彰・Unikorn連携',
+      items: [
+        'プランナーとラダー貯蓄のステージ明細に横スワイプ・ドラッグ・年次スライダー操作を追加しました。',
+        '貢献者表彰ページ (/contributors)、フッターのUnikorn公式バッジ、トップページのUnikorn特集セクションを公開しました。',
+      ],
+    },
+  },
   'v1.8.0.0': {
     en: {
       title: 'Unified Multi-Screen Adaptive Layout (Mobile · Tablet · Duo/Fold · Desktop)',

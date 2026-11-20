@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-20 10:49 (Version 1.8.0.0: Unified Multi-Screen Adaptive Layout System for Mobile, Tablet, Duo/Foldable & PC/Desktop)
-> **Current Architecture Version**: v1.8.0.0 (Unified Adaptive Layout Mobile/Tablet/Duo-Fold/Desktop + Trilingual VI/EN/JA SPA + Clean-URL History API + Household Financial Planning + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
+> **Last Synced**: 2026-11-20 15:06 (Version 1.9.0.0: Swipeable Stage Carousel, Contributors Hall of Fame `/contributors`, Unikorn Footer Badge & Home Unikorn Showcase)
+> **Current Architecture Version**: v1.9.0.0 (Swipeable Stage Explorer + Community Hall of Fame + Unikorn Showcase + Unified Adaptive Multi-Screen + Trilingual VI/EN/JA SPA + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue` + Daily 9AM Scrapers)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---
@@ -33,17 +33,18 @@
 | `/ladder` | `ladder` | [src/pages/Ladder.jsx](../../src/pages/Ladder.jsx) | Multi-tranche Savings Ladder simulator with household 1M–3M Emergency Fund liquidity coverage & 2-earner split |
 | `/career` | `career` | [src/pages/Career.jsx](../../src/pages/Career.jsx) | Models how annual raises vs. job hopping accelerate financial freedom for 1 or 2 earners (`SAME`/`STATIC`) |
 | `/inflation` | `inflation` | [src/pages/Inflation.jsx](../../src/pages/Inflation.jsx) | Real interest rate & future purchasing power erosion calculator |
+| `/contributors` | `contributors` | [src/pages/Contributors.jsx](../../src/pages/Contributors.jsx) | Community Hall of Fame honoring opt-in contributors, transparent feedback-to-shipped timeline, and Unikorn showcase |
 | `/referral` *(hidden)* | `referral` | [src/pages/Referral.jsx](../../src/pages/Referral.jsx) | Temporarily hidden (`hidden: true` in `src/tools.js`) — redirects cleanly to `/` |
 
 ---
 
-## File Registry (v1.8.0.0 Adaptive Multi-Screen Tier 1 Serverless + Supabase Postgres + Daily Scrapers)
+## File Registry (v1.9.0.0 Community Hall of Fame, Unikorn Showcase & Adaptive Multi-Screen Tier 1 Serverless)
 
 - **Database & Schema (`supabase/`)**: `supabase/schema.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `usage_quotas`, `quota_alerts_log` + RLS policies), `supabase/email-templates/`, `.env.example`
 - **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,supabase,resend,quotaGuard}.js`
 - **Automated Scrapers, Versioning & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/bump-version.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1`, `.github/workflows/daily-rates-sync.yml`
 - **Root, i18n, Layout & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/version.json`, `src/index.css`, `src/i18n/index.jsx`, `src/layout/{DisplayModeContext.jsx,viewportMetrics.js}`
-- **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Auth,Profile}.jsx` (`Referral.jsx` hidden)
-- **Shared Components**: `src/components/{Layout,AdaptiveLayout,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
-- **Data**: `src/data/{banksData,bankPackagesData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
+- **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Contributors,Auth,Profile}.jsx` (`Referral.jsx` hidden)
+- **Shared Components**: `src/components/{Layout,AdaptiveLayout,StageCarousel,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
+- **Data**: `src/data/{banksData,bankPackagesData,contributorsData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
 - **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`
