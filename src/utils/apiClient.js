@@ -4,6 +4,7 @@ import { getFormatLang } from './format.js';
 
 export const POC_QUOTA_EVENT = 'vnsaving:poc-quota-reached';
 export const OPEN_AUTH_EVENT = 'vnsaving:open-auth';
+export const OPEN_ONBOARDING_EVENT = 'vnsaving:open-onboarding';
 export const CALC_HISTORY_UPDATED_EVENT = 'vnsaving:calc-history-updated';
 
 export function emitPocQuotaReached(detail = {}) {
@@ -15,6 +16,12 @@ export function emitPocQuotaReached(detail = {}) {
 export function openAuthPrompt(mode = 'login') {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(OPEN_AUTH_EVENT, { detail: { mode } }));
+  }
+}
+
+export function openOnboardingWizard() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(OPEN_ONBOARDING_EVENT));
   }
 }
 
@@ -453,4 +460,160 @@ export async function syncLocalHistoryToCloud(accessToken) {
   } catch {
     return local;
   }
+}
+
+/* ── Onboarding State & Starter Apply ─────────────────────────────────────── */
+
+export function loadOnboardingState() {
+  return cryptoStorage.load('ONBOARDING_STATE', null);
+}
+
+export function saveOnboardingState(patch = {}) {
+  const prev = cryptoStorage.load('ONBOARDING_STATE', {}) || {};
+  const next = {
+    completed: Boolean(patch.completed ?? prev.completed),
+    dismissed: Boolean(patch.dismissed ?? prev.dismissed),
+    householdMode: patch.householdMode || prev.householdMode || 'INDIVIDUAL',
+    goalFocus: patch.goalFocus || prev.goalFocus || 'PASSIVE_INCOME',
+    completedAt: patch.completedAt || new Date().toISOString(),
+  };
+  cryptoStorage.save('ONBOARDING_STATE', next);
+  return next;
+}
+
+export function applyOnboardingStarter({
+  householdMode = 'INDIVIDUAL',
+  goalFocus = 'PASSIVE_INCOME',
+  targetMonthlyPassive = 15_000_000,
+  targetCapital = 1_000_000_000,
+  monthlySaving = 10_000_000,
+  capital = 50_000_000,
+  bankId = 'cake',
+} = {}) {
+  const prev = cryptoStorage.load('PLANNER_STATE', {}) || {};
+  const isTargetAmount = goalFocus === 'TARGET_AMOUNT';
+  cryptoStorage.save('PLANNER_STATE', {
+    ...prev,
+    householdMode,
+    goalType: isTargetAmount ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME',
+    solveMode: 'TIME',
+    target: Number(targetMonthlyPassive) || 15_000_000,
+    targetAmount: Number(targetCapital) || 1_000_000_000,
+    saving: Number(monthlySaving) || 10_000_000,
+    capital: Number(capital) || 0,
+    bankId: bankId || prev.bankId || 'cake',
+    prioritizeEmergencyFund: householdMode === 'FAMILY',
+  });
+  return saveOnboardingState({
+    completed: true,
+    dismissed: true,
+    householdMode,
+    goalFocus,
+  });
+}
+
+/* ── Collaborative Household Planning API ─────────────────────────────────── */
+
+export async function previewCollabInviteFromApi(code) {
+  const cleanCode = String(code || '').trim().toUpperCase();
+  const res = await fetch(`/api/collaborations?preview=${encodeURIComponent(cleanCode)}`);
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function fetchCollaborationsFromApi(accessToken) {
+  const res = await fetch('/api/collaborations', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function createCollabInviteFromApi({ householdMode = 'COUPLE', title = '', invitedEmail = '', role = 'partner', shareCode = '', planPayload = {}, accessToken }) {
+  const res = await fetch('/api/collaborations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      action: 'create',
+      householdMode,
+      title,
+      invitedEmail,
+      role,
+      shareCode,
+      planPayload,
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function acceptCollabInviteFromApi({ inviteCode, accessToken }) {
+  const res = await fetch('/api/collaborations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      action: 'accept',
+      inviteCode: String(inviteCode || '').trim().toUpperCase(),
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function syncCollabPlanFromApi({ collabId, shareCode, planPayload, title, accessToken }) {
+  const res = await fetch('/api/collaborations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      action: 'sync',
+      collabId,
+      shareCode,
+      title,
+      planPayload,
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function revokeCollabInviteFromApi(id, accessToken) {
+  const res = await fetch(`/api/collaborations?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
 }

@@ -4,7 +4,20 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
-## 0. Completed in Version 1.11.0.0 (2026-11-23 — Infrastructure, Cost, Security & Bundle Optimization)
+## 0. Completed in Version 1.12.0.0 (2026-11-23 — Silent Auto-Layout, Highlighted Header, Branded Splash, Onboarding, Shared Household Planning & CIC/Advisors Roadmap)
+
+- [x] **Hidden Display Mode Selector (`v1.12.0.0`)**: Removed manual `DisplayModeSwitcher`, Footer display pills, `MobileTabBar` display grid, and `Profile` display card; restricted [DisplayModeContext.jsx](../../src/layout/DisplayModeContext.jsx) & `LayoutModeBanner` strictly to QA `?layout=`/`?posture=` query params so responsive/foldable layouts adapt silently.
+- [x] **Streamlined Header & Flagship Spotlights ([Layout.jsx](../../src/components/Layout.jsx))**: Consolidated Desktop/Duo/Tablet `TopNav` to highlight **Lập kế hoạch** (gradient pill) and **Lãi suất** (live 12M yield badge) alongside `Khám phá`, `LanguageSwitcher`, and `UserMenu`.
+- [x] **Branded Initial Splash & 3-Step Onboarding ([SplashScreen.jsx](../../src/components/SplashScreen.jsx), [OnboardingModal.jsx](../../src/components/OnboardingModal.jsx), [App.jsx](../../src/App.jsx))**: Added smooth initial loading overlay for all visitors plus gentle first-visit 3-step setup wizard persisted in `ONBOARDING_STATE` & `PLANNER_STATE` ([cryptoStorage.js](../../src/utils/cryptoStorage.js) `raw` schema validator).
+- [x] **Deduplicated Homepage CTAs ([Home.jsx](../../src/pages/Home.jsx))**: Replaced repetitive Hero/Household/Toolkit "Lập kế hoạch" labels with `"Thiết lập nhanh trong 30 giây"` + distinct per-card action copy and highlighted flagship cards.
+- [x] **Collaborative Household Planning (`Cặp đôi` · `Gia đình`)**: Added [20261123_v112_collaborative_planning.sql](../../supabase/migrations/20261123_v112_collaborative_planning.sql), [api/collaborations.js](../../api/collaborations.js) (`GET ?preview=`, auth-gated `GET`/`POST`/`DELETE`, Resend invite email, memory fallback), [vite.config.js](../../vite.config.js) route, [apiClient.js](../../src/utils/apiClient.js) helpers, and [Profile.jsx](../../src/pages/Profile.jsx) invite/accept/sync UI.
+- [x] **Strategic Roadmap & Vietnam Advisor Research**: Published [PRODUCT_ROADMAP_CIC_AND_ADVISORS.md](./PRODUCT_ROADMAP_CIC_AND_ADVISORS.md) covering the 5-factor CIC estimator (`/cic`) and Vietnam Wealth Advisor research (`FIDT`, `AFA Capital`, `FinPeace`, `TOPI`, `MoneyGain`, `VWA/VWAS`, `Private Banking`) + `/advisors` connector plan.
+- [ ] **Manual Owner SQL Action Pending**:
+  - Run [supabase/migrations/20261123_v112_collaborative_planning.sql](../../supabase/migrations/20261123_v112_collaborative_planning.sql) (and `v1.11.0.0` migration if not yet applied) in Supabase SQL Editor (`gvgyztwpjvjvztwhwnue`).
+
+---
+
+## 0b. Completed in Version 1.11.0.0 (2026-11-23 — Infrastructure, Cost, Security & Bundle Optimization)
 
 - [x] **Free-Tier Invocation & DB RPC Reduction (`Phase 1`)**: Edge cached `/api/rates` (`24h` CDN + `6h` memory + pre-computed `defaultQuickEstimate`), removed redundant `/api/quota-status` mount call in `App.jsx`, batched `quotaGuard.js` (`5m` window / `50` hits), and added bounded sliding-window rate limiters ([rateLimit.js](../../api/_lib/rateLimit.js)) across `calculate`, `feedback`, `plans`, and `history`.
 - [x] **Database Security, Retention & Keepalive (`Phase 2`)**: Created [20261123_v111_security_and_history.sql](../../supabase/migrations/20261123_v111_security_and_history.sql) & updated [schema.sql](../../supabase/schema.sql) (adding `calculation_history`, revoking `anon` direct Data API table access on `saved_plans`/`user_feedback`, dropping unused `idx_bank_rate_snapshots_updated_date`), locked unauthenticated admin `GET /api/feedback`, enforced retention caps (50 runs/user, 24 rate snapshots), and added [keepalive-supabase.yml](../../.github/workflows/keepalive-supabase.yml) (5-day ping).
@@ -58,8 +71,9 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
-## 3. Future Backlog (v1.4+ Ideas)
+## 3. Future Backlog (`v1.13+` Roadmap)
 
+- **CIC Credit Health & Loan Readiness Simulator (`/cic`)**: 5-pillar weighted simulator (`403–706` / Rank 1–10 + SBV Debt Groups 1–5) integrated with `/plan` passbooks; full spec in [PRODUCT_ROADMAP_CIC_AND_ADVISORS.md](./PRODUCT_ROADMAP_CIC_AND_ADVISORS.md).
+- **Vietnam Financial Advisor & Wealth Butler Connector (`/advisors`)**: Verified advisor directory (`FIDT`, `FinPeace`, `AFA Capital`, VWA/CFP/CFA independents) with 1-click anonymized read-only snapshot sharing; full benchmark & architecture in [PRODUCT_ROADMAP_CIC_AND_ADVISORS.md](./PRODUCT_ROADMAP_CIC_AND_ADVISORS.md).
 - **Multi-Goal Portfolio Tracking**: Allow users to track multiple active savings books (e.g., entering actual start dates and maturity dates) with maturity reminders.
-- **Automated Bank Rate Scraper / GitHub Action**: Periodically verify bank website rate tables and trigger redeploy or KV update automatically.
 - **Automated Unit Tests**: Add Vitest suite for `api/_lib/calculator.js` and `api/_lib/feasibilityEvaluator.js`.

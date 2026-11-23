@@ -3,21 +3,18 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  Columns2,
   Cookie,
+  Database,
   Globe,
   Home,
   Info,
   LayoutGrid,
   LogIn,
   LogOut,
-  Monitor,
   MonitorSmartphone,
   RotateCcw,
-  Rows2,
   ShieldCheck,
-  Smartphone,
-  Tablet,
+  Sparkles,
   User,
 } from 'lucide-react';
 import {
@@ -28,19 +25,12 @@ import {
   getLocalizedVersionLabel,
 } from '../tools.js';
 import { SUPPORTED_LANGS, useI18n } from '../i18n/index.jsx';
-import { DISPLAY_MODES, DUO_POSTURES, useDisplayMode } from '../layout/DisplayModeContext.jsx';
+import { DISPLAY_MODES, useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
+import { pct } from '../utils/format.js';
 import { PageContainer } from './AdaptiveLayout.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
-
-const MODE_ICONS = {
-  auto: MonitorSmartphone,
-  mobile: Smartphone,
-  tablet: Tablet,
-  duo: Columns2,
-  desktop: Monitor,
-};
 
 export function LanguageSwitcher({ compact = false, className }) {
   const { lang, setLang, tx } = useI18n();
@@ -94,162 +84,14 @@ export function LanguageSwitcher({ compact = false, className }) {
   );
 }
 
-export function DisplayModeSwitcher({ compact = false, className }) {
-  const { lang, tx } = useI18n();
-  const {
-    mode,
-    autoMode,
-    preference,
-    duoPosture,
-    duoPosturePref,
-    width,
-    height,
-    hardwareFoldable,
-    isFoldableInner,
-    isForced,
-    setPreference,
-    setDuoPosture,
-  } = useDisplayMode();
-  const [open, setOpen] = useState(false);
-
-  const activeMeta = DISPLAY_MODES.find((m) => m.id === preference) || DISPLAY_MODES[0];
-  const resolvedMeta = DISPLAY_MODES.find((m) => m.id === mode) || DISPLAY_MODES[0];
-  const ActiveIcon = MODE_ICONS[isForced ? mode : 'auto'] || MonitorSmartphone;
-
-  return (
-    <div className={cx('relative', className)}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label={tx('Chọn chế độ màn hình', 'Select display layout mode', '画面レイアウトを選択')}
-        title={tx(
-          'Chế độ hiển thị: Mobile · Tablet · Duo/Fold · Desktop',
-          'Display Layout: Mobile · Tablet · Duo/Fold · Desktop',
-          '画面表示切替：Mobile · Tablet · Duo/Fold · PC'
-        )}
-        className={cx(
-          'flex h-8 items-center gap-1.5 rounded-xl border px-2.5 text-xs font-medium transition',
-          isForced
-            ? 'border-indigo-400/40 bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/25'
-            : 'border-white/10 bg-white/[0.04] text-zinc-200 hover:bg-white/[0.08] hover:text-white'
-        )}
-      >
-        <ActiveIcon className="size-3.5 text-indigo-300" />
-        <span className={compact ? 'hidden sm:inline' : ''}>
-          {isForced ? resolvedMeta.shortLabel[lang] : activeMeta.shortLabel[lang]}
-        </span>
-        <ChevronDown className={cx('size-3 text-zinc-400 transition-transform', open && 'rotate-180')} />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-72 max-w-[92vw] animate-pop rounded-2xl border border-white/10 bg-elevated p-2 shadow-2xl">
-            <div className="mb-1.5 flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 text-[11px]">
-              <span className="text-zinc-400">
-                {tx('Màn hình thực:', 'Viewport:', '検出画面：')}{' '}
-                <strong className="font-mono text-zinc-200">
-                  {width}×{height}
-                </strong>
-              </span>
-              <Badge tone={hardwareFoldable || isFoldableInner ? 'brand' : 'neutral'}>
-                {hardwareFoldable || isFoldableInner
-                  ? tx('Duo / Fold', 'Foldable', '折りたたみ')
-                  : autoMode.toUpperCase()}
-              </Badge>
-            </div>
-
-            <div className="space-y-1">
-              {DISPLAY_MODES.map((item) => {
-                const Icon = MODE_ICONS[item.id] || MonitorSmartphone;
-                const active = preference === item.id;
-                const isEffective = mode === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setPreference(item.id);
-                      if (item.id !== 'duo') setOpen(false);
-                    }}
-                    className={cx(
-                      'flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left transition',
-                      active
-                        ? 'bg-indigo-500/15 ring-1 ring-inset ring-indigo-400/35'
-                        : 'hover:bg-white/[0.05]'
-                    )}
-                  >
-                    <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-indigo-300">
-                      <Icon className="size-3.5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-white">{item.label[lang]}</span>
-                        <span className="flex items-center gap-1">
-                          {item.id !== 'auto' && isEffective && preference === 'auto' && (
-                            <span className="rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] text-zinc-300">
-                              {tx('Đang dùng', 'Active', '現在')}
-                            </span>
-                          )}
-                          {active && <Check className="size-3.5 text-emerald-400" />}
-                        </span>
-                      </span>
-                      <span className="mt-0.5 block text-[11px] leading-snug text-zinc-400">{item.desc[lang]}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {mode === 'duo' && (
-              <div className="mt-2 border-t border-white/[0.08] pt-2">
-                <div className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-300">
-                  {tx('Tư thế Duo / Màn hình gập', 'Duo / Fold Posture', 'Duo / 折りたたみ姿勢')}
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  {DUO_POSTURES.map((p) => {
-                    const active = duoPosturePref === p.id;
-                    const Icon = p.id === 'tabletop' ? Rows2 : p.id === 'book' ? Columns2 : MonitorSmartphone;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setDuoPosture(p.id);
-                          setOpen(false);
-                        }}
-                        className={cx(
-                          'flex flex-col items-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-medium ring-1 ring-inset transition',
-                          active
-                            ? 'bg-indigo-500/20 text-white ring-indigo-400/40'
-                            : 'bg-white/[0.03] text-zinc-400 ring-white/[0.07] hover:text-white'
-                        )}
-                        title={p.desc[lang]}
-                      >
-                        <Icon className="size-3.5 text-indigo-300" />
-                        <span className="truncate">{p.id === 'auto' ? 'Auto' : p.id === 'book' ? 'Book' : 'Flex'}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <p className="mt-1 px-1 text-[10px] text-zinc-500">
-                  {duoPosture === 'book'
-                    ? tx('Đang hiển thị Book 2 nửa Trái | Phải.', 'Active: Side-by-side Book posture.', '現在：左右 Book モード')
-                    : tx('Đang hiển thị Flex Trên / Dưới.', 'Active: Top/Bottom Flex posture.', '現在：上下 Flex モード')}
-                </p>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export function LayoutModeBanner() {
   const { lang, tx } = useI18n();
-  const { mode, width, duoPosture, isForced, setDuoPosture, resetAuto } = useDisplayMode();
-  if (!isForced) return null;
+  const { mode, duoPosture, isForced, resetAuto } = useDisplayMode();
+  const hasQueryOverride =
+    typeof window !== 'undefined' &&
+    (new URLSearchParams(window.location.search).has('layout') ||
+      new URLSearchParams(window.location.search).has('posture'));
+  if (!isForced || !hasQueryOverride) return null;
 
   const activeLabel = (DISPLAY_MODES.find((m) => m.id === mode) || DISPLAY_MODES[0]).label[lang];
 
@@ -259,7 +101,7 @@ export function LayoutModeBanner() {
         <span className="flex items-center gap-2">
           <MonitorSmartphone className="size-3.5 text-indigo-300" />
           <span>
-            {tx('Đang xem chế độ:', 'Layout preview:', '表示レイアウト：')}{' '}
+            {tx('Đang xem chế độ QA:', 'QA layout preview:', 'QAレイアウト表示：')}{' '}
             <strong className="text-white">{activeLabel}</strong>
             {mode === 'duo' && (
               <span className="ml-1 text-indigo-300">
@@ -268,26 +110,13 @@ export function LayoutModeBanner() {
             )}
           </span>
         </span>
-        <div className="flex items-center gap-2">
-          {mode === 'duo' && width >= 560 && (
-            <button
-              type="button"
-              onClick={() => setDuoPosture(duoPosture === 'book' ? 'tabletop' : 'book')}
-              className="rounded-lg bg-white/[0.07] px-2 py-0.5 text-[11px] font-medium text-white transition hover:bg-white/[0.14]"
-            >
-              {duoPosture === 'book'
-                ? tx('Đổi Flex (Trên/Dưới)', 'Flex (Top/Bottom)', 'Flex(上下)へ')
-                : tx('Đổi Book (Trái/Phải)', 'Book (Left/Right)', 'Book(左右)へ')}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={resetAuto}
-            className="inline-flex items-center gap-1 rounded-lg bg-indigo-500/25 px-2.5 py-0.5 text-[11px] font-medium text-white transition hover:bg-indigo-500/40"
-          >
-            <RotateCcw className="size-3" /> {tx('Về Tự động', 'Reset Auto', '自動に戻す')}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={resetAuto}
+          className="inline-flex items-center gap-1 rounded-lg bg-indigo-500/25 px-2.5 py-0.5 text-[11px] font-medium text-white transition hover:bg-indigo-500/40"
+        >
+          <RotateCcw className="size-3" /> {tx('Về Tự động', 'Reset Auto', '自動に戻す')}
+        </button>
       </PageContainer>
     </div>
   );
@@ -401,47 +230,89 @@ export function Logo({ className }) {
   );
 }
 
-function MoreMenu({ route }) {
+function MoreMenu({ route, extraTools = [], onOpenData, onOpenOnboarding, align = 'left' }) {
   const { lang, tx } = useI18n();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [route]);
   const secondary = getLocalizedTools(lang).filter((t) => !t.primary);
-  const activeTool = secondary.find((t) => t.id === route);
+  const items = extraTools.length ? extraTools : secondary;
+  const activeTool = items.find((t) => t.id === route);
 
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className={cx(
           'flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[13px] transition-colors lg:px-3 lg:text-sm',
-          activeTool ? 'bg-white/[0.06] text-white' : 'text-zinc-400 hover:text-white'
+          activeTool ? 'bg-white/[0.08] font-medium text-white' : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
         )}
       >
-        <span className="hidden lg:inline">
-          {activeTool ? `${tx('Công cụ:', 'Tool:', 'ツール：')} ${activeTool.short}` : tx('Công cụ khác', 'More Tools', 'その他ツール')}
+        <span>
+          {activeTool ? activeTool.short : tx('Khám phá', 'Explore', 'ツール一覧')}
         </span>
-        <span className="lg:hidden">{activeTool ? activeTool.short : tx('Thêm', 'More', 'その他')}</span>
         <ChevronDown className={cx('size-3.5 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full z-50 mt-2 w-80 animate-pop rounded-2xl border border-white/10 bg-elevated p-2 shadow-2xl">
-            {secondary.map((t) => (
-              <a
-                key={t.id}
-                href={href(t.id)}
-                className="flex gap-3 rounded-xl p-3 transition-colors hover:bg-white/[0.04]"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] ring-1 ring-inset ring-white/[0.07]">
-                  <t.icon className="size-4 text-indigo-300" />
-                </span>
-                <span>
-                  <span className="block text-sm font-medium text-white">{t.label}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">{t.desc}</span>
-                </span>
-              </a>
-            ))}
+          <div
+            className={cx(
+              'absolute top-full z-50 mt-2 w-80 max-w-[92vw] animate-pop rounded-2xl border border-white/10 bg-elevated p-2 shadow-2xl',
+              align === 'right' ? 'right-0' : 'left-0'
+            )}
+          >
+            <div className="space-y-0.5">
+              {items.map((t) => (
+                <a
+                  key={t.id}
+                  href={href(t.id)}
+                  onClick={() => setOpen(false)}
+                  className={cx(
+                    'flex gap-3 rounded-xl p-2.5 transition-colors',
+                    route === t.id ? 'bg-indigo-500/15 ring-1 ring-inset ring-indigo-400/25' : 'hover:bg-white/[0.04]'
+                  )}
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] ring-1 ring-inset ring-white/[0.07]">
+                    <t.icon className="size-4 text-indigo-300" />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-medium text-white">{t.label}</span>
+                    <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">{t.desc}</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+            {(onOpenOnboarding || onOpenData) && (
+              <div className="mt-1.5 grid gap-1 border-t border-white/[0.06] pt-1.5">
+                {onOpenOnboarding && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onOpenOnboarding();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-indigo-200 transition hover:bg-indigo-500/15"
+                  >
+                    <Sparkles className="size-3.5 shrink-0 text-indigo-300" />
+                    {tx('Thiết lập nhanh 30 giây', '30-Second Quick Setup', '30秒クイック初期設定')}
+                  </button>
+                )}
+                {onOpenData && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      onOpenData();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <Database className="size-3.5 shrink-0 text-emerald-300" />
+                    {tx('Dữ liệu, Cloud & Sao lưu', 'Data, Cloud & Backup', 'データ・クラウド保存')}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -449,7 +320,7 @@ function MoreMenu({ route }) {
   );
 }
 
-function UserMenu({ onOpenAuth, compact = false }) {
+function UserMenu({ onOpenAuth, onOpenData, onOpenOnboarding, compact = false }) {
   const { user, profile, authConfigured, signOut } = useAuth();
   const { tx } = useI18n();
   const notify = useToast();
@@ -490,7 +361,7 @@ function UserMenu({ onOpenAuth, compact = false }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-56 animate-pop rounded-2xl border border-white/10 bg-elevated p-1.5 shadow-2xl">
+          <div className="absolute right-0 top-full z-50 mt-2 w-60 animate-pop rounded-2xl border border-white/10 bg-elevated p-1.5 shadow-2xl">
             <div className="border-b border-white/[0.06] px-3 py-2">
               <p className="truncate text-xs font-semibold text-white">{displayName}</p>
               <p className="truncate text-[11px] text-zinc-400">{user.email}</p>
@@ -500,8 +371,32 @@ function UserMenu({ onOpenAuth, compact = false }) {
               onClick={() => setOpen(false)}
               className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
             >
-              <User className="size-3.5 text-indigo-300" /> {tx('Hồ sơ & Kịch bản đã lưu', 'Profile & Saved Plans', 'プロフィール・保存済み')}
+              <User className="size-3.5 text-indigo-300" /> {tx('Hồ sơ & Kế hoạch chung', 'Profile & Shared Plans', 'プロフィール・共同プラン')}
             </a>
+            {onOpenOnboarding && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenOnboarding();
+                }}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <Sparkles className="size-3.5 text-indigo-300" /> {tx('Hướng dẫn nhanh 30s', '30s Quick Setup', '30秒クイック設定')}
+              </button>
+            )}
+            {onOpenData && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onOpenData();
+                }}
+                className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-zinc-200 transition hover:bg-white/[0.05] hover:text-white"
+              >
+                <Database className="size-3.5 text-emerald-300" /> {tx('Dữ liệu & Sao lưu', 'Data & Backup', 'データ管理')}
+              </button>
+            )}
             <button
               type="button"
               onClick={async () => {
@@ -510,7 +405,7 @@ function UserMenu({ onOpenAuth, compact = false }) {
                 notify(tx('Đã đăng xuất', 'Signed out', 'ログアウトしました'));
                 navigate(href('home'));
               }}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs text-red-300 transition hover:bg-red-500/10"
+              className="mt-0.5 flex w-full items-center gap-2.5 rounded-xl border-t border-white/[0.06] px-3 py-2 text-left text-xs text-red-300 transition hover:bg-red-500/10"
             >
               <LogOut className="size-3.5" /> {tx('Đăng xuất', 'Sign out', 'ログアウト')}
             </button>
@@ -521,7 +416,58 @@ function UserMenu({ onOpenAuth, compact = false }) {
   );
 }
 
-function TabletToolBar({ route }) {
+function renderFeaturedNavLink({ t, route, topRateLabel, compact = false }) {
+  const active = route === t.id;
+  const isPlan = t.id === 'plan';
+  const isRates = t.id === 'rates';
+
+  if (isPlan) {
+    return (
+      <a
+        key={t.id}
+        href={href(t.id)}
+        className={cx(
+          'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl font-semibold transition-all',
+          compact ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-[13px] lg:text-sm',
+          active
+            ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-[0_6px_22px_-6px_rgba(99,102,241,0.85)]'
+            : 'bg-gradient-to-r from-indigo-500/20 to-violet-500/15 text-indigo-100 ring-1 ring-inset ring-indigo-400/35 hover:from-indigo-500/30 hover:to-violet-500/25 hover:text-white'
+        )}
+      >
+        <t.icon className={cx('shrink-0', compact ? 'size-3.5' : 'size-3.5 text-indigo-200')} />
+        <span>{t.short}</span>
+        <span className={cx('size-1.5 rounded-full', active ? 'bg-white' : 'bg-emerald-400')} aria-hidden="true" />
+      </a>
+    );
+  }
+
+  return (
+    <a
+      key={t.id}
+      href={href(t.id)}
+      className={cx(
+        'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl transition-colors',
+        compact ? 'px-2 py-1 text-xs font-medium' : 'px-3 py-1.5 text-[13px] lg:text-sm',
+        active
+          ? isRates
+            ? 'bg-emerald-500/15 font-medium text-emerald-100 ring-1 ring-inset ring-emerald-400/35'
+            : 'bg-white/[0.08] font-medium text-white'
+          : isRates
+            ? 'text-zinc-200 hover:bg-emerald-500/[0.08] hover:text-white'
+            : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
+      )}
+    >
+      <span>{t.short}</span>
+      {isRates && topRateLabel && (
+        <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-400/25">
+          {topRateLabel}
+        </span>
+      )}
+    </a>
+  );
+}
+
+function TabletToolBar({ route, topRateLabel }) {
   const { lang, tx } = useI18n();
   const all = [{ id: 'home', short: tx('Trang chủ', 'Home', 'ホーム'), icon: Home }, ...getLocalizedTools(lang)];
 
@@ -531,6 +477,8 @@ function TabletToolBar({ route }) {
         <nav className="no-scrollbar flex items-center gap-1.5 overflow-x-auto py-1.5">
           {all.map((t) => {
             const active = route === t.id;
+            const isPlan = t.id === 'plan';
+            const isRates = t.id === 'rates';
             return (
               <a
                 key={t.id}
@@ -539,11 +487,18 @@ function TabletToolBar({ route }) {
                   'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                   active
                     ? 'bg-indigo-500/20 text-white ring-1 ring-inset ring-indigo-400/35'
-                    : 'text-zinc-400 hover:bg-white/[0.05] hover:text-white'
+                    : isPlan
+                      ? 'bg-indigo-500/10 text-indigo-100 ring-1 ring-inset ring-indigo-400/25 hover:bg-indigo-500/20'
+                      : 'text-zinc-400 hover:bg-white/[0.05] hover:text-white'
                 )}
               >
                 <t.icon className="size-3.5 text-indigo-300" />
-                {t.short}
+                <span>{t.short}</span>
+                {isRates && topRateLabel && (
+                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-300">
+                    {topRateLabel}
+                  </span>
+                )}
               </a>
             );
           })}
@@ -553,10 +508,20 @@ function TabletToolBar({ route }) {
   );
 }
 
-export function TopNav({ route, onOpenData, onOpenAuth }) {
-  const { lang, tx } = useI18n();
+export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
+  const { lang } = useI18n();
   const { mode, duoPosture, width, isCoverScreen } = useDisplayMode();
-  const primary = getLocalizedTools(lang).filter((t) => t.primary);
+  const { banks, getRate } = useRates();
+  const allTools = getLocalizedTools(lang);
+  const primary = allTools.filter((t) => t.primary);
+  const featured = primary.slice(0, 3);
+  const overflowTools = [...primary.slice(3), ...allTools.filter((t) => !t.primary)];
+
+  const top12m = banks.reduce((best, b) => {
+    const r = getRate(b, '12M');
+    return r > best ? r : best;
+  }, 0);
+  const topRateLabel = top12m > 0 ? pct(top12m, 1, lang) : '';
 
   if (mode === 'mobile') {
     return (
@@ -566,13 +531,9 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
             <Logo />
             {!isCoverScreen && <VersionBadge compact />}
           </div>
-          <div className="flex shrink-0 items-center gap-1">
-            <DisplayModeSwitcher compact />
+          <div className="flex shrink-0 items-center gap-1.5">
             <LanguageSwitcher compact />
-            <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
-              <ShieldCheck className="size-4" />
-            </Button>
-            <UserMenu onOpenAuth={onOpenAuth} compact />
+            <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} compact />
           </div>
         </PageContainer>
       </header>
@@ -588,16 +549,18 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
             <VersionBadge compact />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <DisplayModeSwitcher compact />
+            <MoreMenu
+              route={route}
+              extraTools={overflowTools}
+              onOpenData={onOpenData}
+              onOpenOnboarding={onOpenOnboarding}
+              align="right"
+            />
             <LanguageSwitcher compact />
-            <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
-              <ShieldCheck className="size-4" />
-              <span className="hidden sm:inline">{tx('Dữ liệu', 'Data', 'データ')}</span>
-            </Button>
-            <UserMenu onOpenAuth={onOpenAuth} />
+            <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} />
           </div>
         </PageContainer>
-        <TabletToolBar route={route} />
+        <TabletToolBar route={route} topRateLabel={topRateLabel} />
       </header>
     );
   }
@@ -612,31 +575,21 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
                 <Logo />
                 <VersionBadge compact className="hidden xl:inline-flex" />
               </div>
-              <nav className="no-scrollbar flex items-center gap-0.5 overflow-x-auto">
-                {primary.map((t) => (
-                  <a
-                    key={t.id}
-                    href={href(t.id)}
-                    className={cx(
-                      'shrink-0 whitespace-nowrap rounded-lg px-2 py-1 text-xs font-medium transition-colors',
-                      route === t.id ? 'bg-indigo-500/20 text-white' : 'text-zinc-400 hover:text-white'
-                    )}
-                  >
-                    {t.short}
-                  </a>
-                ))}
+              <nav className="no-scrollbar flex items-center gap-1 overflow-x-auto">
+                {featured.map((t) => renderFeaturedNavLink({ t, route, topRateLabel, compact: true }))}
               </nav>
             </div>
             <div className="duo-hinge-vertical" aria-hidden="true" />
             <div className="flex min-w-0 items-center justify-between gap-1.5">
-              <MoreMenu route={route} />
+              <MoreMenu
+                route={route}
+                extraTools={overflowTools}
+                onOpenData={onOpenData}
+                onOpenOnboarding={onOpenOnboarding}
+              />
               <div className="flex shrink-0 items-center gap-1.5">
-                <DisplayModeSwitcher compact />
                 <LanguageSwitcher compact />
-                <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
-                  <ShieldCheck className="size-4" />
-                </Button>
-                <UserMenu onOpenAuth={onOpenAuth} compact />
+                <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} compact />
               </div>
             </div>
           </div>
@@ -651,82 +604,56 @@ export function TopNav({ route, onOpenData, onOpenAuth }) {
         <PageContainer className="flex h-11 items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <Logo />
-            <nav className="no-scrollbar hidden items-center gap-0.5 overflow-x-auto sm:flex">
-              {primary.map((t) => (
-                <a
-                  key={t.id}
-                  href={href(t.id)}
-                  className={cx(
-                    'shrink-0 whitespace-nowrap rounded-lg px-2 py-1 text-xs transition-colors',
-                    route === t.id ? 'bg-white/[0.08] text-white' : 'text-zinc-400 hover:text-white'
-                  )}
-                >
-                  {t.short}
-                </a>
-              ))}
-              <MoreMenu route={route} />
+            <nav className="no-scrollbar hidden items-center gap-1 overflow-x-auto sm:flex">
+              {featured.map((t) => renderFeaturedNavLink({ t, route, topRateLabel, compact: true }))}
+              <MoreMenu
+                route={route}
+                extraTools={overflowTools}
+                onOpenData={onOpenData}
+                onOpenOnboarding={onOpenOnboarding}
+              />
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <DisplayModeSwitcher compact />
             <LanguageSwitcher compact />
-            <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
-              <ShieldCheck className="size-4" />
-            </Button>
-            <UserMenu onOpenAuth={onOpenAuth} compact />
+            <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} compact />
           </div>
         </PageContainer>
       </header>
     );
   }
 
-  // Desktop mode
+  // Desktop mode: streamlined Brand · 3 Featured Tools + Explore · Language + Account
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/75 backdrop-blur-xl">
-      <PageContainer className="flex h-14 items-center gap-4">
+      <PageContainer className="flex h-14 items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2.5">
           <Logo />
           <VersionBadge compact />
         </div>
-        <nav className="flex items-center gap-0.5">
-          {primary.map((t) => (
-            <a
-              key={t.id}
-              href={href(t.id)}
-              className={cx(
-                'whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors',
-                route === t.id ? 'bg-white/[0.06] text-white' : 'text-zinc-400 hover:text-white'
-              )}
-            >
-              {t.short}
-            </a>
-          ))}
-          <MoreMenu route={route} />
+        <nav className="flex items-center gap-1.5">
+          {featured.map((t) => renderFeaturedNavLink({ t, route, topRateLabel }))}
+          <MoreMenu
+            route={route}
+            extraTools={overflowTools}
+            onOpenData={onOpenData}
+            onOpenOnboarding={onOpenOnboarding}
+          />
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <DisplayModeSwitcher compact />
+        <div className="flex shrink-0 items-center gap-2">
           <LanguageSwitcher compact />
-          <Button variant="ghost" size="sm" onClick={onOpenData} aria-label={tx('Dữ liệu của bạn', 'Your data', 'データ管理')}>
-            <ShieldCheck className="size-4" />
-            <span>{tx('Dữ liệu', 'Data', 'データ')}</span>
-          </Button>
-          <UserMenu onOpenAuth={onOpenAuth} />
-          {route !== 'plan' && (
-            <Button as="a" href={href('plan')} variant="primary" size="sm">
-              {tx('Lập kế hoạch', 'Start Planning', 'プラン作成')}
-            </Button>
-          )}
+          <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} />
         </div>
       </PageContainer>
     </header>
   );
 }
 
-export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
+export function MobileTabBar({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
   const [sheet, setSheet] = useState(false);
   const { user, authConfigured } = useAuth();
   const { lang, setLang, tx } = useI18n();
-  const { mode, duoPosture, duoPosturePref, width, preference, setPreference, setDuoPosture } = useDisplayMode();
+  const { mode, duoPosture, width } = useDisplayMode();
   useEffect(() => setSheet(false), [route]);
 
   const showMobileBar = mode === 'mobile' || (mode === 'duo' && duoPosture === 'tabletop' && width < 640);
@@ -743,16 +670,20 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
         <div className="mx-auto grid max-w-[460px] grid-cols-5">
           {items.map((t) => {
             const active = route === t.id;
+            const highlight = t.id === 'plan' || t.id === 'rates';
             return (
               <a
                 key={t.id}
                 href={href(t.id)}
                 className={cx(
-                  'flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition active:scale-95',
-                  active ? 'text-white' : 'text-zinc-500'
+                  'relative flex min-h-[52px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-medium transition active:scale-95',
+                  active ? 'text-white' : highlight ? 'text-indigo-200/90' : 'text-zinc-500'
                 )}
               >
-                <t.icon className={cx('size-5', active && 'text-indigo-300')} />
+                {active && (
+                  <span className="absolute top-0 h-0.5 w-8 rounded-full bg-indigo-400" aria-hidden="true" />
+                )}
+                <t.icon className={cx('size-5', active ? 'text-indigo-300' : highlight && 'text-indigo-400/90')} />
                 <span className="truncate">{t.short}</span>
               </a>
             );
@@ -770,7 +701,7 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
           </button>
         </div>
       </nav>
-      <Modal open={sheet} onClose={() => setSheet(false)} title={tx('Công cụ & Hiển thị', 'Tools & Display', 'ツール・画面設定')}>
+      <Modal open={sheet} onClose={() => setSheet(false)} title={tx('Công cụ & Tài khoản', 'Tools & Account', 'ツール・アカウント')}>
         <div className="space-y-4">
           <div className="grid gap-1.5">
             {localizedTools.slice(3).map((t) => (
@@ -796,7 +727,7 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
           <div className="grid grid-cols-2 gap-2 border-t border-white/[0.06] pt-3">
             {user ? (
               <Button as="a" href={href('profile')} variant="secondary" size="sm" onClick={() => setSheet(false)}>
-                <User className="size-3.5 text-indigo-300" /> {tx('Hồ sơ & Kịch bản', 'Profile & Plans', 'プロフィール')}
+                <User className="size-3.5 text-indigo-300" /> {tx('Hồ sơ & Kế hoạch', 'Profile & Plans', 'プロフィール')}
               </Button>
             ) : (
               authConfigured &&
@@ -827,48 +758,20 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
                 <ShieldCheck className="size-3.5 text-emerald-300" /> {tx('Dữ liệu & Cloud', 'Data & Cloud', 'データ管理')}
               </Button>
             )}
-          </div>
-
-          <div className="space-y-2 border-t border-white/[0.06] pt-3 text-xs text-zinc-400">
-            <span className="flex items-center gap-1.5 font-medium text-zinc-300">
-              <MonitorSmartphone className="size-3.5 text-indigo-300" />
-              {tx('Chế độ màn hình:', 'Display layout:', '画面レイアウト：')}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {DISPLAY_MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setPreference(m.id)}
-                  className={cx(
-                    'rounded-lg px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition',
-                    preference === m.id
-                      ? 'bg-indigo-500/20 text-white ring-indigo-400/40'
-                      : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08] hover:text-white'
-                  )}
-                >
-                  {m.shortLabel[lang]}
-                </button>
-              ))}
-            </div>
-            {mode === 'duo' && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {DUO_POSTURES.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setDuoPosture(p.id)}
-                    className={cx(
-                      'rounded-lg px-2 py-1 text-[11px] font-medium ring-1 ring-inset transition',
-                      duoPosturePref === p.id
-                        ? 'bg-emerald-500/20 text-emerald-200 ring-emerald-400/40'
-                        : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08]'
-                    )}
-                  >
-                    {p.label[lang]}
-                  </button>
-                ))}
-              </div>
+            {onOpenOnboarding && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="col-span-2 ring-1 ring-inset ring-indigo-400/25"
+                onClick={() => {
+                  setSheet(false);
+                  onOpenOnboarding();
+                }}
+              >
+                <Sparkles className="size-3.5 text-indigo-300" />
+                {tx('Thiết lập nhanh trong 30 giây', '30-Second Quick Setup', '30秒クイック初期設定')}
+              </Button>
             )}
           </div>
 
@@ -908,7 +811,7 @@ export function MobileTabBar({ route, onOpenData, onOpenAuth }) {
 
 export function Footer({ onOpenCookies }) {
   const { lang, setLang, tx } = useI18n();
-  const { mode, isTabletSplit, preference, setPreference } = useDisplayMode();
+  const { mode, isTabletSplit } = useDisplayMode();
   const localizedTools = getLocalizedTools(lang);
 
   const bottomPadClass =
@@ -986,21 +889,6 @@ export function Footer({ onOpenCookies }) {
                   )}
                 >
                   {item.short}
-                </button>
-              ))}
-            </div>
-            <div className="inline-flex flex-wrap items-center gap-1 rounded-full bg-white/[0.03] p-0.5 ring-1 ring-inset ring-white/[0.08]">
-              {DISPLAY_MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setPreference(m.id)}
-                  className={cx(
-                    'rounded-full px-2 py-0.5 text-[11px] font-medium transition',
-                    preference === m.id ? 'bg-indigo-500/25 text-indigo-200' : 'text-zinc-400 hover:text-white'
-                  )}
-                >
-                  {m.shortLabel[lang]}
                 </button>
               ))}
             </div>

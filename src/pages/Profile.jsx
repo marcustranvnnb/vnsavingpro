@@ -10,32 +10,40 @@ import {
   KeyRound,
   LogIn,
   LogOut,
-  MonitorSmartphone,
+  Mail,
   Plus,
   RefreshCw,
   RotateCcw,
   Save,
+  Share2,
   Shield,
   Trash2,
+  UserPlus,
+  Users,
   User as UserIcon,
 } from 'lucide-react';
 import { Badge, Button, Card, CardHeader, PageHeader, cx } from '../components/ui.jsx';
 import { DualPaneSection } from '../components/AdaptiveLayout.jsx';
-import { DISPLAY_MODES, DUO_POSTURES, useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
 import {
   CALC_HISTORY_UPDATED_EVENT,
+  acceptCollabInviteFromApi,
+  createCollabInviteFromApi,
   deleteCalculationHistoryFromApi,
   deleteCloudPlanFromApi,
+  fetchCollaborationsFromApi,
   fetchMyCalculationHistoryFromApi,
   fetchMyCloudPlansFromApi,
   loadLocalCalculationHistory,
   openAuthPrompt,
+  previewCollabInviteFromApi,
   removeLocalCalculationHistoryEntry,
+  revokeCollabInviteFromApi,
   saveCloudPlanToApi,
   saveToolRestoreState,
+  syncCollabPlanFromApi,
   syncLocalHistoryToCloud,
 } from '../utils/apiClient.js';
 import { cryptoStorage, isPlainObject } from '../utils/cryptoStorage.js';
@@ -57,7 +65,7 @@ function getHouseholdBadgeLabel(mode, tx) {
   return tx('Cá nhân', 'Individual', '個人');
 }
 
-export default function Profile() {
+export default function Profile({ params }) {
   const {
     user,
     profile,
@@ -69,8 +77,12 @@ export default function Profile() {
   } = useAuth();
   const { banks, replaceAll } = useRates();
   const { lang, tx } = useI18n();
-  const { mode, preference, duoPosturePref, setPreference, setDuoPosture } = useDisplayMode();
   const notify = useToast();
+
+  const inviteFromUrl = String(params?.invite || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
 
   const [fullName, setFullName] = useState('');
   const [defaultBankId, setDefaultBankId] = useState('cake');
@@ -86,6 +98,20 @@ export default function Profile() {
   const [newPlanTitle, setNewPlanTitle] = useState('');
   const [savingPlan, setSavingPlan] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
+
+  const [collabs, setCollabs] = useState([]);
+  const [collabsLoading, setCollabsLoading] = useState(false);
+  const [collabMode, setCollabMode] = useState('COUPLE');
+  const [collabRole, setCollabRole] = useState('partner');
+  const [collabTitle, setCollabTitle] = useState('');
+  const [collabEmail, setCollabEmail] = useState('');
+  const [creatingCollab, setCreatingCollab] = useState(false);
+  const [latestInviteUrl, setLatestInviteUrl] = useState('');
+  const [manualInviteCode, setManualInviteCode] = useState('');
+  const [joiningCollab, setJoiningCollab] = useState(false);
+  const [syncingCollabId, setSyncingCollabId] = useState('');
+  const [invitePreview, setInvitePreview] = useState(null);
+  const [invitePreviewError, setInvitePreviewError] = useState('');
 
   const [historyItems, setHistoryItems] = useState(() => loadLocalCalculationHistory());
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -143,6 +169,45 @@ export default function Profile() {
     }
   }, [getAccessToken]);
 
+  const loadCollaborations = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    setCollabsLoading(true);
+    try {
+      const res = await fetchCollaborationsFromApi(token);
+      setCollabs(res.items || []);
+    } catch {
+      // ignore if collaborations table is not yet migrated
+    } finally {
+      setCollabsLoading(false);
+    }
+  }, [getAccessToken]);
+
+  useEffect(() => {
+    if (!inviteFromUrl || !/^[A-Z0-9]{6,10}$/.test(inviteFromUrl)) {
+      setInvitePreview(null);
+      setInvitePreviewError('');
+      return;
+    }
+    let cancelled = false;
+    previewCollabInviteFromApi(inviteFromUrl)
+      .then((res) => {
+        if (!cancelled) {
+          setInvitePreview(res.preview || null);
+          setInvitePreviewError('');
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setInvitePreview(null);
+          setInvitePreviewError(err?.message || '');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteFromUrl]);
+
   useEffect(() => {
     const onUpdated = () => {
       if (!user) {
@@ -157,8 +222,25 @@ export default function Profile() {
     if (user) {
       loadMyPlans();
       loadMyHistory();
+      loadCollaborations();
     }
-  }, [user, loadMyPlans, loadMyHistory]);
+  }, [user, loadMyPlans, loadMyHistory, loadCollaborations]);
+
+  const getCollabInviteUrl = (code) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://vnsavingpro.vercel.app';
+    return `${origin}/profile?invite=${code}`;
+  };
+
+  const handleCopyText = async (text, label) => {
+    try {
+      await navigator.clipboard?.writeText(text);
+      setCopiedCode(text);
+      notify(label || tx('Đã sao chép', 'Copied', 'コピーしました'));
+      setTimeout(() => setCopiedCode(''), 1500);
+    } catch {
+      notify(text);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -172,6 +254,49 @@ export default function Profile() {
     const guestLocale = lang === 'en' ? 'en-US' : lang === 'ja' ? 'ja-JP' : 'vi-VN';
     return (
       <div className="mx-auto max-w-2xl space-y-5 py-8">
+        {inviteFromUrl && (
+          <Card className="border-emerald-400/30 bg-gradient-to-br from-emerald-500/[0.09] via-surface to-indigo-500/[0.06] p-5 sm:p-6">
+            {invitePreview ? (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone="success">{getHouseholdBadgeLabel(invitePreview.householdMode, tx)}</Badge>
+                    <Badge tone="brand">{invitePreview.inviteCode}</Badge>
+                  </div>
+                  <h2 className="text-base font-semibold text-white">
+                    {tx(
+                      `${invitePreview.ownerDisplayName} mời bạn cùng lập "${invitePreview.title}"`,
+                      `${invitePreview.ownerDisplayName} invited you to co-plan "${invitePreview.title}"`,
+                      `${invitePreview.ownerDisplayName} さんから共同プラン「${invitePreview.title}」への招待`
+                    )}
+                  </h2>
+                  <p className="text-xs text-zinc-400">
+                    {tx(
+                      'Đăng nhập bằng Google hoặc Email để xác nhận tham gia không gian tài chính chung.',
+                      'Sign in with Google or Email to join this shared planning workspace.',
+                      'Googleまたはメールでログインして共同プランへ参加してください。'
+                    )}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => openAuthPrompt('login')}
+                >
+                  <UserPlus className="size-4" />
+                  {tx('Đăng nhập & Tham gia', 'Sign In to Join', 'ログインして参加')}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-300">
+                {invitePreviewError ||
+                  tx('Không tìm thấy thông tin lời mời hoặc mã mời đã hết hạn.', 'Invite not found or expired.', '招待が見つからないか期限切れです。')}
+              </p>
+            )}
+          </Card>
+        )}
         <Card className="border-indigo-400/25 bg-gradient-to-br from-indigo-500/[0.08] via-surface to-emerald-500/[0.05] p-6 text-center sm:p-8">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-300 ring-1 ring-inset ring-indigo-400/30">
             <BookmarkPlus className="size-6" />
@@ -400,6 +525,126 @@ export default function Profile() {
     notify(tx('Đã xoá bản ghi khỏi lịch sử', 'Deleted history record', '履歴を削除しました'));
   };
 
+  const handleCreateCollabInvite = async (e) => {
+    e.preventDefault();
+    const token = getAccessToken();
+    if (!token) return;
+    setCreatingCollab(true);
+    try {
+      const plannerState = cryptoStorage.load('PLANNER_STATE', {});
+      const title =
+        collabTitle.trim() ||
+        (collabMode === 'FAMILY'
+          ? tx('Kế hoạch Gia đình chung', 'Shared Family Roadmap', '家族共同プラン')
+          : tx('Kế hoạch Cặp đôi chung', 'Shared Couple Roadmap', 'カップル共同プラン'));
+      const res = await createCollabInviteFromApi({
+        householdMode: collabMode,
+        role: collabRole,
+        title,
+        invitedEmail: collabEmail.trim(),
+        planPayload: isPlainObject(plannerState) ? { ...plannerState, householdMode: collabMode } : { householdMode: collabMode },
+        accessToken: token,
+      });
+      setCollabTitle('');
+      setCollabEmail('');
+      const shareUrl = getCollabInviteUrl(res.item.inviteCode);
+      setLatestInviteUrl(shareUrl);
+      setCollabs((prev) => [res.item, ...prev.filter((c) => c.id !== res.item.id)]);
+      notify(
+        res.emailSent
+          ? tx('Đã tạo lời mời & gửi email tới người đồng hành!', 'Created invite & emailed your partner!', '招待を作成しメール送信しました')
+          : tx(`Đã tạo mã mời ${res.item.inviteCode} · Hãy sao chép link gửi ngay!`, `Invite ${res.item.inviteCode} ready · Copy & share!`, `招待コード ${res.item.inviteCode} を作成しました`)
+      );
+    } catch (err) {
+      notify(err?.message || tx('Không thể tạo lời mời chung', 'Could not create invite', '招待を作成できませんでした'));
+    } finally {
+      setCreatingCollab(false);
+    }
+  };
+
+  const handleAcceptCollabInvite = async (rawCode) => {
+    const token = getAccessToken();
+    const cleanCode = String(rawCode || '').trim().toUpperCase();
+    if (!token || !cleanCode) return;
+    setJoiningCollab(true);
+    try {
+      const res = await acceptCollabInviteFromApi({ inviteCode: cleanCode, accessToken: token });
+      setManualInviteCode('');
+      setInvitePreview(null);
+      if (isPlainObject(res.item?.planPayload) && Object.keys(res.item.planPayload).length > 0) {
+        cryptoStorage.save('PLANNER_STATE', {
+          ...res.item.planPayload,
+          householdMode: res.item.householdMode,
+        });
+      }
+      await loadCollaborations();
+      notify(
+        tx(
+          `Đã tham gia "${res.item.title}"! Có thể mở ngay trong Lập kế hoạch.`,
+          `Joined "${res.item.title}"! Ready to open in Planner.`,
+          `「${res.item.title}」に参加しました！`
+        )
+      );
+    } catch (err) {
+      notify(err?.message || tx('Không thể tham gia lời mời này', 'Could not accept invite', '招待に参加できませんでした'));
+    } finally {
+      setJoiningCollab(false);
+    }
+  };
+
+  const handleOpenCollabPlan = (item) => {
+    const prev = cryptoStorage.load('PLANNER_STATE', {});
+    const nextPlan = {
+      ...(isPlainObject(prev) ? prev : {}),
+      ...(isPlainObject(item.planPayload) ? item.planPayload : {}),
+      householdMode: item.householdMode || 'COUPLE',
+      householdConfigured: true,
+    };
+    cryptoStorage.save('PLANNER_STATE', nextPlan);
+    notify(tx(`Đã nạp "${item.title}" (${getHouseholdBadgeLabel(item.householdMode, tx)})`, `Loaded "${item.title}"`, `「${item.title}」を開きました`));
+    navigate(href('plan', { hh: item.householdMode || 'COUPLE' }));
+  };
+
+  const handleSyncCollabPlan = async (item) => {
+    const token = getAccessToken();
+    if (!token || !item?.id) return;
+    setSyncingCollabId(item.id);
+    try {
+      const currentPlan = cryptoStorage.load('PLANNER_STATE', {});
+      const res = await syncCollabPlanFromApi({
+        collabId: item.id,
+        planPayload: {
+          ...(isPlainObject(currentPlan) ? currentPlan : {}),
+          householdMode: item.householdMode || currentPlan?.householdMode || 'COUPLE',
+        },
+        accessToken: token,
+      });
+      setCollabs((prev) => prev.map((c) => (c.id === res.item.id ? res.item : c)));
+      notify(tx('Đã đồng bộ thông số kế hoạch mới nhất lên không gian chung!', 'Synced latest plan numbers to shared space!', '最新プランを共有スペースに同期しました'));
+    } catch (err) {
+      notify(err?.message || tx('Không thể đồng bộ kế hoạch chung', 'Could not sync shared plan', '共有プランを同期できませんでした'));
+    } finally {
+      setSyncingCollabId('');
+    }
+  };
+
+  const handleRevokeCollab = async (item) => {
+    const token = getAccessToken();
+    if (
+      !token ||
+      !confirm(tx('Thu hồi lời mời / Rời khỏi không gian kế hoạch chung này?', 'Revoke or leave this shared workspace?', 'この共同プランを解除しますか？'))
+    ) {
+      return;
+    }
+    try {
+      await revokeCollabInviteFromApi(item.id, token);
+      setCollabs((prev) => prev.filter((c) => c.id !== item.id));
+      notify(tx('Đã gỡ bỏ kế hoạch chung', 'Removed shared workspace', '共同プランを解除しました'));
+    } catch (err) {
+      notify(err?.message || tx('Không thể cập nhật trạng thái lời mời', 'Could not remove invite', '解除できませんでした'));
+    }
+  };
+
   const filteredHistory =
     historyFilter === 'all' ? historyItems : historyItems.filter((item) => item.tool === historyFilter);
 
@@ -464,61 +709,6 @@ export default function Profile() {
                     <Badge tone="success">{tx('Đã xác thực', 'Verified', '認証済み')}</Badge>
                   </div>
                 </div>
-              </div>
-            </Card>
-
-            <Card className="p-5">
-              <CardHeader
-                title={tx('Giao diện & Chế độ màn hình', 'Screen & Display Layout', '画面レイアウト設定')}
-                description={tx(
-                  'Chọn bố cục tối ưu cho Mobile, Tablet, Duo / Màn hình gập (Galaxy Fold, iPhone Duo) hoặc PC.',
-                  'Pick an optimized layout for Mobile, Tablet, Duo / Foldable (Galaxy Fold, iPhone Duo), or Desktop.',
-                  'Mobile・Tablet・Duo/折りたたみ（Galaxy Fold、iPhone Duo）・PC向けレイアウトを選択できます。'
-                )}
-                right={<MonitorSmartphone className="size-4 text-indigo-300" />}
-              />
-              <div className="mt-4 space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {DISPLAY_MODES.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setPreference(item.id)}
-                      className={cx(
-                        'rounded-xl px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition',
-                        preference === item.id
-                          ? 'bg-indigo-500/20 text-white ring-indigo-400/45'
-                          : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08] hover:text-white'
-                      )}
-                    >
-                      {item.label[lang]}
-                    </button>
-                  ))}
-                </div>
-                {mode === 'duo' && (
-                  <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3">
-                    <p className="mb-2 text-[11px] font-medium text-indigo-200">
-                      {tx('Tư thế Duo / Màn hình gập:', 'Duo / Fold Posture:', 'Duo / 折りたたみ姿勢：')}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {DUO_POSTURES.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setDuoPosture(p.id)}
-                          className={cx(
-                            'rounded-lg px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition',
-                            duoPosturePref === p.id
-                              ? 'bg-emerald-500/20 text-emerald-200 ring-emerald-400/40'
-                              : 'bg-white/[0.04] text-zinc-300 ring-white/[0.08] hover:text-white'
-                          )}
-                        >
-                          {p.label[lang]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </Card>
 
@@ -629,6 +819,249 @@ export default function Profile() {
         }
         right={
           <div className="space-y-6">
+            <Card className="border-indigo-400/20 p-5">
+              <CardHeader
+                title={tx('Mời lập kế hoạch cùng nhau (Cặp đôi · Gia đình)', 'Shared Household Planning (Couple · Family)', '共同プランニング（カップル・家族）')}
+                description={tx(
+                  'Tạo không gian hoạch định chung cho 2 người hoặc gia đình: gửi link mời, đồng bộ thông số kế hoạch từ máy này và cùng mở trực tiếp trong trang Kế hoạch.',
+                  'Invite a partner or family member via shareable link or optional email to co-own and sync your household savings plan.',
+                  'パートナーや家族をリンク／メールで招待し、最新の積立プランを共有・同期できます。'
+                )}
+                right={<Users className="size-4 text-indigo-300" />}
+              />
+
+              {invitePreview && invitePreview.status !== 'revoked' && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] p-3.5">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <Badge tone="success">{tx('Lời mời đang chờ bạn', 'Pending Invite', '招待が届いています')}</Badge>
+                      <Badge tone="brand">{invitePreview.inviteCode}</Badge>
+                      <Badge tone="neutral">{getHouseholdBadgeLabel(invitePreview.householdMode, tx)}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs font-medium text-white">
+                      {tx(
+                        `${invitePreview.ownerDisplayName} mời bạn tham gia "${invitePreview.title}"`,
+                        `${invitePreview.ownerDisplayName} invited you to "${invitePreview.title}"`,
+                        `${invitePreview.ownerDisplayName} さんからの招待：「${invitePreview.title}」`
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    disabled={joiningCollab}
+                    onClick={() => handleAcceptCollabInvite(invitePreview.inviteCode)}
+                  >
+                    <UserPlus className="size-3.5" />
+                    {joiningCollab
+                      ? tx('Đang tham gia...', 'Joining...', '参加処理中...')
+                      : tx('Chấp nhận tham gia', 'Accept Invite', '承諾して参加')}
+                  </Button>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateCollabInvite} className="mt-4 space-y-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3.5">
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-400">
+                      {tx('Tên kế hoạch chung', 'Shared Plan Name', '共同プラン名')}
+                    </label>
+                    <input
+                      type="text"
+                      value={collabTitle}
+                      onChange={(e) => setCollabTitle(e.target.value)}
+                      maxLength={120}
+                      placeholder={tx('VD: Quỹ mua nhà 2028', 'e.g. Home Fund 2028', '例：2028年住宅資金')}
+                      className="h-9 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium text-zinc-400">
+                      {tx('Email người đồng hành (tuỳ chọn)', 'Partner Email (optional)', '相手のメール（任意）')}
+                    </label>
+                    <div className="relative flex items-center">
+                      <Mail className="pointer-events-none absolute left-3 size-3.5 text-zinc-500" />
+                      <input
+                        type="email"
+                        value={collabEmail}
+                        onChange={(e) => setCollabEmail(e.target.value)}
+                        maxLength={140}
+                        placeholder="partner@email.com"
+                        className="h-9 w-full rounded-xl border border-white/10 bg-canvas/80 pl-8 pr-3 text-sm text-white placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex rounded-xl bg-black/30 p-0.5 ring-1 ring-inset ring-white/10">
+                      {['COUPLE', 'FAMILY'].map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => setCollabMode(m)}
+                          className={cx(
+                            'rounded-lg px-2.5 py-1 text-xs font-medium transition',
+                            collabMode === m ? 'bg-indigo-500/25 text-white' : 'text-zinc-400 hover:text-white'
+                          )}
+                        >
+                          {getHouseholdBadgeLabel(m, tx)}
+                        </button>
+                      ))}
+                    </div>
+                    <select
+                      value={collabRole}
+                      onChange={(e) => setCollabRole(e.target.value)}
+                      className="select h-8 rounded-xl border border-white/10 bg-canvas/80 px-2.5 text-xs text-zinc-200 focus:border-indigo-400/60 focus:outline-none"
+                    >
+                      <option value="partner">{tx('Bạn đời · Cùng chỉnh sửa', 'Partner · Co-editor', 'パートナー（共同編集）')}</option>
+                      <option value="family_member">{tx('Thành viên gia đình · Đồng bộ', 'Family · Sync access', '家族メンバー（同期）')}</option>
+                      <option value="viewer">{tx('Chỉ xem lộ trình', 'View only', '閲覧のみ')}</option>
+                    </select>
+                  </div>
+
+                  <Button type="submit" variant="primary" size="sm" disabled={creatingCollab}>
+                    <UserPlus className="size-3.5" />
+                    {creatingCollab
+                      ? tx('Đang tạo lời mời...', 'Creating invite...', '作成中...')
+                      : tx('Tạo link mời chung', 'Create Invite Link', '招待リンクを作成')}
+                  </Button>
+                </div>
+
+                {latestInviteUrl && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-3 py-2 text-xs">
+                    <span className="truncate font-mono text-emerald-200">{latestInviteUrl}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        handleCopyText(
+                          latestInviteUrl,
+                          tx('Đã sao chép link mời!', 'Invite link copied!', '招待リンクをコピーしました')
+                        )
+                      }
+                    >
+                      <Copy className="size-3" /> {tx('Sao chép link', 'Copy Link', 'コピー')}
+                    </Button>
+                  </div>
+                )}
+              </form>
+
+              <div className="mt-4 space-y-2.5">
+                {collabsLoading ? (
+                  <p className="py-4 text-center text-xs text-zinc-500">
+                    {tx('Đang tải danh sách không gian chung...', 'Loading shared workspaces...', '共同プランを読み込み中...')}
+                  </p>
+                ) : collabs.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-white/10 p-4 text-center text-xs text-zinc-400">
+                    {tx(
+                      'Chưa có kế hoạch chung nào. Hãy tạo link mời phía trên hoặc nhập mã mời từ người thân ở bên dưới.',
+                      'No shared plans yet. Create an invite link above or enter a code below.',
+                      'まだ共同プランがありません。上から招待を作成するか、下のコード入力欄から参加できます。'
+                    )}
+                  </div>
+                ) : (
+                  collabs.map((c) => {
+                    const isOwner = c.ownerUserId === user.id;
+                    const inviteUrl = getCollabInviteUrl(c.inviteCode);
+                    const partnerName = isOwner
+                      ? c.memberDisplayName || c.invitedEmail || tx('Đang chờ người tham gia', 'Waiting for partner', '参加待ち')
+                      : c.ownerDisplayName;
+                    return (
+                      <div
+                        key={c.id || c.inviteCode}
+                        className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3.5"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="truncate text-sm font-medium text-white">{c.title}</span>
+                              <Badge tone="brand">{getHouseholdBadgeLabel(c.householdMode, tx)}</Badge>
+                              <Badge tone={c.status === 'active' ? 'success' : 'warning'}>
+                                {c.status === 'active'
+                                  ? tx('Đã kết nối', 'Active', '連携中')
+                                  : tx('Chờ tham gia', 'Pending', '承認待ち')}
+                              </Badge>
+                              <span className="rounded bg-white/[0.05] px-1.5 py-0.5 font-mono text-[10px] text-zinc-300">
+                                {c.inviteCode}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-400">
+                              {isOwner
+                                ? tx(`Thành viên: ${partnerName}`, `Partner: ${partnerName}`, `メンバー：${partnerName}`)
+                                : tx(`Chủ kế hoạch: ${partnerName}`, `Owner: ${partnerName}`, `オーナー：${partnerName}`)}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Button size="sm" variant="secondary" onClick={() => handleOpenCollabPlan(c)}>
+                              <ExternalLink className="size-3.5" /> {tx('Mở', 'Open', '開く')}
+                            </Button>
+                            {(isOwner || c.role !== 'viewer') && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={syncingCollabId === c.id}
+                                onClick={() => handleSyncCollabPlan(c)}
+                                title={tx('Đẩy thông số Kế hoạch hiện tại lên không gian chung', 'Sync active plan from this browser', 'この端末のプランを同期')}
+                              >
+                                <RefreshCw className={cx('size-3.5 text-emerald-300', syncingCollabId === c.id && 'animate-spin')} />
+                                {tx('Đồng bộ', 'Sync', '同期')}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() =>
+                                handleCopyText(
+                                  inviteUrl,
+                                  tx(`Đã chép link mời ${c.inviteCode}`, `Copied link ${c.inviteCode}`, `招待リンク ${c.inviteCode} をコピー`)
+                                )
+                              }
+                              title={tx('Sao chép link mời', 'Copy invite link', '招待リンクをコピー')}
+                            >
+                              <Share2 className="size-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleRevokeCollab(c)}
+                              title={isOwner ? tx('Thu hồi lời mời', 'Revoke invite', '招待を取り消す') : tx('Rời nhóm', 'Leave workspace', 'グループを退出')}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2 border-t border-white/[0.06] pt-3 sm:flex-row">
+                <input
+                  type="text"
+                  value={manualInviteCode}
+                  onChange={(e) => setManualInviteCode(e.target.value.toUpperCase())}
+                  maxLength={10}
+                  placeholder={tx('Nhập mã mời từ người thân (VD: A7K9P2Q4)', 'Enter partner invite code', '招待コードを入力')}
+                  className="h-9 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 font-mono text-xs uppercase text-white placeholder:font-sans placeholder:normal-case placeholder:text-zinc-500 focus:border-indigo-400/60 focus:outline-none sm:flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={joiningCollab || manualInviteCode.trim().length < 6}
+                  onClick={() => handleAcceptCollabInvite(manualInviteCode)}
+                >
+                  <Check className="size-3.5" /> {tx('Tham gia bằng mã', 'Join with Code', 'コードで参加')}
+                </Button>
+              </div>
+            </Card>
+
             <Card className="p-5">
               <CardHeader
                 title={tx('Lịch sử lập kế hoạch & chạy công cụ', 'Plan & Tool Run History', 'プラン・シミュレーション実行履歴')}

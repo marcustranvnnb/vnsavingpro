@@ -1,4 +1,4 @@
-import React, { Component, Suspense, lazy, useEffect, useState } from 'react';
+import React, { Component, Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { RotateCcw, ShieldAlert } from 'lucide-react';
 import { AppProvider, href, navigate, useRoute } from './state.jsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
@@ -9,12 +9,17 @@ import { TopNav, LayoutModeBanner, MobileTabBar, Footer } from './components/Lay
 import { PageContainer } from './components/AdaptiveLayout.jsx';
 import { AuthModal } from './components/AuthModal.jsx';
 import { DataModal } from './components/DataModal.jsx';
+import OnboardingModal from './components/OnboardingModal.jsx';
+import SplashScreen from './components/SplashScreen.jsx';
 import { CookieBanner } from './components/CookieBanner.jsx';
 import { PocValidationOverlay } from './components/PocValidationOverlay.jsx';
 import { PageSkeleton } from './components/ui.jsx';
 import {
   OPEN_AUTH_EVENT,
+  OPEN_ONBOARDING_EVENT,
   POC_QUOTA_EVENT,
+  loadOnboardingState,
+  loadSavedPlannerState,
   syncLocalHistoryToCloud,
 } from './utils/apiClient.js';
 import { initAnalyticsIfAllowed } from './utils/cookieManager.js';
@@ -35,20 +40,44 @@ const pages = {
 
 function Shell() {
   const { route, params } = useRoute();
-  const { user, passwordRecoveryMode, getAccessToken } = useAuth();
+  const { user, profile, passwordRecoveryMode, getAccessToken } = useAuth();
   const { mode, duoPosture, isTabletSplit, isPreviewConstrained } = useDisplayMode();
   const [dataOpen, setDataOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [cookieOpen, setCookieOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
   const [pocState, setPocState] = useState({ locked: false, info: null });
   const [previewPoc, setPreviewPoc] = useState(() => params?.preview_poc === '1');
   const Page = pages[route];
 
+  const handleSplashDone = useCallback(() => setSplashDone(true), []);
+
   useEffect(() => {
     const onOpenAuth = () => setAuthOpen(true);
+    const onOpenOnboarding = () => setOnboardingOpen(true);
     window.addEventListener(OPEN_AUTH_EVENT, onOpenAuth);
-    return () => window.removeEventListener(OPEN_AUTH_EVENT, onOpenAuth);
+    window.addEventListener(OPEN_ONBOARDING_EVENT, onOpenOnboarding);
+    return () => {
+      window.removeEventListener(OPEN_AUTH_EVENT, onOpenAuth);
+      window.removeEventListener(OPEN_ONBOARDING_EVENT, onOpenOnboarding);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!splashDone || route !== 'home') return;
+    if (params?.invite || params?.preview_poc === '1') return;
+    const onboarded = loadOnboardingState();
+    const existingPlan = loadSavedPlannerState();
+    const hasSavedSetup = Boolean(
+      onboarded?.completed ||
+        onboarded?.dismissed ||
+        (existingPlan && Object.keys(existingPlan).length > 0)
+    );
+    if (hasSavedSetup) return;
+    const t = window.setTimeout(() => setOnboardingOpen(true), 450);
+    return () => window.clearTimeout(t);
+  }, [splashDone, route, params?.invite, params?.preview_poc]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -102,7 +131,13 @@ function Shell() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopNav route={route} onOpenData={() => setDataOpen(true)} onOpenAuth={() => setAuthOpen(true)} />
+      <SplashScreen onDone={handleSplashDone} />
+      <TopNav
+        route={route}
+        onOpenData={() => setDataOpen(true)}
+        onOpenAuth={() => setAuthOpen(true)}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
+      />
       <LayoutModeBanner />
       <main className={`flex-1 ${previewFrameClass}`}>
         {Page ? (
@@ -112,11 +147,20 @@ function Shell() {
             </PageContainer>
           </Suspense>
         ) : (
-          <Home onOpenAuth={() => setAuthOpen(true)} onOpenData={() => setDataOpen(true)} />
+          <Home
+            onOpenAuth={() => setAuthOpen(true)}
+            onOpenData={() => setDataOpen(true)}
+            onOpenOnboarding={() => setOnboardingOpen(true)}
+          />
         )}
       </main>
       <Footer onOpenCookies={() => setCookieOpen(true)} />
-      <MobileTabBar route={route} onOpenData={() => setDataOpen(true)} onOpenAuth={() => setAuthOpen(true)} />
+      <MobileTabBar
+        route={route}
+        onOpenData={() => setDataOpen(true)}
+        onOpenAuth={() => setAuthOpen(true)}
+        onOpenOnboarding={() => setOnboardingOpen(true)}
+      />
       <PocValidationOverlay
         open={pocState.locked || previewPoc}
         info={pocState.info}
@@ -126,6 +170,11 @@ function Shell() {
       />
       <DataModal open={dataOpen} onClose={() => setDataOpen(false)} onOpenAuth={() => setAuthOpen(true)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <OnboardingModal
+        open={onboardingOpen}
+        onClose={() => setOnboardingOpen(false)}
+        initialMode={profile?.default_household_mode || 'INDIVIDUAL'}
+      />
       <CookieBanner
         settingsOpen={cookieOpen}
         onOpenSettings={() => setCookieOpen(true)}

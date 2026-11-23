@@ -78,7 +78,7 @@ const HOUSEHOLD_CARDS = [
         '柔軟性の高い高金利ネット銀行をひと目で比較',
       ],
     },
-    cta: { vi: 'Lập kế hoạch Cá nhân', en: 'Plan as Individual', ja: '個人プランを作成' },
+    cta: { vi: 'Khám phá cấu hình Cá nhân', en: 'Explore Individual Setup', ja: '個人モデルを試す' },
   },
   {
     id: 'COUPLE',
@@ -103,7 +103,7 @@ const HOUSEHOLD_CARDS = [
         'どちらか一方の収入が減った場合の耐久力をストレステスト',
       ],
     },
-    cta: { vi: 'Lập kế hoạch Cặp đôi', en: 'Plan as a Couple', ja: 'カップルプランを作成' },
+    cta: { vi: 'Thử chia khoản góp Cặp đôi', en: 'Try Couple Split Planner', ja: 'カップル配分を試す' },
   },
   {
     id: 'FAMILY',
@@ -128,7 +128,7 @@ const HOUSEHOLD_CARDS = [
         '1人の収入比率が75%以上のとき集中リスクを自動警告',
       ],
     },
-    cta: { vi: 'Lập kế hoạch Gia đình', en: 'Plan for Family', ja: '家族プランを作成' },
+    cta: { vi: 'Tính Quỹ dự phòng Gia đình', en: 'Build Family Safety Fund', ja: '家族の防衛資金を試算' },
   },
 ];
 
@@ -314,7 +314,7 @@ function RateSnapshot() {
   );
 }
 
-export default function Home({ onOpenAuth, onOpenData }) {
+export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
   const { best, updatedAt } = useRates();
   const { user, authConfigured } = useAuth();
   const { lang, tx } = useI18n();
@@ -377,24 +377,32 @@ export default function Home({ onOpenAuth, onOpenData }) {
                   )}
                 >
                   {tx(
-                    'Lập lộ trình tài chính chuẩn xác cho Cá nhân, Cặp đôi & Gia đình — biết rõ cần gửi bao nhiêu, lấp Quỹ dự phòng thế nào và chọn ngân hàng số nào lãi cao nhất. Tối ưu đồng bộ cho Mobile, Tablet, Duo / Màn hình gập & PC.',
-                    'Build data-driven savings roadmaps for Individuals, Couples & Families — know how much to deposit, how to fill your Emergency Fund, and which Vietnam digital bank pays the highest yield. Adaptive across Mobile, Tablet, Duo/Fold & Desktop.',
-                    '個人・カップル・家族向けに、毎月の積立額・緊急防衛資金・高金利ネット銀行を正確に試算。Mobile・Tablet・Duo/折りたたみ・PCの全画面に最適化されています。'
+                    'Lập lộ trình tài chính chuẩn xác cho Cá nhân, Cặp đôi & Gia đình — biết rõ cần gửi bao nhiêu, lấp Quỹ dự phòng thế nào và chọn ngân hàng số nào lãi cao nhất. Tự động tối ưu mượt mà trên mọi thiết bị.',
+                    'Build data-driven savings roadmaps for Individuals, Couples & Families — know how much to deposit, how to fill your Emergency Fund, and which Vietnam digital bank pays the highest yield seamlessly on every screen.',
+                    '個人・カップル・家族向けに、毎月の積立額・緊急防衛資金・高金利ネット銀行を正確に試算。あらゆる端末で快適に動作します。'
                   )}
                 </p>
                 <div className={cx('mt-7 flex gap-3', isMobileMode ? 'flex-col' : 'flex-col sm:mt-8 sm:flex-row')}>
-                  <Button as="a" href={href('plan')} variant="primary" size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
-                    {tx('Lập kế hoạch ngay', 'Start Planning Now', '今すぐプラン設計')} <ArrowRight className="size-4" />
+                  <Button
+                    type="button"
+                    onClick={onOpenOnboarding}
+                    variant="primary"
+                    size="lg"
+                    className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}
+                  >
+                    <Sparkles className="size-4" />
+                    {tx('Thiết lập nhanh trong 30 giây', '30-Second Quick Setup', '30秒クイック初期設定')}
+                    <ArrowRight className="size-4" />
                   </Button>
                   <Button as="a" href={href('rates')} size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
-                    {tx('So sánh lãi suất', 'Compare Bank Rates', '金利を比較する')}
+                    {tx('So sánh lãi suất 4 ngân hàng', 'Compare 4 Digital Banks', 'ネット銀行金利を比較')}
                   </Button>
                 </div>
                 <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 sm:mt-10 sm:gap-6">
                   {[
                     { k: pct(top.rate, 2, lang), v: tx('Lãi suất cao nhất (12T)', 'Highest 12M Rate', '12ヶ月最高金利') },
-                    { k: tx('4 chế độ', '4 Screens', '4画面対応'), v: tx('Mobile · Tablet · Duo · PC', 'Mobile · Tablet · Duo · PC', 'Mobile · Tablet · Duo · PC') },
-                    { k: 'Mùng 1', v: tx('Cập nhật lãi suất đầu tháng', 'Auto-synced 1st of month', '毎月1日自動レート同期') },
+                    { k: tx('3 mô hình', '3 Models', '3モデル'), v: tx('Cá nhân · Đôi · Gia đình', 'Solo · Couple · Family', '個人・カップル・家族') },
+                    { k: tx('Mùng 1', '1st of Mo', '毎月1日'), v: tx('Cập nhật lãi suất đầu tháng', 'Auto-synced 1st of month', '毎月1日自動レート同期') },
                   ].map((s) => (
                     <div key={s.v} className="min-w-0">
                       <dt className={cx('font-semibold tracking-tight text-white tabular-nums', isMobileMode ? 'text-base' : 'text-lg sm:text-2xl')}>
@@ -483,22 +491,56 @@ export default function Home({ onOpenAuth, onOpenData }) {
         </div>
 
         <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 4 }} hingeAligned className="mt-7">
-          {primary.map((t) => (
-            <a
-              key={t.id}
-              href={href(t.id)}
-              className="group relative flex flex-col rounded-2xl border border-white/[0.07] bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-white/[0.14] hover:bg-elevated"
-            >
-              <span className="flex size-10 items-center justify-center rounded-xl bg-indigo-500/10 ring-1 ring-inset ring-indigo-400/20">
-                <t.icon className="size-5 text-indigo-300" />
-              </span>
-              <span className="mt-5 text-[15px] font-semibold text-white">{t.label}</span>
-              <span className="mt-1.5 flex-1 text-[13px] leading-relaxed text-zinc-500">{t.desc}</span>
-              <span className="mt-5 flex items-center gap-1 text-[13px] font-medium text-zinc-400 transition-colors group-hover:text-white">
-                {tx('Mở công cụ', 'Open tool', 'ツールを開く')} <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-              </span>
-            </a>
-          ))}
+          {primary.map((t) => {
+            const isPlan = t.id === 'plan';
+            const isRates = t.id === 'rates';
+            const ctaByTool = {
+              plan: tx('Thiết kế lộ trình mục tiêu', 'Design Savings Roadmap', '目標ロードマップを作成'),
+              rates: tx('Xem bảng xếp hạng lãi suất', 'View Live Rate Rankings', '金利ランキングを見る'),
+              calculator: tx('Tính lãi 3 phương pháp', 'Compare 3 Calc Methods', '3方式で利息計算'),
+              ladder: tx('Mô phỏng chia sổ bậc thang', 'Simulate Rolling Ladder', 'ラダー分割を試す'),
+            };
+            return (
+              <a
+                key={t.id}
+                href={href(t.id)}
+                className={cx(
+                  'group relative flex flex-col rounded-2xl border p-5 transition-all hover:-translate-y-0.5',
+                  isPlan
+                    ? 'border-indigo-400/35 bg-gradient-to-b from-indigo-500/[0.11] to-surface hover:border-indigo-400/60 hover:bg-elevated'
+                    : isRates
+                      ? 'border-emerald-400/25 bg-gradient-to-b from-emerald-500/[0.06] to-surface hover:border-emerald-400/50 hover:bg-elevated'
+                      : 'border-white/[0.07] bg-surface hover:border-white/[0.14] hover:bg-elevated'
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={cx(
+                      'flex size-10 items-center justify-center rounded-xl ring-1 ring-inset',
+                      isRates
+                        ? 'bg-emerald-500/15 ring-emerald-400/30'
+                        : 'bg-indigo-500/12 ring-indigo-400/25'
+                    )}
+                  >
+                    <t.icon className={cx('size-5', isRates ? 'text-emerald-300' : 'text-indigo-300')} />
+                  </span>
+                  {isPlan && <Badge tone="brand">{tx('Nổi bật', 'Featured', '注目')}</Badge>}
+                  {isRates && <Badge tone="success">{pct(top.rate, 2, lang)}</Badge>}
+                </div>
+                <span className="mt-5 text-[15px] font-semibold text-white">{t.label}</span>
+                <span className="mt-1.5 flex-1 text-[13px] leading-relaxed text-zinc-500">{t.desc}</span>
+                <span
+                  className={cx(
+                    'mt-5 flex items-center gap-1 text-[13px] font-medium transition-colors group-hover:text-white',
+                    isPlan ? 'text-indigo-200' : isRates ? 'text-emerald-200' : 'text-zinc-400'
+                  )}
+                >
+                  {ctaByTool[t.id] || tx('Khám phá chi tiết', 'Explore details', '詳細を見る')}{' '}
+                  <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </a>
+            );
+          })}
         </AdaptiveGrid>
 
         <AdaptiveGrid
@@ -712,11 +754,11 @@ export default function Home({ onOpenAuth, onOpenData }) {
                     <li className="flex items-start gap-2.5">
                       <Cloud className="mt-0.5 size-3.5 shrink-0 text-indigo-300" />
                       <span>
-                        <strong className="text-zinc-200">{tx('Đồng bộ Mobile · Tablet · Duo/Fold · PC:', 'Sync across Mobile, Tablet, Duo/Fold & PC:', 'Mobile・Tablet・Duo/Fold・PC対応：')}</strong>{' '}
+                        <strong className="text-zinc-200">{tx('Đồng bộ đa thiết bị & Lập kế hoạch chung:', 'Cross-Device Sync & Shared Planning:', 'マルチ端末同期・共同プラン：')}</strong>{' '}
                         {tx(
-                          'Đăng nhập Google / Email hoặc mã chia sẻ 6 ký tự trên Supabase Cloud, kèm tuỳ chọn chuyển layout cho iPhone Duo, Galaxy Z Fold, Tablet và Desktop.',
-                          'Sign in with Google/Email or a 6-char share code via Supabase Cloud, paired with adaptive layout modes for iPhone Duo, Galaxy Fold, Tablet, and Desktop.',
-                          'Google/メール認証または6桁コードでSupabase同期。iPhone Duo・Galaxy Fold・Tablet・PCに最適レイアウトで自動対応します。'
+                          'Đăng nhập Google / Email hoặc mã chia sẻ 6 ký tự trên Supabase Cloud, mời bạn đời/gia đình cùng hoạch định và tự động thích nghi mọi kích thước màn hình từ điện thoại gập đến PC.',
+                          'Sign in with Google/Email or a 6-char share code via Supabase Cloud, invite family partners to co-plan, and enjoy silent adaptive formatting from foldables to Desktop.',
+                          'Google/メール認証または6桁コードでSupabase同期。家族やパートナーとの共同設計に対応し、折りたたみスマホからPCまで自動で最適化されます。'
                         )}
                       </span>
                     </li>

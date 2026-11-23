@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-23 15:52 (Version 1.11.0.0: Free-Tier 0đ Optimization, Deferred Supabase SDK Chunk `-40%+ JS`, Hardened RLS & Retention Caps, Node 24 LTS & 5-Day Keepalive)
-> **Current Architecture Version**: v1.11.0.0 (Edge CDN 24h `/api/rates` + Seeded `QuickEstimate` + Deferred `@supabase/supabase-js` + Consent-Gated GTM + Bounded Rate Limiters + Hardened RLS & 5-Day Keepalive + Node 24 LTS + Manual Tool Run CTA & Profile History)
+> **Last Synced**: 2026-11-23 16:55 (Version 1.12.0.0: Silent Auto-Adaptive Layout, Streamlined Header Spotlights, Branded Splash Screen, 3-Step Onboarding, Shared Household Planning & CIC/Advisors Roadmap)
+> **Current Architecture Version**: v1.12.0.0 (Silent Responsive/Foldable Auto-Layout + Highlighted TopNav + Branded Splash + 3-Step Onboarding Wizard + Collaborative Couple/Family Invites `/api/collaborations` + Edge CDN 24h `/api/rates` + Deferred Supabase Auth Chunk)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---
@@ -15,6 +15,7 @@
 | [DOMAIN_AND_FORMULAS.md](./DOMAIN_AND_FORMULAS.md) | Financial formulas (SBV Circular 14, passive income solver, ladder matrix) & bank data | Before reviewing calculations, financial accuracy, or bank rates |
 | [REVIEW_CHECKLIST.md](./REVIEW_CHECKLIST.md) | Living audit rubric, known technical debt, UX/financial feedback items, and backlog | When asked to review the project or suggest improvements |
 | [CHANGELOG_AND_DECISIONS.md](./CHANGELOG_AND_DECISIONS.md) | Chronological Architecture Decision Records (ADRs) and change history | To understand why past changes were made and log new updates |
+| [PRODUCT_ROADMAP_CIC_AND_ADVISORS.md](./PRODUCT_ROADMAP_CIC_AND_ADVISORS.md) | Strategic design for CIC Credit Health estimator (`/cic`) & Vietnam Advisor/Butler connector (`/advisors`) + domestic competitor benchmark | Before building or scoping CIC scoring or financial advisor integrations |
 
 ---
 
@@ -38,13 +39,13 @@
 
 ---
 
-## File Registry (v1.11.0.0 Free-Tier Optimization, Deferred Auth Bundle, Hardened RLS & Monthly Sync)
+## File Registry (v1.12.0.0 Streamlined Header, Splash, Onboarding, Shared Household Planning & Free-Tier Core)
 
-- **Database & Schema (`supabase/`)**: `supabase/schema.sql`, `supabase/migrations/20261123_v111_security_and_history.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `calculation_history`, `usage_quotas`, `quota_alerts_log` + hardened RLS policies), `supabase/email-templates/`, `.env.example`
-- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/history.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,rateLimit,supabase,resend,quotaGuard}.js`
+- **Database & Schema (`supabase/`)**: `supabase/schema.sql`, `supabase/migrations/20261123_v111_security_and_history.sql`, `supabase/migrations/20261123_v112_collaborative_planning.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `calculation_history`, `household_collaborations`, `usage_quotas`, `quota_alerts_log` + hardened RLS policies), `supabase/email-templates/`, `.env.example`
+- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/history.js`, `api/collaborations.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,rateLimit,supabase,resend,quotaGuard}.js`
 - **Automated Scrapers, Keepalive & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/bump-version.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1` (Monthly 1st `09:00`), `.github/workflows/daily-rates-sync.yml` (`0 2 1 * *`, Node 24 LTS), `.github/workflows/keepalive-supabase.yml` (`0 3 */5 * *`)
 - **Root, i18n, Layout & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/version.json`, `src/index.css`, `src/i18n/index.jsx`, `src/layout/{DisplayModeContext.jsx,viewportMetrics.js}`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Contributors,Auth,Profile}.jsx` (`Referral.jsx` hidden)
-- **Shared Components**: `src/components/{Layout,AdaptiveLayout,StageCarousel,SavePlanPromptCard,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
+- **Shared Components**: `src/components/{Layout,AdaptiveLayout,SplashScreen,OnboardingModal,StageCarousel,SavePlanPromptCard,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
 - **Data**: `src/data/{banksData,bankPackagesData,contributorsData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
 - **Client Utilities**: `src/utils/{apiClient,supabaseClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`

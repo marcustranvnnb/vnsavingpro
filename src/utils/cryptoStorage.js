@@ -16,6 +16,7 @@ const ALLOWED_KEYS = new Set([
   'USER_FEEDBACK_LOG',
   'CALC_HISTORY_LOG',
   'TOOL_RESTORE_STATE',
+  'ONBOARDING_STATE',
 ]);
 
 const ALLOWED_BANKS = new Set(['cake', 'tnex', 'timo', 'liobank']);
@@ -362,11 +363,11 @@ export function validateBySchema(key, raw) {
     }
 
     case 'CALC_HISTORY_LOG': {
-      if (!Array.isArray(value)) return null;
+      if (!Array.isArray(raw)) return null;
       const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
       const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
       const validTones = new Set(['default', 'emerald', 'indigo', 'amber']);
-      return value
+      return raw
         .filter((item) => isPlainObject(item) && validTools.has(item.tool))
         .slice(0, 40)
         .map((item) => ({
@@ -392,13 +393,26 @@ export function validateBySchema(key, raw) {
     }
 
     case 'TOOL_RESTORE_STATE': {
-      if (!isPlainObject(value)) return null;
+      if (!isPlainObject(raw)) return null;
       const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
-      if (!validTools.has(value.tool) || !isPlainObject(value.inputs)) return null;
+      if (!validTools.has(raw.tool) || !isPlainObject(raw.inputs)) return null;
       return {
-        tool: value.tool,
-        inputs: value.inputs,
-        restoredAt: sanitizeText(value.restoredAt, 40) || new Date().toISOString(),
+        tool: raw.tool,
+        inputs: raw.inputs,
+        restoredAt: sanitizeText(raw.restoredAt, 40) || new Date().toISOString(),
+      };
+    }
+
+    case 'ONBOARDING_STATE': {
+      if (!isPlainObject(raw)) return null;
+      const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
+      const validGoals = new Set(['PASSIVE_INCOME', 'TARGET_AMOUNT', 'RATES_COMPARE']);
+      return {
+        completed: Boolean(raw.completed),
+        dismissed: Boolean(raw.dismissed),
+        householdMode: validModes.has(raw.householdMode) ? raw.householdMode : 'INDIVIDUAL',
+        goalFocus: validGoals.has(raw.goalFocus) ? raw.goalFocus : 'PASSIVE_INCOME',
+        completedAt: sanitizeText(raw.completedAt || new Date().toISOString(), 40),
       };
     }
 

@@ -4,6 +4,20 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-23] — Version 1.12.0.0: Streamlined Header, Branded Splash Screen, 3-Step Onboarding, Collaborative Household Planning & CIC/Advisor Roadmap
+
+- **Request**: Hide manual screen-mode selector UI, streamline cluttered header while highlighting key tools, add a branded initial entry loading splash screen, remove repetitive planning CTAs on Homepage, add partner/family collaborative planning inside Profile, design a structured 3-step onboarding flow, plan CIC credit scoring, and plan a financial advisor/butler connector backed by Vietnam market research.
+- **Changes Implemented**:
+  - **Version Bump (`v1.12.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), and prepended `v1.12.0.0` highlights in [src/tools.js](../../src/tools.js) (`vi`/`en`/`ja`).
+  - **Silent Adaptive Layout**: Updated [DisplayModeContext.jsx](../../src/layout/DisplayModeContext.jsx) so manual overrides require explicit QA `?layout=` / `?posture=` query params, removed `DisplayModeSwitcher` and manual layout pills from [Layout.jsx](../../src/components/Layout.jsx) (`TopNav`, `LayoutModeBanner`, `MobileTabBar`, `Footer`), removed the layout card from [Profile.jsx](../../src/pages/Profile.jsx), and updated screen-mode copy in [Home.jsx](../../src/pages/Home.jsx).
+  - **Streamlined Header + Flagship Spotlights ([Layout.jsx](../../src/components/Layout.jsx))**: Consolidated Desktop/Duo/Tablet headers to 3 featured links (`Lập kế hoạch` gradient spotlight, `Lãi suất` live 12M yield badge, `Tính lãi`), moved remaining items + Onboarding + Data actions into `Khám phá` (`MoreMenu`), `UserMenu`, and `MobileTabBar` sheet.
+  - **Branded Entry Splash & 3-Step Onboarding**: Built [SplashScreen.jsx](../../src/components/SplashScreen.jsx) (`z-[95]`, reduced-motion aware), built [OnboardingModal.jsx](../../src/components/OnboardingModal.jsx) (`Profile -> Goal -> Starter Figures`), added `ONBOARDING_STATE` + fixed `raw` variable bug in [cryptoStorage.js](../../src/utils/cryptoStorage.js), added `OPEN_ONBOARDING_EVENT` / `applyOnboardingStarter` (aligned with `PLANNER_STATE` keys) in [apiClient.js](../../src/utils/apiClient.js), and wired gentle auto-launch in [App.jsx](../../src/App.jsx).
+  - **Homepage CTA Deduplication ([Home.jsx](../../src/pages/Home.jsx))**: Replaced Hero primary button with `"Thiết lập nhanh trong 30 giây"`, individualized Household card CTAs and primary Toolkit card CTAs, and highlighted `plan` (`Nổi bật`) & `rates` (top 12M %).
+  - **Collaborative Household Planning (Couples & Families)**: Added `public.household_collaborations` DDL & hardened RLS in [20261123_v112_collaborative_planning.sql](../../supabase/migrations/20261123_v112_collaborative_planning.sql) & [schema.sql](../../supabase/schema.sql), added `sbPatch` in [api/_lib/supabase.js](../../api/_lib/supabase.js), built [api/collaborations.js](../../api/collaborations.js) & registered in [vite.config.js](../../vite.config.js), and added guest invite preview + full invite/accept/sync/revoke UI in [Profile.jsx](../../src/pages/Profile.jsx).
+  - **Strategic CIC & Vietnam Advisor Roadmap**: Authored [PRODUCT_ROADMAP_CIC_AND_ADVISORS.md](./PRODUCT_ROADMAP_CIC_AND_ADVISORS.md) detailing the `/cic` estimator (5 weights, 403–706 / Rank 1–10, Debt Groups 1–5, Decree 13 PII safety) and verified Vietnam market landscape (`FIDT`, `AFA Capital`, `FinPeace`, `TOPI`, `MoneyGain`, `VWA/VWAS`, `Private Banking`) + `/advisors` connector architecture.
+
+---
+
 ## [2026-11-23] — Version 1.11.0.0: Free-Tier Cost Optimization, -40%+ Entry JS Bundle, Hardened RLS & Anti-Pause Infrastructure
 
 - **Request**: Audit entire infrastructure, architecture, and MCP connections, then execute a 4-phase upgrade minimizing Free-Tier cost and maximizing performance/security.

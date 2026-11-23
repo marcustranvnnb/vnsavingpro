@@ -8,6 +8,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v1.12.0.0',
+    date: '23/11/2026',
+    title: 'Tinh gọn Header, Màn hình mở đầu, Onboarding 3 bước & Mời lập kế hoạch chung',
+    items: [
+      'Ẩn nút chuyển chế độ màn hình thủ công để giao diện tự động tối ưu âm thầm trên Mobile, Tablet, Foldable Duo và Desktop.',
+      'Tinh gọn thanh Header với spotlight nổi bật cho Lập kế hoạch & Lãi suất, thêm màn hình mở đầu thương hiệu và làm mới CTA Trang chủ theo từng ngữ cảnh.',
+      'Ra mắt luồng Onboarding 3 bước (Hồ sơ -> Mục tiêu -> Con số mẫu) cùng tính năng mời bạn đời/gia đình lập kế hoạch chung trong Profile.',
+    ],
+  },
+  {
     version: 'v1.11.0.0',
     date: '23/11/2026',
     title: 'Tối ưu Free-Tier 0đ, Giảm 40%+ JS Trang chủ, Siết RLS & Chống Auto-Pause',
@@ -396,12 +406,30 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Free-Tier Cost Guard · -40% Entry JS Bundle · Hardened RLS · Node 24 LTS';
-  if (lang === 'ja') return 'Free-Tier最適化・初期JS約40%削減・RLS強化・Node 24 LTS対応';
+  if (lang === 'en') return 'Streamlined Header · Branded Splash · 3-Step Onboarding · Shared Household Planning';
+  if (lang === 'ja') return 'ヘッダー刷新・起動画面・3ステップ初期設定・家族共同プラン対応';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v1.12.0.0': {
+    en: {
+      title: 'Streamlined Header, Branded Splash, 3-Step Onboarding & Shared Household Planning',
+      items: [
+        'Hid manual screen-mode toggles so the responsive layout adapts silently across Mobile, Tablet, Foldable Duo, and Desktop.',
+        'Streamlined TopNav with highlighted Planning & Bank Rates spotlights, added a smooth branded Splash Screen, and replaced repetitive Homepage CTAs.',
+        'Launched a 3-step Onboarding wizard plus Collaborative Household Planning invites for Couples & Families inside Profile.',
+      ],
+    },
+    ja: {
+      title: 'ヘッダー刷新・起動画面・3ステップ初期設定・家族共同プラン対応',
+      items: [
+        '手動の画面モード切替ボタンを非表示にし、Mobile・Tablet・折りたたみDuo・Desktopへ自動最適化しました。',
+        'ヘッダーを整理してプラン作成と金利比較を強調し、起動画面と文脈別のトップページCTAを追加しました。',
+        '3ステップの初期設定ウィザードと、プロフィールから家族・パートナーを招待できる共同プラン機能を追加しました。',
+      ],
+    },
+  },
   'v1.11.0.0': {
     en: {
       title: 'Free-Tier Optimization, -40% Initial JS Bundle, Hardened RLS & Anti-Pause',

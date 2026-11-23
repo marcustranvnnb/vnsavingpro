@@ -59,10 +59,8 @@ function readInitialPreference() {
   try {
     const q = new URLSearchParams(window.location.search).get('layout');
     if (isValidDisplayMode(q)) return q;
-    const saved = window.localStorage?.getItem(DISPLAY_MODE_STORAGE_KEY);
-    if (isValidDisplayMode(saved)) return saved;
   } catch {
-    // Ignore storage access failures
+    // Ignore URL parsing failures
   }
   return 'auto';
 }
@@ -72,10 +70,8 @@ function readInitialPosture() {
   try {
     const q = new URLSearchParams(window.location.search).get('posture');
     if (isValidDuoPosture(q)) return q;
-    const saved = window.localStorage?.getItem(DUO_POSTURE_STORAGE_KEY);
-    if (isValidDuoPosture(saved)) return saved;
   } catch {
-    // Ignore storage access failures
+    // Ignore URL parsing failures
   }
   return 'auto';
 }

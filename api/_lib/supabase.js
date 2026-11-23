@@ -111,6 +111,17 @@ export async function sbDelete(table, queryString = '') {
   return sbFetch(path, { method: 'DELETE' });
 }
 
+export async function sbPatch(table, queryString, patchFields) {
+  const path = queryString ? `${table}?${queryString}` : table;
+  return sbFetch(path, {
+    method: 'PATCH',
+    headers: {
+      Prefer: 'return=representation',
+    },
+    body: patchFields,
+  });
+}
+
 export async function sbRpc(fnName, params = {}) {
   return sbFetch(`rpc/${encodeURIComponent(fnName)}`, {
     method: 'POST',
