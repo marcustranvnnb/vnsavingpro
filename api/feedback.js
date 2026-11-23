@@ -1,9 +1,22 @@
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
+import { createRateLimiter } from './_lib/rateLimit.js';
 import { isSupabaseConfigured, sbInsert, sbSelect } from './_lib/supabase.js';
 
 const MAX_ENTRIES = 500;
 const feedbackStore = [];
+const readLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60, maxEntries: 2000 });
+const writeLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 30, maxEntries: 2000 });
+
+function isAdminAuthorized(req) {
+  const cronSecret = process.env.CRON_SECRET;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const authHeader = String(req?.headers?.authorization || '').trim();
+  return (
+    Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+    Boolean(serviceKey && authHeader === `Bearer ${serviceKey}`)
+  );
+}
 
 function getSummary(list = feedbackStore) {
   const count = list.length;
@@ -70,16 +83,27 @@ function toPublicContributorEntry(raw) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-  const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
+  const isPublicMode = req.method === 'GET' && /(?:^|[?&])public=1(?:&|$)/.test(String(req.url || ''));
+
+  if (req.method === 'GET' && readLimiter(req)) {
+    return res.status(429).json({ ok: false, error: 'Too many requests. Please slow down.' });
+  }
+  if (req.method === 'POST' && writeLimiter(req)) {
+    return res.status(429).json({ ok: false, error: 'Too many feedback submissions. Please wait a minute.' });
+  }
+
+  res.setHeader(
+    'Cache-Control',
+    isPublicMode ? 'public, s-maxage=300, stale-while-revalidate=600' : 'no-store'
+  );
+
+  const quotaGuard = await checkAndTrackQuota({ trackApiHit: !isPublicMode });
   if (quotaGuard.blocked) {
     return sendPocQuotaResponse(res, quotaGuard);
   }
   const supabaseConnected = isSupabaseConfigured();
 
   if (req.method === 'GET') {
-    const isPublicMode = /(?:^|[?&])public=1(?:&|$)/.test(String(req.url || ''));
-
     if (isPublicMode) {
       let publicEntries = [];
       if (supabaseConnected) {
@@ -104,6 +128,13 @@ export default async function handler(req, res) {
         entries: publicEntries,
         storage: 'memory',
         supabaseConnected,
+      });
+    }
+
+    if (!isAdminAuthorized(req)) {
+      return res.status(401).json({
+        ok: false,
+        error: 'Admin authorization required. Use ?public=1 for public contributor feed.',
       });
     }
 

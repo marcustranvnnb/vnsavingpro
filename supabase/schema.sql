@@ -19,9 +19,6 @@ CREATE TABLE IF NOT EXISTS public.bank_rate_snapshots (
 CREATE INDEX IF NOT EXISTS idx_bank_rate_snapshots_created_at
   ON public.bank_rate_snapshots (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_bank_rate_snapshots_updated_date
-  ON public.bank_rate_snapshots (updated_date);
-
 -- 2. Persistent User Feedback & NPS Ratings
 CREATE TABLE IF NOT EXISTS public.user_feedback (
   id TEXT PRIMARY KEY,
@@ -63,47 +60,24 @@ GRANT ALL PRIVILEGES ON SEQUENCE public.bank_rate_snapshots_id_seq TO service_ro
 GRANT SELECT ON TABLE public.bank_rate_snapshots TO anon, authenticated;
 GRANT ALL PRIVILEGES ON TABLE public.bank_rate_snapshots TO service_role;
 
-GRANT INSERT ON TABLE public.user_feedback TO anon, authenticated;
+REVOKE ALL ON TABLE public.user_feedback FROM PUBLIC, anon, authenticated;
 GRANT ALL PRIVILEGES ON TABLE public.user_feedback TO service_role;
 
-GRANT SELECT, INSERT, UPDATE ON TABLE public.saved_plans TO anon, authenticated;
+REVOKE ALL ON TABLE public.saved_plans FROM PUBLIC, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.saved_plans TO authenticated;
 GRANT ALL PRIVILEGES ON TABLE public.saved_plans TO service_role;
 
 DROP POLICY IF EXISTS "Allow public read bank rate snapshots" ON public.bank_rate_snapshots;
 CREATE POLICY "Allow public read bank rate snapshots"
   ON public.bank_rate_snapshots
   FOR SELECT
-  TO anon
+  TO anon, authenticated
   USING (true);
 
 DROP POLICY IF EXISTS "Allow anon insert user feedback" ON public.user_feedback;
-CREATE POLICY "Allow anon insert user feedback"
-  ON public.user_feedback
-  FOR INSERT
-  TO anon
-  WITH CHECK (rating BETWEEN 1 AND 5);
-
 DROP POLICY IF EXISTS "Allow public read saved plans by code" ON public.saved_plans;
-CREATE POLICY "Allow public read saved plans by code"
-  ON public.saved_plans
-  FOR SELECT
-  TO anon
-  USING (true);
-
 DROP POLICY IF EXISTS "Allow anon insert or update saved plans" ON public.saved_plans;
-CREATE POLICY "Allow anon insert or update saved plans"
-  ON public.saved_plans
-  FOR INSERT
-  TO anon
-  WITH CHECK (char_length(share_code) BETWEEN 6 AND 12);
-
 DROP POLICY IF EXISTS "Allow anon update saved plans" ON public.saved_plans;
-CREATE POLICY "Allow anon update saved plans"
-  ON public.saved_plans
-  FOR UPDATE
-  TO anon
-  USING (char_length(share_code) BETWEEN 6 AND 12)
-  WITH CHECK (char_length(share_code) BETWEEN 6 AND 12);
 
 -- ============================================================================
 -- 4. User Profiles & Authenticated Plan Ownership (Auth v1.6)

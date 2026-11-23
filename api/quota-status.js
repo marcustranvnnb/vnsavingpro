@@ -5,8 +5,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  res.setHeader('Cache-Control', 'no-store');
-
   const cronSecret = process.env.CRON_SECRET;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const authHeader = String(req.headers?.authorization || '');
@@ -15,6 +13,10 @@ export default async function handler(req, res) {
     Boolean(serviceKey && authHeader === `Bearer ${serviceKey}`);
 
   const forceRefresh = isAdmin || req.url?.includes('refresh=1');
+  res.setHeader(
+    'Cache-Control',
+    isAdmin || forceRefresh ? 'no-store' : 'public, s-maxage=300, stale-while-revalidate=600'
+  );
   const status = await checkAndTrackQuota({
     trackApiHit: false,
     forceRefresh: Boolean(forceRefresh),

@@ -10,25 +10,9 @@ import { evaluatePlanFeasibility } from './_lib/feasibilityEvaluator.js';
 import { computeHouseholdAnalysis, getRecommendedEmergencyMonths } from './_lib/householdAnalytics.js';
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
+import { createRateLimiter } from './_lib/rateLimit.js';
 
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 120;
-const ipHits = new Map();
-
-function isRateLimited(req) {
-  const forwarded = req.headers?.['x-forwarded-for'];
-  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) || req.socket?.remoteAddress || 'unknown';
-  const now = Date.now();
-  const entry = ipHits.get(ip);
-
-  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-    ipHits.set(ip, { windowStart: now, count: 1 });
-    return false;
-  }
-
-  entry.count += 1;
-  return entry.count > RATE_LIMIT_MAX_REQUESTS;
-}
+const isRateLimited = createRateLimiter({ windowMs: 60_000, maxRequests: 120, maxEntries: 2000 });
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

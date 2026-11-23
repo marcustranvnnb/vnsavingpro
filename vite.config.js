@@ -144,6 +144,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             react: ['react', 'react-dom'],
             charts: ['chart.js', 'react-chartjs-2'],
+            supabase: ['@supabase/supabase-js'],
           },
         },
       },

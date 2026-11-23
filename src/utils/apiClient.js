@@ -46,7 +46,7 @@ function setCached(key, value) {
  *   showing smooth lazy loading feedback (`minLoadingMs`) and invoking `onSuccess`.
  */
 export function useServerCalc(action, payload, initialData = null, options = {}) {
-  const { mode = 'auto', minLoadingMs = mode === 'manual' ? 320 : 0, onSuccess = null } = options || {};
+  const { mode = 'auto', enabled = true, minLoadingMs = mode === 'manual' ? 320 : 0, onSuccess = null } = options || {};
 
   const lang = getFormatLang();
   const baseSerialized = JSON.stringify(payload ?? {});
@@ -57,6 +57,9 @@ export function useServerCalc(action, payload, initialData = null, options = {})
   const serialized = JSON.stringify(effectivePayload ?? {});
   const cacheKey = `${action}:${serialized}`;
 
+  const initialDataRef = useRef(initialData);
+  initialDataRef.current = initialData;
+
   const [applied, setApplied] = useState(() => ({
     cacheKey,
     baseSerialized,
@@ -66,11 +69,11 @@ export function useServerCalc(action, payload, initialData = null, options = {})
   }));
 
   const [state, setState] = useState(() => {
-    const hit = calcCache.get(cacheKey);
+    const hit = enabled ? calcCache.get(cacheKey) : null;
     return {
       data: hit ?? initialData,
-      loading: !hit,
-      initialized: Boolean(hit),
+      loading: enabled ? !hit : false,
+      initialized: enabled ? Boolean(hit) : true,
       error: null,
     };
   });
@@ -82,6 +85,7 @@ export function useServerCalc(action, payload, initialData = null, options = {})
   onSuccessRef.current = onSuccess;
 
   useEffect(() => {
+    if (!enabled) return;
     if (mode === 'auto') {
       if (cacheKey !== applied.cacheKey) {
         setApplied((prev) => ({
@@ -106,7 +110,7 @@ export function useServerCalc(action, payload, initialData = null, options = {})
       }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, cacheKey, baseSerialized, applied.baseSerialized, applied.cacheKey]);
+  }, [enabled, mode, cacheKey, baseSerialized, applied.baseSerialized, applied.cacheKey]);
 
   const run = useCallback(() => {
     const latest = latestRef.current;
@@ -120,6 +124,16 @@ export function useServerCalc(action, payload, initialData = null, options = {})
   }, []);
 
   useEffect(() => {
+    if (!enabled) {
+      setState({
+        data: initialDataRef.current,
+        loading: false,
+        initialized: true,
+        error: null,
+      });
+      return undefined;
+    }
+
     const targetKey = applied.cacheKey;
     const targetPayload = applied.payload;
     const targetTrigger = applied.trigger;
@@ -187,12 +201,14 @@ export function useServerCalc(action, payload, initialData = null, options = {})
       controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action, applied.cacheKey, applied.seq]);
+  }, [action, enabled, applied.cacheKey, applied.seq]);
 
   const isDirty = mode === 'manual' && baseSerialized !== applied.baseSerialized;
 
   return {
     ...state,
+    data: enabled ? state.data : initialData,
+    loading: enabled ? state.loading : false,
     isDirty,
     run,
     runCount: applied.seq,
@@ -206,7 +222,9 @@ export function loadSavedPlannerState() {
 export async function fetchLiveRatesFromApi() {
   const res = await fetch('/api/rates');
   const json = await res.json().catch(() => ({}));
-  handlePotentialPocLock(res, json);
+  if (!handlePotentialPocLock(res, json) && json?.pocValidationReached) {
+    emitPocQuotaReached(json);
+  }
   if (!res.ok) {
     throw new Error(json?.error || `HTTP ${res.status}`);
   }

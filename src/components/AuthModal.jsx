@@ -32,6 +32,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
   const {
     authConfigured,
     googleEnabled,
+    probeGoogleProvider,
     passwordRecoveryMode,
     signInWithGoogle,
     signInWithEmail,
@@ -41,6 +42,10 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
   } = useAuth();
   const { tx } = useI18n();
   const notify = useToast();
+
+  useEffect(() => {
+    probeGoogleProvider?.();
+  }, [probeGoogleProvider]);
 
   const [mode, setMode] = useState(passwordRecoveryMode ? 'update_password' : initialMode);
   const [fullName, setFullName] = useState('');

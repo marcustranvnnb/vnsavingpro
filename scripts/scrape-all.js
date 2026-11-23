@@ -30,7 +30,7 @@ function loadLocalEnvIfPresent() {
 async function main() {
   loadLocalEnvIfPresent();
 
-  console.log('=== VnSavingPro Daily Rate Sync (ALL 4 BANKS) ===');
+  console.log('=== VnSavingPro Monthly Day-1 Rate Sync (ALL 4 BANKS) ===');
   const tnex = await runTnexScraper({ writeFiles: true });
   console.log(`✔ TNEX: 1M=${tnex.rates['1M']}% | 6M=${tnex.rates['6M']}% | 12M=${tnex.rates['12M']}% (${tnex.note})`);
 
@@ -65,6 +65,7 @@ async function main() {
     const updatedAt = cake.updatedDate || liobank.updatedDate || tnex.updatedDate || timo.updatedDate;
     const res = await setLiveRatesSnapshotAsync(updatedBanks, updatedAt, {
       source: 'scripts/scrape-all.js',
+      schedule: 'monthly_day_1',
       tnex: { live: tnex.liveFetchSucceeded, parsed: tnex.parsedTenuresCount, note: tnex.note },
       timo: { live: timo.liveFetchSucceeded, parsed: timo.parsedTenuresCount, note: timo.note },
       liobank: {
@@ -81,7 +82,7 @@ async function main() {
       },
     });
     if (res.supabaseSaved) {
-      console.log(`✔ SUPABASE: Saved daily rate snapshot (${updatedAt}) to public.bank_rate_snapshots`);
+      console.log(`✔ SUPABASE: Saved monthly rate snapshot (${updatedAt}) to public.bank_rate_snapshots`);
     } else {
       console.warn(`! SUPABASE: Failed to push rate snapshot (${res.supabaseError || 'unknown error'})`);
     }

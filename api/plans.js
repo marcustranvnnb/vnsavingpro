@@ -1,6 +1,10 @@
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
+import { createRateLimiter } from './_lib/rateLimit.js';
 import { getUserFromBearerToken, isSupabaseConfigured, sbDelete, sbSelect, sbUpsert } from './_lib/supabase.js';
+
+const readLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 90, maxEntries: 2000 });
+const writeLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 40, maxEntries: 2000 });
 
 const ALLOWED_PAYLOAD_KEYS = new Set([
   'plan',
@@ -74,6 +78,10 @@ function formatPlanRow(row) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  const limited = req.method === 'GET' ? readLimiter(req) : writeLimiter(req);
+  if (limited) {
+    return res.status(429).json({ ok: false, error: 'Too many requests. Please slow down.' });
+  }
   const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
   if (quotaGuard.blocked) {
     return sendPocQuotaResponse(res, quotaGuard);

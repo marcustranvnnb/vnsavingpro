@@ -1,0 +1,21 @@
+name: Keep Supabase Free-Tier Active (5-Day Ping)
+
+on:
+  schedule:
+    # Run every 5 days at 03:00 UTC (10:00 AM UTC+7) to prevent Supabase 7-day auto-pause
+    - cron: '0 3 */5 * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/rates?keepalive=1 to touch Supabase Postgres
+        run: |
+          code=$(curl -sS -o /tmp/keepalive.json -w "%{http_code}" "https://vnsavingpro.vercel.app/api/rates?keepalive=1")
+          echo "Keepalive HTTP status: $code"
+          cat /tmp/keepalive.json | head -c 400
+          echo ""
+          if [ "$code" != "200" ] && [ "$code" != "503" ]; then
+            exit 1
+          fi

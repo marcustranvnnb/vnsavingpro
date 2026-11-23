@@ -1,7 +1,9 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  hasAuthUrlCallback,
+  hasStoredSupabaseSession,
   isBrowserAuthConfigured,
-  supabase,
+  loadSupabaseClient,
   supabaseBrowserKey,
   supabaseBrowserUrl,
 } from '../utils/supabaseClient.js';
@@ -40,19 +42,27 @@ function normalizeAuthError(err) {
 }
 
 export function AuthProvider({ children }) {
+  const needsImmediateSessionHydration =
+    isBrowserAuthConfigured() && (hasStoredSupabaseSession() || hasAuthUrlCallback());
+
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [authLoading, setAuthLoading] = useState(Boolean(supabase));
+  const [authLoading, setAuthLoading] = useState(needsImmediateSessionHydration);
   const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(null);
 
-  const loadOrCreateProfile = useCallback(async (user) => {
-    if (!supabase || !user?.id) {
+  const clientRef = useRef(null);
+  const listenerBoundRef = useRef(false);
+  const subscriptionRef = useRef(null);
+  const probedGoogleRef = useRef(false);
+
+  const loadOrCreateProfile = useCallback(async (client, user) => {
+    if (!client || !user?.id) {
       setProfile(null);
       return null;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('profiles')
       .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
       .eq('id', user.id)
@@ -69,7 +79,7 @@ export function AuthProvider({ children }) {
     );
     const fallbackAvatar = String(user.user_metadata?.avatar_url || user.user_metadata?.picture || '').slice(0, 400);
 
-    const { data: created } = await supabase
+    const { data: created } = await client
       .from('profiles')
       .upsert(
         {
@@ -89,69 +99,81 @@ export function AuthProvider({ children }) {
     return null;
   }, []);
 
-  useEffect(() => {
-    if (!supabase) {
-      setAuthLoading(false);
-      return undefined;
+  const ensureClient = useCallback(async () => {
+    if (!isBrowserAuthConfigured()) return null;
+    const client = clientRef.current || (await loadSupabaseClient());
+    if (!client) return null;
+    clientRef.current = client;
+
+    if (!listenerBoundRef.current) {
+      listenerBoundRef.current = true;
+      const {
+        data: { subscription },
+      } = client.auth.onAuthStateChange((event, nextSession) => {
+        setSession(nextSession || null);
+        if (event === 'PASSWORD_RECOVERY') {
+          setPasswordRecoveryMode(true);
+        }
+        if (nextSession?.user) {
+          loadOrCreateProfile(client, nextSession.user);
+        } else {
+          setProfile(null);
+        }
+      });
+      subscriptionRef.current = subscription;
     }
 
-    let mounted = true;
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (!mounted) return;
-        const activeSession = data?.session || null;
-        setSession(activeSession);
-        if (activeSession?.user) {
-          loadOrCreateProfile(activeSession.user).finally(() => {
-            if (mounted) setAuthLoading(false);
-          });
-        } else {
-          setAuthLoading(false);
-        }
-      })
-      .catch(() => {
-        if (mounted) setAuthLoading(false);
-      });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (!mounted) return;
-      setSession(nextSession || null);
-      if (event === 'PASSWORD_RECOVERY') {
-        setPasswordRecoveryMode(true);
-      }
-      if (nextSession?.user) {
-        loadOrCreateProfile(nextSession.user);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription?.unsubscribe();
-    };
+    return client;
   }, [loadOrCreateProfile]);
 
   useEffect(() => {
-    if (!isBrowserAuthConfigured()) return undefined;
-    let active = true;
-    fetch(`${supabaseBrowserUrl}/auth/v1/settings`, {
-      headers: { apikey: supabaseBrowserKey },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((settings) => {
-        if (!active || !settings?.external) return;
-        setGoogleEnabled(Boolean(settings.external.google));
-      })
-      .catch(() => {
-        // Ignore network failure while probing provider status
-      });
+    let mounted = true;
+    if (!needsImmediateSessionHydration) {
+      setAuthLoading(false);
+    } else {
+      ensureClient()
+        .then(async (client) => {
+          if (!mounted || !client) {
+            if (mounted) setAuthLoading(false);
+            return;
+          }
+          const { data } = await client.auth.getSession();
+          if (!mounted) return;
+          const activeSession = data?.session || null;
+          setSession(activeSession);
+          if (activeSession?.user) {
+            await loadOrCreateProfile(client, activeSession.user);
+          }
+          if (mounted) setAuthLoading(false);
+        })
+        .catch(() => {
+          if (mounted) setAuthLoading(false);
+        });
+    }
+
     return () => {
-      active = false;
+      mounted = false;
+      subscriptionRef.current?.unsubscribe();
+      subscriptionRef.current = null;
+      listenerBoundRef.current = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const probeGoogleProvider = useCallback(async () => {
+    if (probedGoogleRef.current || !isBrowserAuthConfigured()) return;
+    probedGoogleRef.current = true;
+    try {
+      const res = await fetch(`${supabaseBrowserUrl}/auth/v1/settings`, {
+        headers: { apikey: supabaseBrowserKey },
+      });
+      const settings = res.ok ? await res.json() : null;
+      if (settings?.external) {
+        setGoogleEnabled(Boolean(settings.external.google));
+      }
+    } catch {
+      // Ignore network failure while probing provider status
+    }
   }, []);
 
   const value = useMemo(() => {
@@ -160,6 +182,7 @@ export function AuthProvider({ children }) {
     return {
       authConfigured: isBrowserAuthConfigured(),
       googleEnabled,
+      probeGoogleProvider,
       authLoading,
       session,
       user,
@@ -167,10 +190,15 @@ export function AuthProvider({ children }) {
       passwordRecoveryMode,
       clearPasswordRecoveryMode: () => setPasswordRecoveryMode(false),
       getAccessToken: () => session?.access_token || null,
-      refreshProfile: () => (user ? loadOrCreateProfile(user) : Promise.resolve(null)),
+      refreshProfile: async () => {
+        if (!user) return null;
+        const client = await ensureClient();
+        return client ? loadOrCreateProfile(client, user) : null;
+      },
 
       signInWithGoogle: async (redirectTo) => {
-        if (!supabase) throw new Error('Supabase Auth chưa được cấu hình.');
+        const client = await ensureClient();
+        if (!client) throw new Error('Supabase Auth chưa được cấu hình.');
         try {
           const currentPath = `${window.location.pathname}${window.location.search}`;
           if (currentPath && !currentPath.startsWith('/auth')) {
@@ -180,7 +208,7 @@ export function AuthProvider({ children }) {
           // Ignore sessionStorage restrictions
         }
         const callbackUrl = redirectTo || `${window.location.origin}/auth`;
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { error } = await client.auth.signInWithOAuth({
           provider: 'google',
           options: {
             redirectTo: callbackUrl,
@@ -193,8 +221,9 @@ export function AuthProvider({ children }) {
       },
 
       signInWithEmail: async (email, password) => {
-        if (!supabase) throw new Error('Supabase Auth chưa được cấu hình.');
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const client = await ensureClient();
+        if (!client) throw new Error('Supabase Auth chưa được cấu hình.');
+        const { data, error } = await client.auth.signInWithPassword({
           email: String(email || '').trim(),
           password: String(password || ''),
         });
@@ -203,9 +232,10 @@ export function AuthProvider({ children }) {
       },
 
       signUpWithEmail: async (email, password, fullName = '') => {
-        if (!supabase) throw new Error('Supabase Auth chưa được cấu hình.');
+        const client = await ensureClient();
+        if (!client) throw new Error('Supabase Auth chưa được cấu hình.');
         const cleanName = sanitizeText(fullName, 80);
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await client.auth.signUp({
           email: String(email || '').trim(),
           password: String(password || ''),
           options: {
@@ -218,22 +248,25 @@ export function AuthProvider({ children }) {
       },
 
       resetPassword: async (email) => {
-        if (!supabase) throw new Error('Supabase Auth chưa được cấu hình.');
-        const { error } = await supabase.auth.resetPasswordForEmail(String(email || '').trim(), {
+        const client = await ensureClient();
+        if (!client) throw new Error('Supabase Auth chưa được cấu hình.');
+        const { error } = await client.auth.resetPasswordForEmail(String(email || '').trim(), {
           redirectTo: `${window.location.origin}/auth?mode=reset`,
         });
         if (error) throw new Error(normalizeAuthError(error));
       },
 
       updatePassword: async (newPassword) => {
-        if (!supabase) throw new Error('Supabase Auth chưa được cấu hình.');
-        const { error } = await supabase.auth.updateUser({ password: String(newPassword || '') });
+        const client = await ensureClient();
+        if (!client) throw new Error('Supabase Auth chưa được cấu hình.');
+        const { error } = await client.auth.updateUser({ password: String(newPassword || '') });
         if (error) throw new Error(normalizeAuthError(error));
         setPasswordRecoveryMode(false);
       },
 
       updateProfile: async (patch) => {
-        if (!supabase || !user?.id) throw new Error('Bạn cần đăng nhập để cập nhật hồ sơ.');
+        const client = await ensureClient();
+        if (!client || !user?.id) throw new Error('Bạn cần đăng nhập để cập nhật hồ sơ.');
         const payload = {
           updated_at: new Date().toISOString(),
         };
@@ -254,7 +287,7 @@ export function AuthProvider({ children }) {
             ? patch.default_household_mode
             : 'INDIVIDUAL';
         }
-        const { data, error } = await supabase
+        const { data, error } = await client
           .from('profiles')
           .update(payload)
           .eq('id', user.id)
@@ -267,13 +300,15 @@ export function AuthProvider({ children }) {
       },
 
       signOut: async () => {
-        if (!supabase) return;
-        await supabase.auth.signOut();
+        const client = clientRef.current;
+        if (client) {
+          await client.auth.signOut();
+        }
         setSession(null);
         setProfile(null);
       },
     };
-  }, [authLoading, googleEnabled, loadOrCreateProfile, passwordRecoveryMode, profile, session]);
+  }, [authLoading, ensureClient, googleEnabled, loadOrCreateProfile, passwordRecoveryMode, probeGoogleProvider, profile, session]);
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

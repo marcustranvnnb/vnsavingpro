@@ -8,6 +8,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v1.11.0.0',
+    date: '23/11/2026',
+    title: 'Tối ưu Free-Tier 0đ, Giảm 40%+ JS Trang chủ, Siết RLS & Chống Auto-Pause',
+    items: [
+      'Cắt ~80% Vercel invocations trên Trang chủ bằng CDN Edge Cache 24h cho lãi suất, pre-seed Ước tính nhanh và gom batch telemetry Supabase Free-Tier.',
+      'Lazy-load Supabase Auth SDK ra chunk riêng (-40%+ JS tải đầu cho khách), tối ưu tải GTM theo đồng thuận cookie & thêm cache bất biến cho /assets/*.',
+      'Siết chặt RLS bảng saved_plans/user_feedback, thêm cron giữ ấm Supabase mỗi 5 ngày, nâng chuẩn Node 24 LTS và dọn cấu hình dư thừa.',
+    ],
+  },
+  {
     version: 'v1.10.0.0',
     date: '23/11/2026',
     title: 'Đồng bộ lãi suất đầu tháng, Nút chạy mô hình + Lazy Loading & Lịch sử kết quả Profile',
@@ -386,12 +396,30 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Monthly 1st Rate Sync · Run Model CTA & Lazy Loading · Profile Run History';
-  if (lang === 'ja') return '毎月1日金利同期・実行ボタン＆遅延読み込み・計算履歴保存';
+  if (lang === 'en') return 'Free-Tier Cost Guard · -40% Entry JS Bundle · Hardened RLS · Node 24 LTS';
+  if (lang === 'ja') return 'Free-Tier最適化・初期JS約40%削減・RLS強化・Node 24 LTS対応';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v1.11.0.0': {
+    en: {
+      title: 'Free-Tier Optimization, -40% Initial JS Bundle, Hardened RLS & Anti-Pause',
+      items: [
+        'Cut homepage serverless invocations via 24h Edge CDN caching for /api/rates, server-seeded QuickEstimate defaults, and batched 5-minute quota telemetry.',
+        'Lazy-loaded Supabase Auth SDK into its own deferred chunk (-40%+ initial JS for guests), deferred GTM behind consent checks, and enabled immutable /assets/* caching.',
+        'Tightened Postgres RLS policies on saved_plans & user_feedback, enforced row retention caps, added a 5-day free keepalive ping, and standardized on Node 24 LTS.',
+      ],
+    },
+    ja: {
+      title: 'Free-Tier極小化・初期JS約40%軽量化・RLSセキュリティ強化・休止防止',
+      items: [
+        '24時間CDNキャッシュ、初期クイック試算のサーバー事前同梱、5分バッチ計測によりトップページのServerless呼び出しを大幅削減しました。',
+        'Supabase Auth SDKを別チャンクへ遅延読み込み化して未ログイン時の初期JSを約40%以上削減し、同意後GTM読込と不変アセットキャッシュを追加しました。',
+        'saved_plans/user_feedbackのRLSを厳格化し、履歴件数上限管理・5日ごとの無料Keep-Alive・Node 24 LTS統一を適用しました。',
+      ],
+    },
+  },
   'v1.10.0.0': {
     en: {
       title: 'Monthly 1st Rate Sync, Explicit Run CTA + Lazy Loading & Profile Run History',

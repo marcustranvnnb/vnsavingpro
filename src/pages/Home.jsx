@@ -140,12 +140,34 @@ const INITIAL_ESTIMATE = {
 };
 
 function QuickEstimate() {
-  const { best } = useRates();
+  const { best, ratesSyncMeta } = useRates();
   const { lang, tx } = useI18n();
   const [householdMode, setHouseholdMode] = useState('INDIVIDUAL');
   const [target, setTarget] = useState(10_000_000);
   const [saving, setSaving] = useState(5_000_000);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const top = best('12M');
+
+  const serverDefault = ratesSyncMeta?.defaultQuickEstimate;
+  const seededEstimate =
+    serverDefault && serverDefault.timeText
+      ? {
+          timeText: serverDefault.timeText[lang] || serverDefault.timeText.vi || '...',
+          requiredPrincipal: serverDefault.requiredPrincipal || 0,
+          compoundSharePct: serverDefault.compoundSharePct || 0,
+          monthsNeeded: serverDefault.monthsNeeded || 0,
+        }
+      : INITIAL_ESTIMATE;
+
+  const matchesServerSeed =
+    Boolean(serverDefault) &&
+    target === serverDefault.target &&
+    saving === serverDefault.saving &&
+    Math.abs((top?.rate || 0) - serverDefault.rate) < 0.001;
+
+  // Avoid firing /api/calculate on initial homepage load when /api/rates already supplies the seed
+  const shouldFetchLive =
+    hasInteracted || (Boolean(ratesSyncMeta?.loaded) && !matchesServerSeed);
 
   const { data: r, loading } = useServerCalc(
     'quick_estimate',
@@ -155,7 +177,8 @@ function QuickEstimate() {
       initialCapital: 0,
       annualInterestRate: top.rate,
     },
-    INITIAL_ESTIMATE
+    seededEstimate,
+    { enabled: shouldFetchLive }
   );
 
   return (
@@ -181,7 +204,14 @@ function QuickEstimate() {
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {TARGETS.map((v) => (
-            <Chip key={v} active={target === v} onClick={() => setTarget(v)}>
+            <Chip
+              key={v}
+              active={target === v}
+              onClick={() => {
+                setHasInteracted(true);
+                setTarget(v);
+              }}
+            >
               {chip(v, lang)}
             </Chip>
           ))}
@@ -192,7 +222,14 @@ function QuickEstimate() {
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {SAVINGS.map((v) => (
-            <Chip key={v} active={saving === v} onClick={() => setSaving(v)}>
+            <Chip
+              key={v}
+              active={saving === v}
+              onClick={() => {
+                setHasInteracted(true);
+                setSaving(v);
+              }}
+            >
               {chip(v, lang)}
             </Chip>
           ))}

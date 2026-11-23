@@ -20,8 +20,8 @@ export const POC_VALIDATION_PAYLOAD = {
     'Sản phẩm đã đạt đến giai đoạn xác thực POC (POC Validation Phase). Chủ sở hữu dự án đang chuẩn bị nâng cấp hạ tầng để mang lại trải nghiệm tốt hơn. Rất mong bạn thông cảm cho sự bất tiện này.',
 };
 
-const CACHE_WINDOW_MS = 15_000;
-const BATCH_HIT_FLUSH = 10;
+const CACHE_WINDOW_MS = 300_000; // 5-minute snapshot cache to slash Supabase RPC traffic
+const BATCH_HIT_FLUSH = 50;
 
 let pendingApiHits = 0;
 let lastSyncMs = 0;
@@ -218,15 +218,37 @@ export async function checkAndTrackQuota({ trackApiHit = true, forceRefresh = fa
   }
 
   const supabaseReady = isSupabaseConfigured() && getSupabaseConfig().hasServiceRole;
-  const shouldSyncRemote =
+  const needsSnapshotRefresh =
     supabaseReady &&
     (forceRefresh ||
       !cachedQuotaState ||
-      pendingApiHits >= BATCH_HIT_FLUSH ||
       Date.now() - lastSyncMs >= CACHE_WINDOW_MS ||
       cachedQuotaState.maxUsagePct >= 75);
 
-  if (shouldSyncRemote) {
+  if (supabaseReady && !needsSnapshotRefresh) {
+    if (pendingApiHits >= BATCH_HIT_FLUSH) {
+      const deltaToFlush = pendingApiHits;
+      pendingApiHits = 0;
+      sbRpc('increment_quota_counter', {
+        p_metric_key: 'vercel_api_monthly',
+        p_period_key: monthKey,
+        p_delta: deltaToFlush,
+        p_limit_value: limits.vercel_api_monthly,
+      })
+        .then((r) => {
+          if (!r?.ok) pendingApiHits += deltaToFlush;
+        })
+        .catch(() => {
+          pendingApiHits += deltaToFlush;
+        });
+    }
+    return {
+      ...cachedQuotaState,
+      blocked: cachedQuotaState.pocValidationReached,
+    };
+  }
+
+  if (needsSnapshotRefresh) {
     const deltaToFlush = pendingApiHits;
     pendingApiHits = 0;
 

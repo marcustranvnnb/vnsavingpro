@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-23 15:23 (Version 1.10.0.0: Monthly 1st Rate Sync `0 2 1 * *`, Manual Run CTA + Lazy Loading across all 5 tools, Profile Plan/Run History `api/history.js` & Guest Save Prompt)
-> **Current Architecture Version**: v1.10.0.0 (Monthly 1st Rate Sync + Explicit Tool Run CTA & CalculationLoader + Profile Run History & Guest Save Prompt + Swipeable Stage Explorer + Community Hall of Fame + Unified Adaptive Multi-Screen + Trilingual VI/EN/JA SPA + Vercel Serverless API + Supabase Free Tier Postgres `gvgyztwpjvjvztwhwnue`)
+> **Last Synced**: 2026-11-23 15:52 (Version 1.11.0.0: Free-Tier 0đ Optimization, Deferred Supabase SDK Chunk `-40%+ JS`, Hardened RLS & Retention Caps, Node 24 LTS & 5-Day Keepalive)
+> **Current Architecture Version**: v1.11.0.0 (Edge CDN 24h `/api/rates` + Seeded `QuickEstimate` + Deferred `@supabase/supabase-js` + Consent-Gated GTM + Bounded Rate Limiters + Hardened RLS & 5-Day Keepalive + Node 24 LTS + Manual Tool Run CTA & Profile History)
 > **Deployment Status**: Migrated from `#/` hash routing to Clean URLs (`/`, `/plan`, ...) and pushed to GitHub (`https://github.com/marcustranvnnb/vnsavingpro.git`, branch `main`).
 
 ---
@@ -38,13 +38,13 @@
 
 ---
 
-## File Registry (v1.10.0.0 Monthly Rate Sync, Tool Run CTA + Lazy Loading, Profile Run History & Community Serverless)
+## File Registry (v1.11.0.0 Free-Tier Optimization, Deferred Auth Bundle, Hardened RLS & Monthly Sync)
 
-- **Database & Schema (`supabase/`)**: `supabase/schema.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `calculation_history`, `usage_quotas`, `quota_alerts_log` + RLS policies), `supabase/email-templates/`, `.env.example`
-- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/history.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,supabase,resend,quotaGuard}.js`
-- **Automated Scrapers, Versioning & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/bump-version.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1` (Monthly 1st `09:00`), `.github/workflows/daily-rates-sync.yml` (`0 2 1 * *`)
+- **Database & Schema (`supabase/`)**: `supabase/schema.sql`, `supabase/migrations/20261123_v111_security_and_history.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `calculation_history`, `usage_quotas`, `quota_alerts_log` + hardened RLS policies), `supabase/email-templates/`, `.env.example`
+- **Serverless API (`api/`)**: `api/rates.js`, `api/calculate.js`, `api/feedback.js`, `api/plans.js`, `api/history.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,http,liveRatesCache,rateLimit,supabase,resend,quotaGuard}.js`
+- **Automated Scrapers, Keepalive & Scheduling (`scripts/`, `.github/`)**: `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, `scripts/scrape-all.js`, `scripts/bump-version.js`, `scripts/_lib/rateUpdater.js`, `scripts/register-daily-9am-task.ps1` (Monthly 1st `09:00`), `.github/workflows/daily-rates-sync.yml` (`0 2 1 * *`, Node 24 LTS), `.github/workflows/keepalive-supabase.yml` (`0 3 */5 * *`)
 - **Root, i18n, Layout & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/version.json`, `src/index.css`, `src/i18n/index.jsx`, `src/layout/{DisplayModeContext.jsx,viewportMetrics.js}`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,Rates,Calculator,Ladder,Career,Inflation,Contributors,Auth,Profile}.jsx` (`Referral.jsx` hidden)
 - **Shared Components**: `src/components/{Layout,AdaptiveLayout,StageCarousel,SavePlanPromptCard,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
 - **Data**: `src/data/{banksData,bankPackagesData,contributorsData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
-- **Client Utilities**: `src/utils/{apiClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`
+- **Client Utilities**: `src/utils/{apiClient,supabaseClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`

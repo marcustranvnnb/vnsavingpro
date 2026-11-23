@@ -4,6 +4,19 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0. Completed in Version 1.11.0.0 (2026-11-23 — Infrastructure, Cost, Security & Bundle Optimization)
+
+- [x] **Free-Tier Invocation & DB RPC Reduction (`Phase 1`)**: Edge cached `/api/rates` (`24h` CDN + `6h` memory + pre-computed `defaultQuickEstimate`), removed redundant `/api/quota-status` mount call in `App.jsx`, batched `quotaGuard.js` (`5m` window / `50` hits), and added bounded sliding-window rate limiters ([rateLimit.js](../../api/_lib/rateLimit.js)) across `calculate`, `feedback`, `plans`, and `history`.
+- [x] **Database Security, Retention & Keepalive (`Phase 2`)**: Created [20261123_v111_security_and_history.sql](../../supabase/migrations/20261123_v111_security_and_history.sql) & updated [schema.sql](../../supabase/schema.sql) (adding `calculation_history`, revoking `anon` direct Data API table access on `saved_plans`/`user_feedback`, dropping unused `idx_bank_rate_snapshots_updated_date`), locked unauthenticated admin `GET /api/feedback`, enforced retention caps (50 runs/user, 24 rate snapshots), and added [keepalive-supabase.yml](../../.github/workflows/keepalive-supabase.yml) (5-day ping).
+- [x] **Entry JS Reduction `-40%+` & CDN Cache (`Phase 3`)**: Lazy-loaded `@supabase/supabase-js` into deferred `supabase` chunk only when stored session/callback or auth prompt opens, lazy-probed Google OAuth provider settings in `AuthModal.jsx`, deferred GTM behind `initAnalyticsIfAllowed()` cookie consent check, and enabled 1-year `immutable` cache on `/assets/(.*)` in `vercel.json`.
+- [x] **CI/CD & Runtime Cleanup (`Phase 4`)**: Upgraded GitHub Actions workflow to **Node.js 24 LTS** + `engines.node = "24.x"`, consolidated monthly Day-1 sync on GitHub Actions, removed unused Cloudflare config (`wrangler.jsonc`, `public/_redirects`, `public/_headers`, `cf:*` scripts), and ignored `unikorn-assets/`.
+- [ ] **Manual Owner Dashboard Actions Pending**:
+  - Run [supabase/migrations/20261123_v111_security_and_history.sql](../../supabase/migrations/20261123_v111_security_and_history.sql) in Supabase SQL Editor (`gvgyztwpjvjvztwhwnue`).
+  - Enable **Leaked Password Protection** under Supabase Auth Settings (`auth_leaked_password_protection`).
+  - Reconnect the **Vercel** plugin account in Plugins Manager to restore MCP visibility.
+
+---
+
 ## 1. Completed in Version 1.5 (2026-11-18)
 
 - [x] **Dedicated TNEX Scraper (`scripts/scrape-tnex.js`)**: Scrapes `https://www.tnex.vn/san-pham/tiet-kiem` (`parseTnexHtml`, extracting 8 tenures `1M–36M` live: `4.75%`, `8.40%`, `8.60%`) and updates `banksData.js`, `bankPackagesData.js`, and `src/data/scraped/tnex-latest.json`.

@@ -1,7 +1,7 @@
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from '../../src/data/banksData.js';
-import { isSupabaseConfigured, sbInsert, sbSelect } from './supabase.js';
+import { isSupabaseConfigured, sbDelete, sbInsert, sbSelect } from './supabase.js';
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server memory cache for monthly day-1 rate snapshots
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6-hour server memory cache for monthly day-1 rate snapshots
 
 let cachedSnapshot = null;
 let cachedAtMs = 0;
@@ -31,12 +31,12 @@ export function getLiveRatesSnapshot() {
   };
 }
 
-export async function getLiveRatesSnapshotAsync() {
+export async function getLiveRatesSnapshotAsync({ bypassMemoryCache = false } = {}) {
   const supabaseConnected = isSupabaseConfigured();
 
   if (supabaseConnected) {
     const isFreshSupabaseCache =
-      cachedSnapshot && cachedStorage === 'supabase' && Date.now() - cachedAtMs <= CACHE_TTL_MS;
+      !bypassMemoryCache && cachedSnapshot && cachedStorage === 'supabase' && Date.now() - cachedAtMs <= CACHE_TTL_MS;
     if (isFreshSupabaseCache) {
       return {
         ...cachedSnapshot,
@@ -107,6 +107,18 @@ export async function setLiveRatesSnapshotAsync(banks, updatedDate, syncMeta = {
 
   if (res.ok) {
     cachedStorage = 'supabase';
+    // Keep only newest 24 snapshots (2 years of monthly runs) to preserve Free-Tier storage
+    try {
+      const oldRes = await sbSelect('bank_rate_snapshots', 'select=id&order=created_at.desc&offset=24&limit=50');
+      if (oldRes.ok && Array.isArray(oldRes.data) && oldRes.data.length > 0) {
+        const oldIds = oldRes.data.map((r) => Number(r.id)).filter((n) => Number.isFinite(n) && n > 0);
+        if (oldIds.length > 0) {
+          await sbDelete('bank_rate_snapshots', `id=in.(${oldIds.join(',')})`);
+        }
+      }
+    } catch {
+      // Non-critical retention cleanup failure
+    }
   }
 
   return {

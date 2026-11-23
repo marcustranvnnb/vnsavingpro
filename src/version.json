@@ -1,6 +1,6 @@
 {
-  "version": "1.10.0.0",
-  "displayVersion": "v1.10.0.0",
+  "version": "1.11.0.0",
+  "displayVersion": "v1.11.0.0",
   "releaseDate": "23/11/2026",
-  "label": "Cập nhật lãi suất đầu tháng, Nút chạy mô hình + Lazy Loading & Lịch sử kế hoạch Profile"
+  "label": "Tối ưu Free-Tier, Giảm 40% Bundle Trang chủ, Siết RLS & Chống Auto-Pause Supabase"
 }

@@ -83,11 +83,41 @@ export function saveCookieConsent({ preferences = false, analytics = false } = {
 
   if (next.analytics) {
     setCookie(ANALYTICS_COOKIE, 'granted', 90);
+    initAnalyticsIfAllowed();
   } else {
     deleteCookie(ANALYTICS_COOKIE);
   }
 
   return next;
+}
+
+const GTM_CONTAINER_ID = 'GTM-MZVGJMWL';
+
+/**
+ * Defers Google Tag Manager injection off the critical render path and respects analytics consent.
+ */
+export function initAnalyticsIfAllowed() {
+  if (typeof window === 'undefined' || !hasDocument()) return false;
+  if (window.__vnsavingGtmLoaded) return true;
+  if (!isAnalyticsAllowed()) return false;
+
+  const injectGtm = () => {
+    if (window.__vnsavingGtmLoaded || !isAnalyticsAllowed()) return;
+    window.__vnsavingGtmLoaded = true;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtm.js?id=${GTM_CONTAINER_ID}`;
+    document.head.appendChild(script);
+  };
+
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(injectGtm, { timeout: 2500 });
+  } else {
+    setTimeout(injectGtm, 1500);
+  }
+  return true;
 }
 
 export function syncUserPrefCookie(patch = {}) {

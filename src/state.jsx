@@ -162,9 +162,11 @@ export function AppProvider({ children }) {
   const [serverBanks, setServerBanks] = useState(INITIAL_BANKS_DATA);
   const [updatedAt, setUpdatedAt] = useState(RATES_UPDATED_AT);
   const [ratesSyncMeta, setRatesSyncMeta] = useState({
+    loaded: false,
     supabaseConnected: false,
     storage: 'memory',
     syncMeta: null,
+    defaultQuickEstimate: null,
   });
 
   useEffect(() => {
@@ -175,13 +177,17 @@ export function AppProvider({ children }) {
         if (Array.isArray(remote.banks) && remote.banks.length > 0) setServerBanks(remote.banks);
         if (remote.updatedAt) setUpdatedAt(remote.updatedAt);
         setRatesSyncMeta({
+          loaded: true,
           supabaseConnected: Boolean(remote.supabaseConnected),
           storage: remote.storage || 'memory',
           syncMeta: remote.syncMeta || null,
+          defaultQuickEstimate: remote.defaultQuickEstimate || null,
         });
       })
       .catch(() => {
-        // Fallback silently to bundled INITIAL_BANKS_DATA
+        if (!cancelled) {
+          setRatesSyncMeta((prev) => ({ ...prev, loaded: true }));
+        }
       });
     return () => {
       cancelled = true;

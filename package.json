@@ -1,9 +1,12 @@
 {
   "name": "vnsavingpro",
   "private": true,
-  "version": "1.10.0",
-  "appVersion": "1.10.0.0",
+  "version": "1.11.0",
+  "appVersion": "1.11.0.0",
   "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -13,9 +16,7 @@
     "scrape:timo": "node scripts/scrape-timo.js",
     "scrape:liobank": "node scripts/scrape-liobank.js",
     "scrape:cake": "node scripts/scrape-cake.js",
-    "scrape:all": "node scripts/scrape-all.js",
-    "cf:deploy": "vite build && npx wrangler deploy",
-    "cf:pages": "vite build && npx wrangler pages deploy dist --project-name=vnsavingpro"
+    "scrape:all": "node scripts/scrape-all.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",

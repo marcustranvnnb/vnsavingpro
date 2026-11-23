@@ -13,11 +13,11 @@ import { CookieBanner } from './components/CookieBanner.jsx';
 import { PocValidationOverlay } from './components/PocValidationOverlay.jsx';
 import { PageSkeleton } from './components/ui.jsx';
 import {
-  fetchQuotaStatusFromApi,
   OPEN_AUTH_EVENT,
   POC_QUOTA_EVENT,
   syncLocalHistoryToCloud,
 } from './utils/apiClient.js';
+import { initAnalyticsIfAllowed } from './utils/cookieManager.js';
 import Home from './pages/Home.jsx';
 
 // Tool pages are code-split so the home page loads fast (Chart.js only loads with the planner).
@@ -69,15 +69,7 @@ function Shell() {
       setPocState({ locked: true, info: e.detail || null });
     };
     window.addEventListener(POC_QUOTA_EVENT, onPoc);
-    fetchQuotaStatusFromApi()
-      .then((status) => {
-        if (status?.pocValidationReached) {
-          setPocState({ locked: true, info: status });
-        }
-      })
-      .catch(() => {
-        // Ignore offline/network check errors on initial quota probe
-      });
+    initAnalyticsIfAllowed();
     return () => window.removeEventListener(POC_QUOTA_EVENT, onPoc);
   }, []);
 

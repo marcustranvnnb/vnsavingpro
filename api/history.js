@@ -8,12 +8,14 @@ import {
   sbUpsert,
 } from './_lib/supabase.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
+import { createRateLimiter } from './_lib/rateLimit.js';
 
 const ALLOWED_TOOLS = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
 const ALLOWED_MODES = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
 const ALLOWED_TONES = new Set(['default', 'emerald', 'indigo', 'amber']);
-const MAX_ENTRIES_PER_USER = 60;
+const MAX_ENTRIES_PER_USER = 50;
 const MAX_BATCH = 25;
+const historyLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60, maxEntries: 2000 });
 
 // Per-user in-memory fallback when Supabase env vars are not configured or temporarily unreachable
 const memoryHistoryByUser = new Map();
@@ -142,6 +144,10 @@ function upsertMemoryHistory(userId, normalizedEntries) {
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
+  if (historyLimiter(req)) {
+    return res.status(429).json({ ok: false, error: 'Too many requests. Please slow down.' });
+  }
+
   const auth = await getUserFromBearerToken(req);
   if (!auth.ok || !auth.user?.id) {
     return res.status(401).json({
@@ -225,6 +231,26 @@ export default async function handler(req, res) {
       const upRes = await sbUpsert('calculation_history', dbRows, 'user_id,client_run_id');
       if (upRes.ok && Array.isArray(upRes.data)) {
         const items = upRes.data.map(formatRow);
+        // Enforce 50-row retention cap per user on Supabase Free Tier
+        try {
+          const oldRes = await sbSelect(
+            'calculation_history',
+            `select=id&user_id=eq.${encodeURIComponent(userId)}&order=created_at.desc&offset=${MAX_ENTRIES_PER_USER}&limit=50`
+          );
+          if (oldRes.ok && Array.isArray(oldRes.data) && oldRes.data.length > 0) {
+            const overflowIds = oldRes.data
+              .map((r) => String(r.id || ''))
+              .filter((id) => /^[0-9a-f-]{36}$/i.test(id));
+            if (overflowIds.length > 0) {
+              await sbDelete(
+                'calculation_history',
+                `user_id=eq.${encodeURIComponent(userId)}&id=in.(${overflowIds.join(',')})`
+              );
+            }
+          }
+        } catch {
+          // Non-critical retention cleanup failure
+        }
         return res.status(200).json({
           ok: true,
           savedCount: items.length,
