@@ -12,14 +12,16 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useRates } from '../state.jsx';
 import { TENURE_DAYS_MAP } from '../data/banksData.js';
-import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { consumeToolRestoreState, loadSavedPlannerState, recordToolRun, useServerCalc } from '../utils/apiClient.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { chip, compact, pct, vnd } from '../utils/format.js';
 import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import {
   Badge,
+  CalculationLoader,
   Callout,
   Card,
   CardHeader,
@@ -29,7 +31,6 @@ import {
   PageHeader,
   Progress,
   RateDisclaimer,
-  ResultsSkeleton,
   Segmented,
   SliderField,
   Stat,
@@ -37,6 +38,7 @@ import {
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { SavePlanPromptCard } from '../components/SavePlanPromptCard.jsx';
 
 const INITIAL_CALC_DATA = {
   days: 365,
@@ -60,17 +62,19 @@ const INITIAL_CALC_DATA = {
 
 export default function Calculator() {
   const { banks, getRate } = useRates();
+  const { getAccessToken } = useAuth();
   const { lang, tx, formatTenure } = useI18n();
   const saved = useMemo(() => loadSavedPlannerState(), []);
+  const restored = useMemo(() => consumeToolRestoreState('calculator'), []);
 
-  const [principal, setPrincipal] = useState(100_000_000);
-  const [bankId, setBankId] = useState(() => saved.bankId || 'cake');
-  const [tenure, setTenure] = useState(() => saved.tenure || '12M');
-  const [customRate, setCustomRate] = useState('');
-  const [customDays, setCustomDays] = useState('');
-  const [inputMode, setInputMode] = useState(() => saved.inputMode || 'basic');
-  const [withdrawAmount, setWithdrawAmount] = useState(30_000_000);
-  const [daysHeld, setDaysHeld] = useState(180);
+  const [principal, setPrincipal] = useState(() => Number(restored?.principal) || 100_000_000);
+  const [bankId, setBankId] = useState(() => restored?.bankId || saved.bankId || 'cake');
+  const [tenure, setTenure] = useState(() => restored?.tenure || saved.tenure || '12M');
+  const [customRate, setCustomRate] = useState(() => (restored?.customRate !== undefined ? restored.customRate : ''));
+  const [customDays, setCustomDays] = useState(() => (restored?.customDays !== undefined ? restored.customDays : ''));
+  const [inputMode, setInputMode] = useState(() => restored?.inputMode || saved.inputMode || 'basic');
+  const [withdrawAmount, setWithdrawAmount] = useState(() => Number(restored?.withdrawAmount) || 30_000_000);
+  const [daysHeld, setDaysHeld] = useState(() => Number(restored?.daysHeld) || 180);
 
   const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v, lang) }));
 
@@ -97,7 +101,41 @@ export default function Calculator() {
     [principal, rate, tenure, inputMode, customDays, withdrawAmount, days, daysHeld]
   );
 
-  const { data: res, loading, initialized } = useServerCalc('calculator_bundle', calcPayload, INITIAL_CALC_DATA);
+  const {
+    data: res,
+    loading,
+    isDirty,
+    run,
+  } = useServerCalc('calculator_bundle', calcPayload, INITIAL_CALC_DATA, {
+    mode: 'manual',
+    minLoadingMs: 320,
+    onSuccess: (resData) => {
+      const a = resData?.m1 || {};
+      const c = resData?.m3 || {};
+      recordToolRun({
+        tool: 'calculator',
+        title: `${compact(principal, lang)} · ${usingCustom ? tx('Tuỳ chỉnh', 'Custom', '独自') : bank.name} (${formatTenure(tenure)})`,
+        householdMode: 'INDIVIDUAL',
+        summary: `${tx('Lãi TT14:', 'Circ.14:', '利息：')} +${compact(a.interest || 0, lang)} · ${tx('Tổng', 'Total', '合計')} ${compact(a.total || 0, lang)}`,
+        metrics: [
+          { label: tx('Lãi chuẩn TT14', 'Circ.14 Int.', '通達14号利息'), value: `+${compact(a.interest || 0, lang)}`, tone: 'emerald' },
+          { label: tx('Tổng cuối kỳ', 'Maturity', '満期受取'), value: compact(a.total || 0, lang), tone: 'indigo' },
+          { label: tx('Lãi kép tái tục', 'Compounding', '毎月複利'), value: `+${compact(c.interest || 0, lang)}`, tone: 'default' },
+        ],
+        inputs: {
+          principal,
+          bankId,
+          tenure,
+          customRate,
+          customDays,
+          inputMode,
+          withdrawAmount,
+          daysHeld,
+        },
+        accessToken: getAccessToken(),
+      });
+    },
+  });
   const { m1, m2, m3, diffDaysVsMonths, diffCompoundVsDays, earlySim } = res;
   const interestSharePct = m1.total > 0 ? Math.min(100, (m1.interest / m1.total) * 100) : 0;
 
@@ -165,6 +203,18 @@ export default function Calculator() {
 
       <WorkspaceSplit
         resultsId="calculator-results"
+        runAction={{
+          onRun: run,
+          isDirty,
+          loading,
+          label: tx('Tính lãi ngay', 'Calculate Interest', '利息を計算する'),
+          loadingLabel: tx('Đang tính lãi...', 'Calculating...', '計算中...'),
+          dirtyLabel: tx(
+            'Bạn vừa đổi số tiền, kỳ hạn hoặc lãi suất — bấm "Tính lãi ngay" để cập nhật bảng so sánh.',
+            'Deposit details updated — click "Calculate Interest" to refresh.',
+            '条件が変更されました。「利息を計算する」を押してください。'
+          ),
+        }}
         mobileSummary={{
           eyebrow: `${bank.name} · ${formatTenure(tenure)} (${pct(rate, 2, lang)})`,
           value: (
@@ -310,11 +360,12 @@ export default function Calculator() {
         }
         results={
           <div className="space-y-5">
-          {!initialized && loading ? (
-            <ResultsSkeleton />
+          {loading ? (
+            <CalculationLoader
+              title={tx('Đang tính lãi chuẩn TT14 & mô phỏng rút sớm...', 'Computing SBV Circular 14 interest & early pull...', '通達14号利息と中途解約を試算中...')}
+            />
           ) : (
-            <div className={cx('space-y-5 animate-fade transition-opacity', loading && 'opacity-80')}>
-              {loading && <div className="loading-bar rounded-full" />}
+            <div className="space-y-5 animate-fade">
 
               {/* Headline Card */}
               <Card className="relative overflow-hidden p-5 sm:p-7">
@@ -582,6 +633,8 @@ export default function Calculator() {
               </Card>
 
               <RateDisclaimer />
+
+              <SavePlanPromptCard />
 
               <FeedbackWidget
                 toolId="calculator"

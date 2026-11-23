@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v1.9.0.0 Adaptive Multi-Screen · Community · Serverless)
+# VnSavingPro — Architecture & Technical Reference (v1.10.0.0 Monthly Sync · Run CTA · History · Adaptive · Serverless)
 
 ## 1. High-Level Architecture
 
@@ -11,13 +11,14 @@ flowchart TD
     App --> Modal["src/components/DataModal.jsx (Supabase Cloud Sync, JSON/CSV Backup)"]
     App --> Cookie["src/components/CookieBanner.jsx + cookieManager.js"]
     App --> Pages["React.lazy() Tool Pages + Home.jsx"]
-    Pages -->|useServerCalc()| ApiClient["src/utils/apiClient.js (50ms debounce + Map cache + Cloud Plans)"]
+    Pages -->|useServerCalc auto/manual| ApiClient["src/utils/apiClient.js (Run CTA + Map cache + Plans & History)"]
     ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Rate-Limited Serverless Handler)"]
     ApiCalc --> ServerLib["api/_lib/{calculator,feasibilityEvaluator}.js (Secret Server-Only)"]
     Pages -->|FeedbackWidget| ApiFeedback["api/feedback.js -> api/_lib/supabase.js"]
-    ApiRates --> Supabase["Supabase Free Tier Postgres (bank_rate_snapshots, user_feedback, saved_plans)"]
+    ApiRates --> Supabase["Supabase Free Tier Postgres (bank_rate_snapshots, user_feedback, saved_plans, calculation_history)"]
     ApiFeedback --> Supabase
     Modal -->|POST/GET /api/plans| ApiPlans["api/plans.js"] --> Supabase
+    Pages -->|GET/POST/DELETE /api/history| ApiHistory["api/history.js"] --> Supabase
     Pages -->|Google Docs Export| GDocs["src/utils/googleDocsExporter.js (docs.new + .doc)"]
 ```
 
@@ -26,22 +27,23 @@ flowchart TD
 - **Zero Client Exposure**: `calculator.js`, `feasibilityEvaluator.js`, `householdAnalytics.js`, and `supabase.js` (`SUPABASE_SERVICE_ROLE_KEY`) live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
 - **Supabase Free Tier Persistence (`supabase/schema.sql` + `api/_lib/supabase.js`)**:
   - Zero-dependency server-side PostgREST client (`sbSelect`, `sbInsert`, `sbUpsert`) using native `fetch` with a 3.5s timeout and automatic fallback to in-memory/bundled defaults when `SUPABASE_URL` / keys are not yet configured.
-  - Tables: `public.bank_rate_snapshots`, `public.user_feedback`, and `public.saved_plans` (protected with RLS policies).
+  - Tables: `public.bank_rate_snapshots`, `public.user_feedback`, `public.saved_plans`, `public.profiles`, `public.calculation_history`, `public.usage_quotas`, and `public.quota_alerts_log` (protected with RLS policies).
 - **Endpoints**:
-  - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` + `supabaseConnected` status from `getLiveRatesSnapshotAsync()` (60s warm cache over Supabase `bank_rate_snapshots`, fallback to `INITIAL_BANKS_DATA`).
+  - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` + `syncSchedule: 'monthly_day_1'` + `supabaseConnected` status from `getLiveRatesSnapshotAsync()` (1h warm cache over Supabase `bank_rate_snapshots`, fallback to `INITIAL_BANKS_DATA`).
   - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with per-IP in-memory rate limiting (`120 req/min`).
+  - `GET`/`POST`/`DELETE /api/history` ([api/history.js](../../api/history.js)): Authenticated endpoint (`401` if unauthenticated) storing and restoring calculation/plan run snapshots (`tool`, `title`, `householdMode`, `summary`, `metrics`, `inputs`, `clientRunId`) in `calculation_history` (or per-user memory fallback).
   - `GET`/`POST /api/feedback` ([api/feedback.js](../../api/feedback.js)): Persists star ratings, tags, comments, optional public contributor opt-in metadata, and snapshots into Supabase `user_feedback` (with memory fallback), plus local `USER_FEEDBACK_LOG` mirror via `cryptoStorage`. `GET /api/feedback?public=1` strictly returns opted-in contributor names, comments, ratings, and optional HTTPS URLs with all financial numbers stripped.
   - `GET`/`POST`/`DELETE /api/plans` ([api/plans.js](../../api/plans.js)): Saves and loads sanitized financial plans (`plan`, `customRates`, `calc`, `ladder`, `career`, `inflation`, `banks`) using 6–12 character share codes (`saved_plans` table in Supabase + user ownership via JWT).
   - `GET /api/quota-status` ([api/quota-status.js](../../api/quota-status.js)) & [quotaGuard.js](../../api/_lib/quotaGuard.js) + [resend.js](../../api/_lib/resend.js): Monitors Free-Tier caps (Vercel API invocations, Supabase DB MB & MAU, Resend daily/monthly emails), sends deduplicated alerts at **80%, 90%, 95%, and 100%** via Resend (`quota_alerts_log`), and locks API endpoints with HTTP `503 POC_QUOTA_REACHED` triggering `PocValidationOverlay.jsx`.
-  - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Scheduled via `vercel.json` (`0 2 * * *` UTC = 09:00 AM UTC+7) to live-scrape TNEX, TIMO, LioBank, and Cake, force-refresh Free-Tier quota status, and persist snapshots via `setLiveRatesSnapshotAsync()`.
-- **Automated Daily 9:00 AM Rate Scrapers (`scripts/` & `.github/workflows/daily-rates-sync.yml`)**:
+  - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Scheduled via `vercel.json` (`0 2 1 * *` UTC = 09:00 AM UTC+7 on the 1st of every month) to live-scrape TNEX, TIMO, LioBank, and Cake, force-refresh Free-Tier quota status, and persist snapshots via `setLiveRatesSnapshotAsync()`.
+- **Automated Monthly 1st (9:00 AM) Rate Scrapers (`scripts/` & `.github/workflows/daily-rates-sync.yml`)**:
   - `scripts/scrape-tnex.js` scrapes `https://www.tnex.vn/san-pham/tiet-kiem` (`parseTnexHtml`) and updates `src/data/banksData.js`, `src/data/bankPackagesData.js`, and `src/data/scraped/tnex-latest.json`.
   - `scripts/scrape-timo.js` scrapes `https://timo.vn/tiet-kiem-co-ky-han/` and updates `src/data/banksData.js`, `src/data/bankPackagesData.js`, and `src/data/scraped/timo-latest.json`.
   - `scripts/scrape-liobank.js` scrapes default tariffs from `https://liobank.vn/vn/deposit-tariffs`, dynamically discovers the latest CTKM promo PDF link from LioBank's site (currently `Liobank_The_Le_CTKM_Cong_Lai_suat_Tiet_kiem_11.11.2026.pdf`), parses compressed PDF streams via `node:zlib` (`parseLiobankPromoPdfBuffer`), and updates `banksData.js`, `bankPackagesData.js`, and `src/data/scraped/liobank-latest.json`.
   - `scripts/scrape-cake.js` scrapes both `https://cake.vn/tien-gui/tien-gui-tieu-chuan` (17 standard deposit terms + effective date + `+2.2%` bonus promo) and `https://cake.vn/tien-gui/tien-gui-co-ky-han-tich-luy` (accumulative deposit terms & promos), updating `banksData.js`, `bankPackagesData.js` (`cake-standard`, `cake-accumulate`), and `src/data/scraped/cake-latest.json`.
   - `scripts/scrape-all.js` runs all 4 bank scrapers and pushes the combined snapshot into Supabase Postgres (`setLiveRatesSnapshotAsync`) when Supabase env vars are configured.
-  - GitHub Actions runs daily at `09:00 AM` Vietnam time (`0 2 * * *`) and pushes updates to `main`; `scripts/register-daily-9am-task.ps1` sets up an equivalent Windows Scheduled Task locally.
-- **Local Dev/Preview Parity (`vite.config.js`)**: `loadEnv` loads server-only keys into `process.env` and `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, `/api/plans`, `/api/quota-status`, and `/api/cron/sync-rates` during `vite dev` and `vite preview`.
+  - GitHub Actions runs on the 1st of each month at `09:00 AM` Vietnam time (`0 2 1 * *`) and pushes updates to `main`; `scripts/register-daily-9am-task.ps1` sets up an equivalent monthly Day-1 Windows Scheduled Task locally.
+- **Local Dev/Preview Parity (`vite.config.js`)**: `loadEnv` loads server-only keys into `process.env` and `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, `/api/plans`, `/api/history`, `/api/quota-status`, and `/api/cron/sync-rates` during `vite dev` and `vite preview`.
 
 ## 3. Routing & State Management (`src/state.jsx` & `src/tools.js`)
 
@@ -65,15 +67,18 @@ flowchart TD
   - Every page (`Home`, `Planner`, `Calculator`, `Ladder`, `Career`, `Inflation`, `Rates`, `Profile`) composes from unified primitives `PageContainer`, `WorkspaceSplit`, `DualPaneSection`, `AdaptiveGrid`, and `StickyResultBar` so layout changes propagate uniformly across all screen types.
   - `overflow-x: clip` prevents horizontal overflow; Modals & Toasts dock into the right screen in Duo Book mode, anchor as bottom sheets in Mobile mode, and center on Tablet/Desktop.
 - **4-Part App Versioning (`src/version.json` + `scripts/bump-version.js` + `AGENTS.md`)**:
-  - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0` (currently `1.8.0.0`), synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part).
+  - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0` (currently `1.10.0.0`), synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part).
   - Run `npm run version:bump` (or `node scripts/bump-version.js [build|patch|minor|major]`) on every committed update.
-- **Reusable Primitives (`src/components/ui.jsx`)**:
+- **Reusable Primitives & Run Workflow (`src/components/ui.jsx`, `src/components/SavePlanPromptCard.jsx`)**:
   - `NumberInput` manages `focused` + `draft` state so typing or clearing digits never jumps the cursor or locks on `0`.
+  - `CalculationLoader` displays a sliding `.loading-bar`, spinner banner, and `ResultsSkeleton` shimmer while manual tool runs are executing (`minLoadingMs: 320`).
+  - `WorkspaceSplit` + `StickyResultBar` (`AdaptiveLayout.jsx`) provide uniform `runAction` CTA footers, dirty-state alerts, and mobile sticky run buttons across all 4 display modes (`Mobile`, `Tablet`, `Duo`, `Desktop`).
+  - `SavePlanPromptCard` displays a guest CTA prompt (*"Bạn muốn lưu và xem lại các kế hoạch & kết quả tính toán không?"*) firing `OPEN_AUTH_EVENT`, or confirms Profile run history when authenticated.
   - `@media print` in `src/index.css` expands scrollable tables and hides navigation/action controls for clean PDF printing.
 
 ## 5. Build, Security Hardening & Deployment (`vite.config.js`, `vercel.json`, `public/_headers`)
 
 - **Vite 5** with `@vitejs/plugin-react`, `@tailwindcss/vite`, `build.sourcemap: false`, manual chunks (`react`, `charts`), and `viteSriPlugin()` generating `sha384` Subresource Integrity (`integrity` + `crossorigin`) attributes on all emitted `/assets/*.js` and `/assets/*.css` tags in `dist/index.html`.
 - **HTTP Security Headers** (`vercel.json`, `public/_headers`, `vite.config.js`): `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, and `Strict-Transport-Security`.
-- **Hardened Client Storage & Self-Healing (`src/utils/cryptoStorage.js` & `src/App.jsx`)**: Strict key allowlist (`CUSTOM_RATES`, `CUSTOM_REFERRAL_CODES`, `PLANNER_STATE`, `USER_FEEDBACK_LOG`), signed cipher envelopes (`v2.<nonce>.<sig>.<cipherB64>`), circular-reference-safe JSON serialization, per-key schema & `Number.isFinite()` validation, XSS tag stripping, foreign-key flooding auto-purge, `safeExternalUrl()` protocol enforcement, and `AppErrorBoundary` recovery UI.
-- **`vercel.json`**: Uses `"framework": "vite"`, excludes `/api/(.*)` from SPA rewrites (`"source": "/((?!api/).*)"`), configures daily 09:00 AM VN cron (`0 2 * * *`), and deploys serverless functions under `api/`.
+- **Hardened Client Storage & Self-Healing (`src/utils/cryptoStorage.js` & `src/App.jsx`)**: Strict key allowlist (`CUSTOM_RATES`, `CUSTOM_REFERRAL_CODES`, `PLANNER_STATE`, `USER_FEEDBACK_LOG`, `CALC_HISTORY_LOG`, `TOOL_RESTORE_STATE`), signed cipher envelopes (`v2.<nonce>.<sig>.<cipherB64>`), circular-reference-safe JSON serialization, per-key schema & `Number.isFinite()` validation, XSS tag stripping, foreign-key flooding auto-purge, `safeExternalUrl()` protocol enforcement, and `AppErrorBoundary` recovery UI.
+- **`vercel.json`**: Uses `"framework": "vite"`, excludes `/api/(.*)` from SPA rewrites (`"source": "/((?!api/).*)"`), configures monthly day-1 09:00 AM VN cron (`0 2 1 * *`), and deploys serverless functions under `api/`.

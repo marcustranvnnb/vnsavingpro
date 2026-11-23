@@ -47,6 +47,7 @@ export default async function handler(req, res) {
 
   const updatedAt = cake.updatedDate || liobank.updatedDate || tnex.updatedDate || timo.updatedDate;
   const savedSnapshot = await setLiveRatesSnapshotAsync(updatedBanks, updatedAt, {
+    schedule: 'monthly_day_1',
     tnex: { live: tnex.liveFetchSucceeded, parsed: tnex.parsedTenuresCount, note: tnex.note },
     timo: { live: timo.liveFetchSucceeded, parsed: timo.parsedTenuresCount, note: timo.note },
     liobank: {
@@ -67,6 +68,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     ok: true,
     updatedAt,
+    syncSchedule: 'monthly_day_1',
     syncedAt: cake.scrapedAt,
     supabaseSaved: savedSnapshot.supabaseSaved,
     storage: savedSnapshot.storage,

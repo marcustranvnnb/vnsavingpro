@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Briefcase, Sparkles } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useRates } from '../state.jsx';
-import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { consumeToolRestoreState, loadSavedPlannerState, recordToolRun, useServerCalc } from '../utils/apiClient.js';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
   Badge,
+  CalculationLoader,
   Card,
   CardHeader,
   MoneyField,
@@ -20,6 +22,7 @@ import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
 import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { SavePlanPromptCard } from '../components/SavePlanPromptCard.jsx';
 
 const EMPTY_CAREER_RES = {
   requiredPrincipal: 0,
@@ -39,29 +42,39 @@ const INITIAL_CAREER_DATA = {
 
 export default function Career() {
   const { banks, getRate } = useRates();
+  const { getAccessToken } = useAuth();
   const { lang, tx } = useI18n();
   const saved = useMemo(() => loadSavedPlannerState(), []);
+  const restored = useMemo(() => consumeToolRestoreState('career'), []);
 
-  const initialBankId = saved.bankId || 'cake';
-  const initialTenure = saved.tenure || '12M';
+  const initialBankId = restored?.bankId || saved.bankId || 'cake';
+  const initialTenure = restored?.tenure || saved.tenure || '12M';
   const initialBank = banks.find((b) => b.id === initialBankId) || banks[0];
   const initialRate =
-    saved.customRate !== '' && Number(saved.customRate) > 0
-      ? Number(saved.customRate)
-      : getRate(initialBank, initialTenure) || 6.9;
+    restored?.annualRate !== undefined
+      ? Number(restored.annualRate)
+      : saved.customRate !== '' && Number(saved.customRate) > 0
+        ? Number(saved.customRate)
+        : getRate(initialBank, initialTenure) || 6.9;
 
   const [householdMode, setHouseholdMode] = useState(() =>
-    ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode) ? saved.householdMode : 'INDIVIDUAL'
+    ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(restored?.householdMode)
+      ? restored.householdMode
+      : ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode)
+        ? saved.householdMode
+        : 'INDIVIDUAL'
   );
-  const [salary, setSalary] = useState(() => Number(saved.salaryFullTime) || Number(saved.salary) || 25_000_000);
-  const [partnerSalary, setPartnerSalary] = useState(() => Number(saved.partnerSalaryFullTime) || 20_000_000);
-  const [partnerGrowthMode, setPartnerGrowthMode] = useState('SAME');
-  const [savingsRate, setSavingsRate] = useState(20);
-  const [targetIncome, setTargetIncome] = useState(() => Number(saved.target) || 10_000_000);
+  const [salary, setSalary] = useState(() => Number(restored?.salary) || Number(saved.salaryFullTime) || Number(saved.salary) || 25_000_000);
+  const [partnerSalary, setPartnerSalary] = useState(() =>
+    restored?.partnerSalary !== undefined ? Number(restored.partnerSalary) : Number(saved.partnerSalaryFullTime) || 20_000_000
+  );
+  const [partnerGrowthMode, setPartnerGrowthMode] = useState(() => restored?.partnerGrowthMode || 'SAME');
+  const [savingsRate, setSavingsRate] = useState(() => Number(restored?.savingsRate) || 20);
+  const [targetIncome, setTargetIncome] = useState(() => Number(restored?.targetIncome) || Number(saved.target) || 10_000_000);
   const [bankId, setBankId] = useState(initialBankId);
   const [tenure, setTenure] = useState(initialTenure);
   const [annualRate, setAnnualRate] = useState(initialRate);
-  const [selected, setSelected] = useState('JOB_HOPPING');
+  const [selected, setSelected] = useState(() => restored?.selected || 'JOB_HOPPING');
   const hasPartner = householdMode === 'COUPLE' || householdMode === 'FAMILY';
   const combinedSalary = salary + (hasPartner ? partnerSalary : 0);
 
@@ -127,7 +140,42 @@ export default function Career() {
     [salary, hasPartner, partnerSalary, partnerGrowthMode, savingsRate, targetIncome, annualRate]
   );
 
-  const { data: careerBundle, loading } = useServerCalc('career', careerPayload, INITIAL_CAREER_DATA);
+  const {
+    data: careerBundle,
+    loading,
+    isDirty,
+    run,
+  } = useServerCalc('career', careerPayload, INITIAL_CAREER_DATA, {
+    mode: 'manual',
+    minLoadingMs: 320,
+    onSuccess: (resData) => {
+      const picked = resData?.results?.[selected] || resData?.results?.JOB_HOPPING || EMPTY_CAREER_RES;
+      recordToolRun({
+        tool: 'career',
+        title: `${tx('Mục tiêu', 'Goal', '目標')} ${compact(targetIncome, lang)}${tx('/th', '/mo', '/月')} (${savingsRate}%)`,
+        householdMode,
+        summary: `${picked.yearsToGoal || 0} ${tx('năm', 'yrs', '年')} · ${tx('Lương đích:', 'Final sal.:', '達成時月収：')} ${compact(picked.finalMonthlySalary || 0, lang)}`,
+        metrics: [
+          { label: tx('Thời gian đạt', 'Years to goal', '達成年数'), value: `${picked.yearsToGoal || 0} ${tx('năm', 'yrs', '年')}`, tone: 'emerald' },
+          { label: tx('Vốn mục tiêu', 'Required capital', '必要元本'), value: compact(picked.requiredPrincipal || 0, lang), tone: 'indigo' },
+          { label: tx('Trích tiết kiệm', 'Savings rate', '貯蓄率'), value: `${savingsRate}%`, tone: 'default' },
+        ],
+        inputs: {
+          householdMode,
+          salary,
+          partnerSalary,
+          partnerGrowthMode,
+          savingsRate,
+          targetIncome,
+          bankId,
+          tenure,
+          annualRate,
+          selected,
+        },
+        accessToken: getAccessToken(),
+      });
+    },
+  });
 
   const results = useMemo(
     () =>
@@ -159,6 +207,18 @@ export default function Career() {
 
       <WorkspaceSplit
         resultsId="career-results"
+        runAction={{
+          onRun: run,
+          isDirty,
+          loading,
+          label: tx('Chạy mô hình tăng lương', 'Run Salary Model', '昇給モデルを実行'),
+          loadingLabel: tx('Đang tính lộ trình tăng lương...', 'Running Career Model...', '昇給モデル計算中...'),
+          dirtyLabel: tx(
+            'Mức lương hoặc tỷ lệ tiết kiệm vừa thay đổi — bấm "Chạy mô hình tăng lương" để xem kết quả mới.',
+            'Salary or savings inputs changed — press "Run Salary Model" to update.',
+            '条件が変更されました。「昇給モデルを実行」を押してください。'
+          ),
+        }}
         mobileSummary={{
           eyebrow: active.title,
           value: `${active.res.yearsToGoal} ${tx('năm', 'yrs', '年')} · ${compact(active.res.finalMonthlySalary, lang)}${tx('/th', '/mo', '/月')}`,
@@ -257,8 +317,13 @@ export default function Career() {
           </div>
         }
         results={
-          <div className={cx('space-y-5 transition-opacity', loading && 'opacity-75')}>
-            {/* 3 Career Strategy Cards */}
+          loading ? (
+            <CalculationLoader
+              title={tx('Đang chạy 3 kịch bản tăng lương & nhảy việc...', 'Running 3 salary growth scenarios...', '3つの昇給・転職シナリオを計算中...')}
+            />
+          ) : (
+            <div className="space-y-5 animate-fade">
+              {/* 3 Career Strategy Cards */}
             <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 1, desktop: 3 }}>
               {results.map((item) => {
                 const isSelected = item.id === selected;
@@ -360,12 +425,15 @@ export default function Career() {
               </Table>
             </Card>
 
+            <SavePlanPromptCard />
+
             <FeedbackWidget
               toolId="career"
               toolLabel={tx('Lộ trình tăng lương', 'Career Growth Simulator', '昇給ロードマップ')}
               snapshot={{ salary, savingsRate, targetIncome, annualRate, selected, yearsToGoal: active.res.yearsToGoal }}
             />
           </div>
+          )
         }
       />
     </>

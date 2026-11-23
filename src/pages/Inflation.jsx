@@ -1,12 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, TrendingDown, ShieldCheck, Percent, Coins } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useRates } from '../state.jsx';
-import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { consumeToolRestoreState, loadSavedPlannerState, recordToolRun, useServerCalc } from '../utils/apiClient.js';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { SavePlanPromptCard } from '../components/SavePlanPromptCard.jsx';
 import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import {
+  CalculationLoader,
   Callout,
   Card,
   CardHeader,
@@ -16,7 +19,6 @@ import {
   SliderField,
   Stat,
   Table,
-  cx,
 } from '../components/ui.jsx';
 
 const INITIAL_INFLATION_DATA = {
@@ -33,19 +35,25 @@ const INITIAL_INFLATION_DATA = {
 
 export default function Inflation() {
   const { banks, getRate } = useRates();
+  const { getAccessToken } = useAuth();
   const { lang, tx } = useI18n();
   const saved = useMemo(() => loadSavedPlannerState(), []);
+  const restored = useMemo(() => consumeToolRestoreState('inflation'), []);
 
   const initialBank = banks.find((b) => b.id === (saved.bankId || 'cake')) || banks[0];
   const initialRate =
-    saved.customRate !== '' && Number(saved.customRate) > 0
-      ? Number(saved.customRate)
-      : getRate(initialBank, saved.tenure || '12M') || 6.9;
+    restored?.nominalRate !== undefined
+      ? Number(restored.nominalRate)
+      : saved.customRate !== '' && Number(saved.customRate) > 0
+        ? Number(saved.customRate)
+        : getRate(initialBank, saved.tenure || '12M') || 6.9;
 
-  const [targetIncome, setTargetIncome] = useState(() => Number(saved.target) || 10_000_000);
+  const [targetIncome, setTargetIncome] = useState(() => Number(restored?.targetIncome) || Number(saved.target) || 10_000_000);
   const [nominalRate, setNominalRate] = useState(initialRate);
-  const [inflationRate, setInflationRate] = useState(3.5);
-  const [years, setYears] = useState(10);
+  const [inflationRate, setInflationRate] = useState(() =>
+    restored?.inflationRate !== undefined ? Number(restored.inflationRate) : 3.5
+  );
+  const [years, setYears] = useState(() => Number(restored?.years) || 10);
 
   const presets = (arr) => arr.map((v) => ({ value: v, label: chip(v, lang) }));
 
@@ -59,7 +67,36 @@ export default function Inflation() {
     [nominalRate, inflationRate, targetIncome, years]
   );
 
-  const { data: inflationBundle, loading } = useServerCalc('inflation', inflationPayload, INITIAL_INFLATION_DATA);
+  const {
+    data: inflationBundle,
+    loading,
+    isDirty,
+    run,
+  } = useServerCalc('inflation', inflationPayload, INITIAL_INFLATION_DATA, {
+    mode: 'manual',
+    minLoadingMs: 320,
+    onSuccess: (resData) => {
+      const imp = resData?.impact || {};
+      recordToolRun({
+        tool: 'inflation',
+        title: `${compact(targetIncome, lang)}${tx('/th', '/mo', '/月')} · ${years} ${tx('năm', 'yrs', '年')} (CPI ${pct(inflationRate, 1, lang)})`,
+        householdMode: 'INDIVIDUAL',
+        summary: `${tx('Lãi thực:', 'Real yield:', '実質利回り：')} ${pct(imp.fisherRealRate || 0, 2, lang)} · ${tx('Sức mua:', 'Power:', '実質購買力：')} ${compact(imp.equivalentCurrentValue || 0, lang)}`,
+        metrics: [
+          { label: tx('Lãi thực Fisher', 'Fisher Real', '実質利回り'), value: pct(imp.fisherRealRate || 0, 2, lang), tone: 'emerald' },
+          { label: tx('Sức mua sau này', 'Future Power', '実質購買力'), value: compact(imp.equivalentCurrentValue || 0, lang), tone: 'indigo' },
+          { label: tx('Cần điều chỉnh lên', 'Adj. Target', '調整後目標'), value: compact(resData?.futureNominalNeeded || 0, lang), tone: 'amber' },
+        ],
+        inputs: {
+          targetIncome,
+          nominalRate,
+          inflationRate,
+          years,
+        },
+        accessToken: getAccessToken(),
+      });
+    },
+  });
   const { impact, futureNominalNeeded, rows } = inflationBundle;
 
   return (
@@ -77,6 +114,18 @@ export default function Inflation() {
 
       <WorkspaceSplit
         resultsId="inflation-results"
+        runAction={{
+          onRun: run,
+          isDirty,
+          loading,
+          label: tx('Tính sức mua thực tế', 'Run Inflation Model', '実質購買力を計算'),
+          loadingLabel: tx('Đang tính lãi thực & sức mua...', 'Computing Purchasing Power...', '実質購買力を計算中...'),
+          dirtyLabel: tx(
+            'Lãi suất, lạm phát hoặc số năm đã thay đổi — bấm "Tính sức mua thực tế" để cập nhật.',
+            'Rate or inflation changed — press "Run Inflation Model" to refresh.',
+            '条件が変更されました。「実質購買力を計算」を押してください。'
+          ),
+        }}
         mobileSummary={{
           eyebrow: tx('Sức mua thực tế sau lạm phát', 'Real Purchasing Power', '実質購買力'),
           value: `${compact(impact.equivalentCurrentValue, lang)} · ${tx('Thực:', 'Real:', '実質：')} ${pct(impact.fisherRealRate, 2, lang)}`,
@@ -131,8 +180,13 @@ export default function Inflation() {
           </div>
         }
         results={
-          <div className={cx('space-y-5 transition-opacity', loading && 'opacity-75')}>
-            <AdaptiveGrid cols={{ mobile: 2, tablet: 2, duo: 2, desktop: 4 }}>
+          loading ? (
+            <CalculationLoader
+              title={tx('Đang phân tích lãi thực Fisher & sức mua từng năm...', 'Calculating Fisher real yield & purchasing power...', 'フィッシャー実質金利と購買力を分析中...')}
+            />
+          ) : (
+            <div className="space-y-5 animate-fade">
+              <AdaptiveGrid cols={{ mobile: 2, tablet: 2, duo: 2, desktop: 4 }}>
               <Stat
                 icon={Percent}
                 label={tx('Lãi suất thực (Fisher chuẩn)', 'Real Yield (Fisher Exact)', '実質利回り (Fisher)')}
@@ -224,12 +278,15 @@ export default function Inflation() {
               </Table>
             </Card>
 
+            <SavePlanPromptCard />
+
             <FeedbackWidget
               toolId="inflation"
               toolLabel={tx('Lạm phát & sức mua', 'Inflation & Purchasing Power', 'インフレ実質値')}
               snapshot={{ targetIncome, nominalRate, inflationRate, years, fisherRealRate: impact.fisherRealRate }}
             />
           </div>
+          )
         }
       />
     </>

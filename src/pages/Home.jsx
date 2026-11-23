@@ -241,7 +241,7 @@ function RateSnapshot() {
               {tx('Lãi suất kỳ hạn 12 tháng', '12-Month Savings Rates', '12ヶ月定期預金 金利ランキング')}
             </h2>
             <Badge tone="brand">
-              {tx(`Auto-sync 09:00 · ${updatedAt}`, `Daily 09:00 Sync · ${updatedAt}`, `毎日09:00同期 · ${updatedAt}`)}
+              {tx(`Cập nhật đầu tháng · ${updatedAt}`, `Monthly 1st Sync · ${updatedAt}`, `毎月1日同期 · ${updatedAt}`)}
             </Badge>
           </div>
           <p className="mt-1 text-[13px] text-zinc-500">
@@ -315,9 +315,9 @@ export default function Home({ onOpenAuth, onOpenData }) {
                   </span>
                   <span>
                     {tx(
-                      `Lãi suất cập nhật ${updatedAt} · Auto-sync 09:00 hằng ngày`,
-                      `Rates updated ${updatedAt} · Daily auto-sync 09:00 AM`,
-                      `金利更新 ${updatedAt} · 毎日 09:00 自動同期`
+                      `Lãi suất cập nhật ${updatedAt} · Auto-sync đầu mỗi tháng`,
+                      `Rates updated ${updatedAt} · Auto-synced 1st of month`,
+                      `金利更新 ${updatedAt} · 毎月1日 自動同期`
                     )}
                   </span>
                   <ArrowRight className="size-3 shrink-0" />
@@ -357,7 +357,7 @@ export default function Home({ onOpenAuth, onOpenData }) {
                   {[
                     { k: pct(top.rate, 2, lang), v: tx('Lãi suất cao nhất (12T)', 'Highest 12M Rate', '12ヶ月最高金利') },
                     { k: tx('4 chế độ', '4 Screens', '4画面対応'), v: tx('Mobile · Tablet · Duo · PC', 'Mobile · Tablet · Duo · PC', 'Mobile · Tablet · Duo · PC') },
-                    { k: '09:00', v: tx('Tự động cập nhật mỗi ngày', 'Auto-synced daily (UTC+7)', '毎日自動レート同期') },
+                    { k: 'Mùng 1', v: tx('Cập nhật lãi suất đầu tháng', 'Auto-synced 1st of month', '毎月1日自動レート同期') },
                   ].map((s) => (
                     <div key={s.v} className="min-w-0">
                       <dt className={cx('font-semibold tracking-tight text-white tabular-nums', isMobileMode ? 'text-base' : 'text-lg sm:text-2xl')}>
@@ -622,7 +622,7 @@ export default function Home({ onOpenAuth, onOpenData }) {
                       {tx('Support / Donate', 'Support / Donate', 'サポート / 寄付')}
                     </div>
                     <p className="mt-1 text-[11px] leading-snug text-zinc-400">
-                      {tx('Tiếp sức server & cập nhật lãi suất hằng ngày', 'Back hosting & daily 09:00 sync', 'サーバー維持と毎日09:00同期を支援')}
+                      {tx('Tiếp sức server & cập nhật lãi suất đầu tháng', 'Back hosting & monthly 1st rate sync', 'サーバー維持と毎月1日同期を支援')}
                     </p>
                   </a>
                 </div>

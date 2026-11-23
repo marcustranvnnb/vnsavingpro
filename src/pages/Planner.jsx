@@ -25,7 +25,7 @@ import {
 import { href, useRates, useToast } from '../state.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
-import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { loadSavedPlannerState, consumeToolRestoreState, recordToolRun, useServerCalc } from '../utils/apiClient.js';
 import { copyReportForGoogleDocs, downloadGoogleDocsFile } from '../utils/googleDocsExporter.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { cryptoStorage } from '../utils/cryptoStorage.js';
@@ -37,6 +37,7 @@ import {
   Badge,
   BankMark,
   Button,
+  CalculationLoader,
   Callout,
   Card,
   CardHeader,
@@ -48,7 +49,6 @@ import {
   PageHeader,
   Progress,
   RateDisclaimer,
-  ResultsSkeleton,
   Segmented,
   SliderField,
   Stat,
@@ -57,6 +57,7 @@ import {
 } from '../components/ui.jsx';
 import { BankPicker, TENURE_OPTIONS } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { SavePlanPromptCard } from '../components/SavePlanPromptCard.jsx';
 import { StageCarousel, SwipeableStageBody } from '../components/StageCarousel.jsx';
 import GrowthChart from '../components/GrowthChart.jsx';
 
@@ -678,10 +679,12 @@ const INITIAL_PLANNER_DATA = {
 
 export default function Planner({ params = {} }) {
   const { banks, getRate, best } = useRates();
-  const { profile } = useAuth();
+  const { profile, getAccessToken } = useAuth();
   const { lang, tx, formatTenure } = useI18n();
   const notify = useToast();
-  const saved = useMemo(() => loadSavedPlannerState(), []);
+  const savedLocal = useMemo(() => loadSavedPlannerState(), []);
+  const restored = useMemo(() => consumeToolRestoreState('plan'), []);
+  const saved = useMemo(() => (restored ? { ...savedLocal, ...restored } : savedLocal), [savedLocal, restored]);
   const pset = (arr) => presets(arr, lang);
 
   const [householdMode, setHouseholdMode] = useState(() => {
@@ -1018,7 +1021,87 @@ export default function Planner({ params = {} }) {
     best,
   ]);
 
-  const { data: bundle, loading, initialized } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA);
+  const {
+    data: bundle,
+    loading,
+    isDirty,
+    run,
+  } = useServerCalc('planner_bundle', plannerPayload, INITIAL_PLANNER_DATA, {
+    mode: 'manual',
+    minLoadingMs: 320,
+    onSuccess: (resData) => {
+      const r = resData?.roadmap || {};
+      const goalHeadline =
+        goalType === 'TARGET_AMOUNT'
+          ? `${tx('Mục tiêu', 'Target', '目標')} ${compact(targetAmount, lang)}`
+          : `${tx('Thụ động', 'Passive', '不労所得')} ${compact(target, lang)}${tx('/th', '/mo', '/月')}`;
+      const timelineOrDeposit =
+        solveMode === 'SAVING'
+          ? `${compact(r.requiredMonthlyDeposit || 0, lang)}${tx('/th', '/mo', '/月')}`
+          : r.timeText || '...';
+
+      recordToolRun({
+        tool: 'plan',
+        title: `${goalHeadline} · ${bank.name} (${formatTenure(tenure)})`,
+        householdMode,
+        summary: `${timelineOrDeposit} · ${tx('Vốn đích:', 'Target:', '目標元本：')} ${compact(r.requiredPrincipal || 0, lang)}`,
+        metrics: [
+          {
+            label: solveMode === 'SAVING' ? tx('Cần gửi/tháng', 'Save / mo', '毎月積立') : tx('Thời gian', 'Timeline', '達成期間'),
+            value: timelineOrDeposit,
+            tone: 'indigo',
+          },
+          {
+            label: tx('Vốn mục tiêu', 'Target Capital', '必要元本'),
+            value: compact(r.requiredPrincipal || 0, lang),
+            tone: 'emerald',
+          },
+          {
+            label: tx('Điểm khả thi', 'Feasibility', '実現度'),
+            value: `${resData?.feasibility?.score ?? 0}/100`,
+            tone: 'amber',
+          },
+        ],
+        inputs: {
+          inputMode,
+          goalType,
+          target,
+          targetAmount,
+          solveMode,
+          targetYears,
+          capital,
+          saving,
+          salaryFullTime,
+          freelanceIncomeMin,
+          freelanceIncomeMax,
+          investIncomeMin,
+          investIncomeMax,
+          salary: totalIncomeAvg,
+          bankId,
+          tenure,
+          customRate,
+          calcMode,
+          annualStepUpPct,
+          annualBonusAmount,
+          inflationRatePct,
+          householdMode,
+          dependentsCount,
+          partnerSalaryFullTime,
+          partnerFreelanceMin,
+          partnerFreelanceMax,
+          partnerInvestMin,
+          partnerInvestMax,
+          monthlyFixedExpense,
+          monthlyDependentsCost,
+          contributionRule,
+          earner1SharePct,
+          prioritizeEmergencyFund,
+          emergencyFundMonths,
+        },
+        accessToken: getAccessToken(),
+      });
+    },
+  });
   const { roadmap, feasibility, householdAnalysis, scenarios } = bundle;
   const bankRuns = useMemo(
     () =>
@@ -1184,6 +1267,18 @@ export default function Planner({ params = {} }) {
 
       <WorkspaceSplit
         resultsId="planner-results"
+        runAction={{
+          onRun: run,
+          isDirty,
+          loading,
+          label: tx('Tạo kế hoạch', 'Generate Plan', 'プランを作成'),
+          loadingLabel: tx('Đang tạo kế hoạch...', 'Generating Plan...', 'プランを作成中...'),
+          dirtyLabel: tx(
+            'Bạn vừa thay đổi thông số — bấm "Tạo kế hoạch" để tính lại lộ trình mới.',
+            'Plan parameters changed — click "Generate Plan" to update your roadmap.',
+            '条件が変更されました。「プランを作成」を押して再計算してください。'
+          ),
+        }}
         mobileSummary={{
           eyebrow: isSavingSolver
             ? tx(
@@ -1744,11 +1839,12 @@ export default function Planner({ params = {} }) {
         }
         results={
           <div className="space-y-5">
-          {!initialized && loading ? (
-            <ResultsSkeleton />
+          {loading ? (
+            <CalculationLoader
+              title={tx('Đang tạo kế hoạch & chạy phân tích khả thi...', 'Generating your plan & feasibility roadmap...', 'プランと実現度分析を作成中...')}
+            />
           ) : (
-            <div className={cx('space-y-5 animate-fade transition-opacity', loading && 'opacity-80')}>
-              {loading && <div className="loading-bar rounded-full" />}
+            <div className="space-y-5 animate-fade">
               {/* Headline */}
               <Card className="relative overflow-hidden p-5 sm:p-7">
             <div className="pointer-events-none absolute -right-24 -top-24 size-72 rounded-full bg-indigo-500/15 blur-3xl" />
@@ -2219,6 +2315,8 @@ export default function Planner({ params = {} }) {
           <RoadmapPackageExplorer roadmap={roadmap} rows={rows} onRowsChange={setRows} />
 
           <RateDisclaimer />
+
+          <SavePlanPromptCard />
 
           <FeedbackWidget
             toolId="plan"

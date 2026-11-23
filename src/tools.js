@@ -8,6 +8,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v1.10.0.0',
+    date: '23/11/2026',
+    title: 'Đồng bộ lãi suất đầu tháng, Nút chạy mô hình + Lazy Loading & Lịch sử kết quả Profile',
+    items: [
+      'Chuyển lịch tự động đồng bộ lãi suất ngân hàng số sang định kỳ đầu mỗi tháng (mùng 1 hàng tháng lúc 09:00 UTC+7).',
+      'Bổ sung nút bấm thực hiện mô hình khi chỉnh sửa thông số trên mọi công cụ kèm hiệu ứng Lazy Loading & skeleton trực quan.',
+      'Lưu lại lịch sử các lần lập kế hoạch & chạy công cụ ngay trong Hồ sơ cá nhân (đồng bộ Cloud khi đăng nhập) và hiển thị CTA mời lưu kế hoạch cho khách.',
+    ],
+  },
+  {
     version: 'v1.9.0.0',
     date: '20/11/2026',
     title: 'Vuốt/Slide lộ trình năm, Trang Vinh Danh Cộng Đồng & Unikorn Showcase',
@@ -110,7 +120,7 @@ export const ALL_TOOLS = [
     pageTitle: 'So Sánh Lãi Suất Ngân Hàng Số — VnSavingPro',
     label: 'So sánh lãi suất',
     short: 'Lãi suất',
-    desc: 'Lãi suất mới nhất của TNEX, LioBank, Cake và Timo theo từng kỳ hạn.',
+    desc: 'Lãi suất TNEX, LioBank, Cake và Timo tự động đồng bộ đầu mỗi tháng theo từng kỳ hạn.',
     icon: BarChart3,
     primary: true,
   },
@@ -262,13 +272,13 @@ const TOOL_I18N = {
       label: 'Bank Rates',
       short: 'Rates',
       pageTitle: 'Vietnam Digital Bank Savings Rates — VnSavingPro',
-      desc: 'Daily auto-synced interest rates across TNEX, LioBank, Cake and Timo for every tenure.',
+      desc: 'Monthly interest rates (auto-synced on the 1st of every month) across TNEX, LioBank, Cake and Timo for every tenure.',
     },
     ja: {
       label: '金利比較',
       short: '金利',
       pageTitle: 'ベトナム主要ネット銀行の金利比較 — VnSavingPro',
-      desc: 'TNEX・LioBank・Cake・Timoの最新定期預金金利を期間別に毎日自動同期して比較できます。',
+      desc: 'TNEX・LioBank・Cake・Timoの定期預金金利を毎月1日に自動同期し、期間別に比較できます。',
     },
   },
   calculator: {
@@ -376,12 +386,30 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Swipeable Roadmap · Community Hall of Fame · Adaptive Multi-Screen · Daily Sync';
-  if (lang === 'ja') return 'スワイプ式年次スライダー・貢献者表彰・マルチ画面統合・毎日自動同期';
+  if (lang === 'en') return 'Monthly 1st Rate Sync · Run Model CTA & Lazy Loading · Profile Run History';
+  if (lang === 'ja') return '毎月1日金利同期・実行ボタン＆遅延読み込み・計算履歴保存';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v1.10.0.0': {
+    en: {
+      title: 'Monthly 1st Rate Sync, Explicit Run CTA + Lazy Loading & Profile Run History',
+      items: [
+        'Switched automated digital bank rate syncing from daily to monthly on the 1st of every month (09:00 AM UTC+7).',
+        'Added explicit "Run Model / Generate Plan" CTA buttons whenever tool inputs change, paired with smooth Lazy Loading & shimmer skeletons.',
+        'Saved past Planner & Tool runs inside Profile (synced to Cloud when signed in) plus an interactive Save Prompt CTA for guest users.',
+      ],
+    },
+    ja: {
+      title: '毎月1日金利同期・実行ボタン＆遅延読み込み・計算履歴保存',
+      items: [
+        'ネット銀行金利の自動同期スケジュールを毎日から毎月1日（09:00 UTC+7）に変更しました。',
+        '入力変更時に「プラン作成／シミュレーション実行」ボタンを表示し、待機中のローディングバー＆スケルトンを追加しました。',
+        '過去の試算・プラン実行履歴をプロフィールに保存（ログイン時はクラウド同期）し、未ログイン向け保存案内CTAを追加しました。',
+      ],
+    },
+  },
   'v1.9.0.0': {
     en: {
       title: 'Swipeable Stage Timeline, Contributors Showcase & Unikorn Integration',

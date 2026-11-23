@@ -265,9 +265,9 @@ export function DataModal({ open, onClose, onOpenAuth }) {
         <p className="mt-2 text-xs leading-relaxed text-zinc-400">
           {supabaseConnected
             ? tx(
-                'Lãi suất cập nhật 09:00 hằng ngày, góp ý người dùng và kế hoạch tiết kiệm được lưu vĩnh viễn trên PostgreSQL Supabase.',
-                'Daily 09:00 AM bank rates, feedback, and shared savings plans are persisted on Supabase PostgreSQL.',
-                '毎日09:00の金利データや共有プランはSupabase PostgreSQLに永続保存されます。'
+                'Lãi suất cập nhật đầu mỗi tháng (mùng 1 lúc 09:00), góp ý người dùng và kế hoạch tiết kiệm được lưu vĩnh viễn trên PostgreSQL Supabase.',
+                'Monthly 1st (09:00 AM) bank rates, feedback, and shared savings plans are persisted on Supabase PostgreSQL.',
+                '毎月1日09:00の金利データや共有プランはSupabase PostgreSQLに永続保存されます。'
               )
             : tx(
                 'Máy chủ đang chạy ở chế độ tạm. Khi cấu hình Supabase trong biến môi trường, mọi dữ liệu sẽ lưu vĩnh viễn.',

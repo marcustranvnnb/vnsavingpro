@@ -1,7 +1,7 @@
 import { INITIAL_BANKS_DATA, RATES_UPDATED_AT } from '../../src/data/banksData.js';
 import { isSupabaseConfigured, sbInsert, sbSelect } from './supabase.js';
 
-const CACHE_TTL_MS = 60_000;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour server memory cache for monthly day-1 rate snapshots
 
 let cachedSnapshot = null;
 let cachedAtMs = 0;

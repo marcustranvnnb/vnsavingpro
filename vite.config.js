@@ -18,6 +18,7 @@ function vercelApiPlugin() {
     '/api/calculate': 'api/calculate.js',
     '/api/feedback': 'api/feedback.js',
     '/api/plans': 'api/plans.js',
+    '/api/history': 'api/history.js',
     '/api/quota-status': 'api/quota-status.js',
     '/api/cron/sync-rates': 'api/cron/sync-rates.js',
   };

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Info, X } from 'lucide-react';
+import { Info, Loader2, X } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
 import { useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { fmt } from '../utils/format.js';
@@ -500,6 +500,38 @@ export function ResultsSkeleton() {
   );
 }
 
+export function CalculationLoader({ title, subtitle, compact = false }) {
+  const { tx } = useI18n();
+  const defaultTitle = tx(
+    'Đang chạy mô hình & tổng hợp kết quả...',
+    'Running model & preparing results...',
+    'モデルを実行し結果を計算中...'
+  );
+  const defaultSubtitle = tx(
+    'Đang xử lý công thức phía máy chủ bảo mật và chuẩn hoá biểu đồ lộ trình.',
+    'Computing projections securely on server and refreshing charts.',
+    'サーバー上でシミュレーションを計算し、チャートを更新しています。'
+  );
+
+  return (
+    <div className="space-y-4 animate-fade" aria-busy="true" aria-live="polite">
+      <div className="loading-bar rounded-full" />
+      <Card className="border-indigo-400/25 bg-indigo-500/[0.06] p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-300 ring-1 ring-inset ring-indigo-400/30">
+            <Loader2 className="size-4 animate-spin" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-white">{title || defaultTitle}</div>
+            <p className="mt-0.5 text-xs leading-relaxed text-zinc-400">{subtitle || defaultSubtitle}</p>
+          </div>
+        </div>
+      </Card>
+      {!compact && <ResultsSkeleton />}
+    </div>
+  );
+}
+
 export function PageSkeleton() {
   const { mode, duoPosture, width } = useDisplayMode();
   const maxWClass =
@@ -546,9 +578,9 @@ export function RateDisclaimer({ className }) {
         </div>
         <p className="leading-relaxed text-zinc-400">
           {tx(
-            'Thông tin lãi suất được tổng hợp tự động từ trang thông tin chính thức (public) của từng ngân hàng. Để nắm rõ chi tiết hạn mức, điều kiện áp dụng và các gói chương trình ưu đãi mới nhất, bạn nên tải ứng dụng chính thức của từng ngân hàng để tham khảo trực tiếp. Mọi số liệu và kết quả tính toán trên VnSavingPro chỉ mang tính chất tham khảo.',
-            'Interest rates are auto-synced daily from each bank’s official public website. For exact deposit limits, eligibility criteria, and active promotional packages, please check each bank’s official mobile app directly. All calculations on VnSavingPro are for reference only.',
-            '金利情報は各銀行の公式公開ページから毎日自動収集しています。最新の適用条件・上限額・キャンペーン特典の詳細は、必ず各銀行の公式アプリにて直接ご確認ください。VnSavingProの試算結果は参考値です。'
+            'Thông tin lãi suất được tổng hợp tự động vào mùng 1 đầu mỗi tháng từ trang thông tin chính thức (public) của từng ngân hàng. Để nắm rõ chi tiết hạn mức, điều kiện áp dụng và các gói chương trình ưu đãi mới nhất, bạn nên tải ứng dụng chính thức của từng ngân hàng để tham khảo trực tiếp. Mọi số liệu và kết quả tính toán trên VnSavingPro chỉ mang tính chất tham khảo.',
+            'Interest rates are auto-synced on the 1st of every month from each bank’s official public website. For exact deposit limits, eligibility criteria, and active promotional packages, please check each bank’s official mobile app directly. All calculations on VnSavingPro are for reference only.',
+            '金利情報は各銀行の公式公開ページから毎月1日に自動収集しています。最新の適用条件・上限額・キャンペーン特典の詳細は、必ず各銀行の公式アプリにて直接ご確認ください。VnSavingProの試算結果は参考値です。'
           )}
         </p>
       </div>

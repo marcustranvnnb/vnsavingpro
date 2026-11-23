@@ -13,10 +13,13 @@ export default async function handler(req, res) {
   }
 
   const snapshot = await getLiveRatesSnapshotAsync();
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600');
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
   return res.status(200).json({
     ok: true,
     updatedAt: snapshot.updatedAt,
+    syncSchedule: 'monthly_day_1',
+    syncTimeUtc7: '09:00',
+    nextSyncDay: 1,
     banks: snapshot.banks,
     syncMeta: snapshot.syncMeta,
     storage: snapshot.storage,

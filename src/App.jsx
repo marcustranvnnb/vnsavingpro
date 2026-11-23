@@ -12,7 +12,12 @@ import { DataModal } from './components/DataModal.jsx';
 import { CookieBanner } from './components/CookieBanner.jsx';
 import { PocValidationOverlay } from './components/PocValidationOverlay.jsx';
 import { PageSkeleton } from './components/ui.jsx';
-import { fetchQuotaStatusFromApi, POC_QUOTA_EVENT } from './utils/apiClient.js';
+import {
+  fetchQuotaStatusFromApi,
+  OPEN_AUTH_EVENT,
+  POC_QUOTA_EVENT,
+  syncLocalHistoryToCloud,
+} from './utils/apiClient.js';
 import Home from './pages/Home.jsx';
 
 // Tool pages are code-split so the home page loads fast (Chart.js only loads with the planner).
@@ -30,7 +35,7 @@ const pages = {
 
 function Shell() {
   const { route, params } = useRoute();
-  const { passwordRecoveryMode } = useAuth();
+  const { user, passwordRecoveryMode, getAccessToken } = useAuth();
   const { mode, duoPosture, isTabletSplit, isPreviewConstrained } = useDisplayMode();
   const [dataOpen, setDataOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
@@ -38,6 +43,20 @@ function Shell() {
   const [pocState, setPocState] = useState({ locked: false, info: null });
   const [previewPoc, setPreviewPoc] = useState(() => params?.preview_poc === '1');
   const Page = pages[route];
+
+  useEffect(() => {
+    const onOpenAuth = () => setAuthOpen(true);
+    window.addEventListener(OPEN_AUTH_EVENT, onOpenAuth);
+    return () => window.removeEventListener(OPEN_AUTH_EVENT, onOpenAuth);
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const token = getAccessToken();
+    if (token) {
+      syncLocalHistoryToCloud(token);
+    }
+  }, [user?.id, getAccessToken]);
 
   useEffect(() => {
     if (params?.preview_poc === '1') {

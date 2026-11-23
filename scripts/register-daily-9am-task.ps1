@@ -1,26 +1,17 @@
-# Registers a daily 9:00 AM Windows Scheduled Task to run the TNEX & TIMO rate scrapers.
+# Registers a monthly Day-1 9:00 AM Windows Scheduled Task to run the bank rate scrapers.
 # Usage: powershell -ExecutionPolicy Bypass -File .\scripts\register-daily-9am-task.ps1
 
 $ErrorActionPreference = "Stop"
 $projectDir = Resolve-Path (Join-Path $PSScriptRoot "..")
 $nodePath = (Get-Command node).Source
-$taskName = "VnSavingPro_DailyRateSync_9AM"
+$taskName = "VnSavingPro_MonthlyRateSync_Day1_9AM"
 
-$action = New-ScheduledTaskAction `
-  -Execute $nodePath `
-  -Argument "scripts/scrape-all.js" `
-  -WorkingDirectory $projectDir.Path
+Push-Location $projectDir.Path
+try {
+  & schtasks.exe /Create /TN $taskName /TR "`"$nodePath`" scripts/scrape-all.js" /SC MONTHLY /D 1 /ST 09:00 /F | Out-Null
+} finally {
+  Pop-Location
+}
 
-$trigger = New-ScheduledTaskTrigger -Daily -At "09:00"
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-
-Register-ScheduledTask `
-  -TaskName $taskName `
-  -Action $action `
-  -Trigger $trigger `
-  -Settings $settings `
-  -Description "Runs TNEX & TIMO savings rate scrapers daily at 09:00 AM for VnSavingPro" `
-  -Force | Out-Null
-
-Write-Host "Registered Windows Scheduled Task '$taskName' to run daily at 09:00 AM." -ForegroundColor Green
+Write-Host "Registered Windows Scheduled Task '$taskName' to run on the 1st of every month at 09:00 AM." -ForegroundColor Green
 Write-Host "Command: $nodePath scripts/scrape-all.js (in $($projectDir.Path))"

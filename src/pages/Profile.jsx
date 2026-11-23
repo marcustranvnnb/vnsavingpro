@@ -1,13 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  BookmarkPlus,
   Check,
+  Clock,
   Cloud,
   Copy,
   ExternalLink,
+  History,
   KeyRound,
+  LogIn,
   LogOut,
   MonitorSmartphone,
   Plus,
+  RefreshCw,
+  RotateCcw,
   Save,
   Shield,
   Trash2,
@@ -20,11 +26,36 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
 import {
+  CALC_HISTORY_UPDATED_EVENT,
+  deleteCalculationHistoryFromApi,
   deleteCloudPlanFromApi,
+  fetchMyCalculationHistoryFromApi,
   fetchMyCloudPlansFromApi,
+  loadLocalCalculationHistory,
+  openAuthPrompt,
+  removeLocalCalculationHistoryEntry,
   saveCloudPlanToApi,
+  saveToolRestoreState,
+  syncLocalHistoryToCloud,
 } from '../utils/apiClient.js';
 import { cryptoStorage, isPlainObject } from '../utils/cryptoStorage.js';
+
+function getHistoryToolMeta(tool, tx) {
+  const map = {
+    plan: { label: tx('Kế hoạch', 'Planner', 'プラン'), tone: 'brand' },
+    calculator: { label: tx('Tính lãi', 'Calculator', '利息計算'), tone: 'success' },
+    ladder: { label: tx('Bậc thang', 'Ladder', 'ラダー'), tone: 'brand' },
+    career: { label: tx('Tăng lương', 'Career', 'キャリア'), tone: 'warning' },
+    inflation: { label: tx('Lạm phát', 'Inflation', 'インフレ'), tone: 'neutral' },
+  };
+  return map[tool] || { label: tool, tone: 'neutral' };
+}
+
+function getHouseholdBadgeLabel(mode, tx) {
+  if (mode === 'COUPLE') return tx('Cặp đôi', 'Couple', 'カップル');
+  if (mode === 'FAMILY') return tx('Gia đình', 'Family', '家族');
+  return tx('Cá nhân', 'Individual', '個人');
+}
 
 export default function Profile() {
   const {
@@ -56,6 +87,10 @@ export default function Profile() {
   const [savingPlan, setSavingPlan] = useState(false);
   const [copiedCode, setCopiedCode] = useState('');
 
+  const [historyItems, setHistoryItems] = useState(() => loadLocalCalculationHistory());
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState('all');
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || '');
@@ -81,11 +116,49 @@ export default function Profile() {
     }
   }, [getAccessToken]);
 
+  const loadMyHistory = useCallback(async () => {
+    const local = loadLocalCalculationHistory();
+    const token = getAccessToken();
+    if (!token) {
+      setHistoryItems(local);
+      return;
+    }
+    setHistoryLoading(true);
+    try {
+      await syncLocalHistoryToCloud(token);
+      const cloud = await fetchMyCalculationHistoryFromApi(token, { limit: 50 });
+      const byRun = new Map();
+      for (const item of [...cloud, ...local]) {
+        const k = item.clientRunId || item.id;
+        if (k && !byRun.has(k)) byRun.set(k, item);
+      }
+      const merged = Array.from(byRun.values()).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setHistoryItems(merged);
+    } catch {
+      setHistoryItems(local);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [getAccessToken]);
+
+  useEffect(() => {
+    const onUpdated = () => {
+      if (!user) {
+        setHistoryItems(loadLocalCalculationHistory());
+      }
+    };
+    window.addEventListener(CALC_HISTORY_UPDATED_EVENT, onUpdated);
+    return () => window.removeEventListener(CALC_HISTORY_UPDATED_EVENT, onUpdated);
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadMyPlans();
+      loadMyHistory();
     }
-  }, [user, loadMyPlans]);
+  }, [user, loadMyPlans, loadMyHistory]);
 
   if (authLoading) {
     return (
@@ -96,31 +169,87 @@ export default function Profile() {
   }
 
   if (!user) {
+    const guestLocale = lang === 'en' ? 'en-US' : lang === 'ja' ? 'ja-JP' : 'vi-VN';
     return (
-      <div className="mx-auto max-w-lg py-8">
-        <Card className="p-6 text-center">
-          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300">
-            <UserIcon className="size-6" />
+      <div className="mx-auto max-w-2xl space-y-5 py-8">
+        <Card className="border-indigo-400/25 bg-gradient-to-br from-indigo-500/[0.08] via-surface to-emerald-500/[0.05] p-6 text-center sm:p-8">
+          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-indigo-500/20 text-indigo-300 ring-1 ring-inset ring-indigo-400/30">
+            <BookmarkPlus className="size-6" />
           </div>
-          <h1 className="text-lg font-semibold text-white">
-            {tx('Bạn chưa đăng nhập', 'You are not signed in', '未ログイン')}
-          </h1>
-          <p className="mt-1.5 text-sm text-zinc-400">
+          <h1 className="text-lg font-semibold text-white sm:text-xl">
             {tx(
-              'Đăng nhập bằng Google hoặc Email để quản lý hồ sơ cá nhân và lưu nhiều kịch bản tiết kiệm trên Cloud.',
-              'Sign in with Google or Email to manage your profile and save multiple savings scenarios on Cloud.',
-              'Googleまたはメールでログインして、プロフィールや複数の貯蓄プランをクラウド管理できます。'
+              'Bạn muốn lưu và xem lại các kế hoạch & kết quả tính toán không?',
+              'Want to save and revisit your plans & calculation results?',
+              '作成したプランや試算結果を保存して見返しますか？'
+            )}
+          </h1>
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-zinc-400">
+            {tx(
+              'Đăng nhập bằng Google hoặc Email để lưu bản ghi kết quả từ mọi công cụ (Kế hoạch, Tính lãi, Bậc thang, Tăng lương, Lạm phát) vào Hồ sơ cá nhân và mở lại bất kỳ lúc nào.',
+              'Sign in with Google or Email to store run results across all tools (Planner, Calculator, Ladder, Career, Inflation) inside your Profile and reopen them anytime.',
+              'Googleまたはメールでログインすると、全ツールの試算結果・プラン履歴をプロフィールに永続保存し、いつでもワンタップで復元できます。'
             )}
           </p>
-          <div className="mt-5 flex justify-center gap-2">
-            <Button as="a" href={href('auth')} variant="primary">
-              {tx('Đăng nhập / Đăng ký', 'Sign In / Sign Up', 'ログイン / 登録')}
+          {historyItems.length > 0 && (
+            <div className="mt-3 flex justify-center">
+              <Badge tone="brand">
+                {tx(
+                  `Đang có ${historyItems.length} lần chạy trên trình duyệt này chờ đồng bộ Cloud`,
+                  `${historyItems.length} local runs ready to sync to Cloud`,
+                  `このブラウザに ${historyItems.length}件の履歴が保存中`
+                )}
+              </Badge>
+            </div>
+          )}
+          <div className="mt-6 flex flex-wrap justify-center gap-2.5">
+            <Button type="button" variant="primary" onClick={() => openAuthPrompt('login')}>
+              <LogIn className="size-4" />
+              {tx('Có, vào đây để lưu & xem lại', 'Yes, enter here to save & review', 'はい、保存・確認する')}
             </Button>
-            <Button as="a" href={href('plan')} variant="secondary">
+            <Button as="a" href={href('auth')} variant="secondary">
+              <UserIcon className="size-4" />
+              {tx('Mở trang Đăng nhập / Đăng ký', 'Sign In / Sign Up Page', 'ログインページへ')}
+            </Button>
+            <Button as="a" href={href('plan')} variant="ghost">
               {tx('Về trang Kế hoạch', 'Open Planner', 'プランナーへ')}
             </Button>
           </div>
         </Card>
+
+        {historyItems.length > 0 && (
+          <Card className="p-5">
+            <CardHeader
+              title={tx('Lịch sử tạm trên trình duyệt này', 'Temporary Browser Run History', 'ブラウザ内の一時試算履歴')}
+              description={tx(
+                'Đăng nhập ở nút phía trên để đồng bộ các bản ghi này lên tài khoản Cloud của bạn.',
+                'Sign in above to sync these local runs permanently into your account.',
+                '上のボタンからログインすると、これらの履歴がクラウドアカウントに同期されます。'
+              )}
+              right={<History className="size-4 text-indigo-300" />}
+            />
+            <div className="mt-4 space-y-2.5">
+              {historyItems.slice(0, 5).map((item) => {
+                const meta = getHistoryToolMeta(item.tool, tx);
+                return (
+                  <div
+                    key={item.id || item.clientRunId}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge tone={meta.tone}>{meta.label}</Badge>
+                        <span className="truncate text-xs font-medium text-white">{item.title}</span>
+                      </div>
+                      <p className="mt-1 truncate text-[11px] text-zinc-400">
+                        {item.summary} · {new Date(item.createdAt).toLocaleString(guestLocale)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
       </div>
     );
   }
@@ -239,6 +368,49 @@ export default function Profile() {
       notify(tx(`Mã chia sẻ: ${code}`, `Share code: ${code}`, `共有コード：${code}`));
     }
   };
+
+  const handleRestoreHistory = (item) => {
+    if (!item?.tool) return;
+    saveToolRestoreState(item.tool, item.inputs || {});
+    if (item.tool === 'plan' && isPlainObject(item.inputs) && Object.keys(item.inputs).length > 0) {
+      cryptoStorage.save('PLANNER_STATE', item.inputs);
+    }
+    notify(
+      tx(
+        `Đã khôi phục "${item.title}"`,
+        `Restored "${item.title}"`,
+        `履歴「${item.title}」を読み込みました`
+      )
+    );
+    navigate(href(item.tool));
+  };
+
+  const handleDeleteHistory = async (item) => {
+    const key = item.clientRunId || item.id;
+    removeLocalCalculationHistoryEntry(key);
+    setHistoryItems((prev) => prev.filter((x) => (x.clientRunId || x.id) !== key && x.id !== item.id));
+    const token = getAccessToken();
+    if (token) {
+      try {
+        await deleteCalculationHistoryFromApi(item.id || key, token);
+      } catch {
+        // Retain clean optimistic UI state if record was local-only
+      }
+    }
+    notify(tx('Đã xoá bản ghi khỏi lịch sử', 'Deleted history record', '履歴を削除しました'));
+  };
+
+  const filteredHistory =
+    historyFilter === 'all' ? historyItems : historyItems.filter((item) => item.tool === historyFilter);
+
+  const historyTabs = [
+    { id: 'all', label: tx('Tất cả', 'All', 'すべて') },
+    { id: 'plan', label: tx('Kế hoạch', 'Planner', 'プラン') },
+    { id: 'calculator', label: tx('Tính lãi', 'Calculator', '利息計算') },
+    { id: 'ladder', label: tx('Bậc thang', 'Ladder', 'ラダー') },
+    { id: 'career', label: tx('Tăng lương', 'Career', 'キャリア') },
+    { id: 'inflation', label: tx('Lạm phát', 'Inflation', 'インフレ') },
+  ];
 
   return (
     <div className="space-y-6">
@@ -456,7 +628,137 @@ export default function Profile() {
           </div>
         }
         right={
-          <Card className="p-5">
+          <div className="space-y-6">
+            <Card className="p-5">
+              <CardHeader
+                title={tx('Lịch sử lập kế hoạch & chạy công cụ', 'Plan & Tool Run History', 'プラン・シミュレーション実行履歴')}
+                description={tx(
+                  'Tự động ghi nhận kết quả mỗi lần bạn bấm tạo kế hoạch hoặc chạy mô hình, bấm Mở lại để nạp nguyên vẹn thông số cũ.',
+                  'Records each plan and tool run so you can inspect key outcomes and reload exact inputs anytime.',
+                  'プラン作成や各ツール実行の結果を自動記録します。「再読み込み」で当時の設定をそのまま復元できます。'
+                )}
+                right={
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={loadMyHistory}
+                    disabled={historyLoading}
+                    title={tx('Làm mới lịch sử', 'Refresh history', '履歴を更新')}
+                  >
+                    <RefreshCw className={cx('size-3.5', historyLoading && 'animate-spin')} />
+                    {tx('Đồng bộ', 'Refresh', '更新')}
+                  </Button>
+                }
+              />
+
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {historyTabs.map((tab) => {
+                  const active = historyFilter === tab.id;
+                  const count =
+                    tab.id === 'all' ? historyItems.length : historyItems.filter((x) => x.tool === tab.id).length;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setHistoryFilter(tab.id)}
+                      className={cx(
+                        'inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-medium ring-1 ring-inset transition',
+                        active
+                          ? 'bg-indigo-500/20 text-white ring-indigo-400/45'
+                          : 'bg-white/[0.03] text-zinc-400 ring-white/[0.08] hover:text-white'
+                      )}
+                    >
+                      <span>{tab.label}</span>
+                      <span className="text-[10px] text-zinc-400 tabular-nums">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {historyLoading && filteredHistory.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-zinc-500">
+                    {tx('Đang tải lịch sử tính toán...', 'Loading run history...', '実行履歴を読み込み中...')}
+                  </p>
+                ) : filteredHistory.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-400">
+                    {tx(
+                      'Chưa có bản ghi chạy mô hình nào trong mục này. Hãy mở công cụ và bấm nút thực hiện để hệ thống ghi lại kết quả.',
+                      'No runs recorded here yet. Open any tool and press its Run button to store a snapshot.',
+                      'まだ履歴がありません。各ツールで実行ボタンを押すと結果が記録されます。'
+                    )}
+                  </div>
+                ) : (
+                  filteredHistory.map((item) => {
+                    const meta = getHistoryToolMeta(item.tool, tx);
+                    return (
+                      <div
+                        key={item.id || item.clientRunId}
+                        className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3.5 transition hover:border-white/[0.14]"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-2.5">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <Badge tone={meta.tone}>{meta.label}</Badge>
+                              {item.householdMode && (
+                                <Badge tone="neutral">{getHouseholdBadgeLabel(item.householdMode, tx)}</Badge>
+                              )}
+                              <span className="truncate text-sm font-medium text-white">{item.title}</span>
+                            </div>
+                            {item.summary && <p className="mt-1 text-xs text-zinc-300">{item.summary}</p>}
+                            <p className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500">
+                              <Clock className="size-3" />
+                              {new Date(item.createdAt).toLocaleString(dateLocale)}
+                            </p>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <Button size="sm" variant="secondary" onClick={() => handleRestoreHistory(item)}>
+                              <RotateCcw className="size-3.5 text-indigo-300" /> {tx('Mở lại', 'Reopen', '再読み込み')}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={() => handleDeleteHistory(item)}
+                              title={tx('Xoá khỏi lịch sử', 'Delete run', '削除')}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {Array.isArray(item.metrics) && item.metrics.length > 0 && (
+                          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                            {item.metrics.slice(0, 3).map((m, idx) => (
+                              <div key={idx} className="rounded-lg bg-black/25 px-2.5 py-1.5">
+                                <div className="truncate text-[10px] text-zinc-500">{m.label}</div>
+                                <div
+                                  className={cx(
+                                    'mt-0.5 truncate text-xs font-semibold tabular-nums',
+                                    m.tone === 'emerald'
+                                      ? 'text-emerald-300'
+                                      : m.tone === 'indigo'
+                                        ? 'text-indigo-300'
+                                        : m.tone === 'amber'
+                                          ? 'text-amber-300'
+                                          : 'text-white'
+                                  )}
+                                >
+                                  {m.value}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </Card>
+
+            <Card className="p-5">
             <CardHeader
               title={tx('Kịch bản tiết kiệm đã lưu', 'Saved Savings Scenarios', '保存済み貯蓄プラン')}
               description={tx(
@@ -542,6 +844,7 @@ export default function Profile() {
               )}
             </div>
           </Card>
+          </div>
         }
       />
     </div>

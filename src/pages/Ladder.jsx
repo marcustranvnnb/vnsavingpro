@@ -13,14 +13,16 @@ import {
   Wallet,
 } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { useRates } from '../state.jsx';
-import { loadSavedPlannerState, useServerCalc } from '../utils/apiClient.js';
+import { consumeToolRestoreState, loadSavedPlannerState, recordToolRun, useServerCalc } from '../utils/apiClient.js';
 import { syncUserPrefCookie } from '../utils/cookieManager.js';
 import { HOUSEHOLD_MODES, HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { chip, compact, fmt, pct, vnd } from '../utils/format.js';
 import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import {
   Badge,
+  CalculationLoader,
   Card,
   CardHeader,
   Chip,
@@ -28,7 +30,6 @@ import {
   PageHeader,
   Progress,
   RateDisclaimer,
-  ResultsSkeleton,
   Segmented,
   SliderField,
   Stat,
@@ -37,6 +38,7 @@ import {
 } from '../components/ui.jsx';
 import { BankPicker } from '../components/BankPicker.jsx';
 import { FeedbackWidget } from '../components/FeedbackWidget.jsx';
+import { SavePlanPromptCard } from '../components/SavePlanPromptCard.jsx';
 import { StageCarousel, SwipeableStageBody } from '../components/StageCarousel.jsx';
 
 const CUSTOM_TERMS = ['1M', '3M', '6M', '9M', '12M'];
@@ -441,28 +443,35 @@ function LadderPackageExplorer({ rows, splitLabel }) {
 
 export default function Ladder() {
   const { banks, getRate } = useRates();
+  const { getAccessToken } = useAuth();
   const { lang, tx, formatTenure } = useI18n();
   const saved = useMemo(() => loadSavedPlannerState(), []);
+  const restored = useMemo(() => consumeToolRestoreState('ladder'), []);
 
-  const [monthlySavings, setMonthlySavings] = useState(() => Number(saved.saving) || 5_000_000);
+  const [monthlySavings, setMonthlySavings] = useState(() => Number(restored?.monthlySavings) || Number(saved.saving) || 5_000_000);
   const [householdMode, setHouseholdMode] = useState(() =>
-    ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode) ? saved.householdMode : 'INDIVIDUAL'
+    ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(restored?.householdMode)
+      ? restored.householdMode
+      : ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(saved.householdMode)
+        ? saved.householdMode
+        : 'INDIVIDUAL'
   );
   const [dependentsCount] = useState(() => Number(saved.dependentsCount) || 0);
   const [monthlyExpense, setMonthlyExpense] = useState(() => {
+    if (restored?.monthlyExpense !== undefined) return Number(restored.monthlyExpense);
     const fixed =
       Number(saved.monthlyFixedExpense) ||
       (saved.householdMode === 'COUPLE' || saved.householdMode === 'FAMILY' ? 18_000_000 : 12_000_000);
     const dep = saved.householdMode === 'FAMILY' ? Number(saved.monthlyDependentsCost) || 0 : 0;
     return fixed + dep;
   });
-  const [totalMonths, setTotalMonths] = useState(12);
-  const [bankId, setBankId] = useState(() => saved.bankId || 'cake');
-  const [strategy, setStrategy] = useState('SPLIT_50_50');
-  const [inputMode, setInputMode] = useState(() => saved.inputMode || 'basic');
-  const [shortTerm, setShortTerm] = useState('1M');
-  const [longTerm, setLongTerm] = useState('12M');
-  const [shortPct, setShortPct] = useState(40);
+  const [totalMonths, setTotalMonths] = useState(() => Number(restored?.totalMonths) || 12);
+  const [bankId, setBankId] = useState(() => restored?.bankId || saved.bankId || 'cake');
+  const [strategy, setStrategy] = useState(() => restored?.strategy || 'SPLIT_50_50');
+  const [inputMode, setInputMode] = useState(() => restored?.inputMode || saved.inputMode || 'basic');
+  const [shortTerm, setShortTerm] = useState(() => restored?.shortTerm || '1M');
+  const [longTerm, setLongTerm] = useState(() => restored?.longTerm || '12M');
+  const [shortPct, setShortPct] = useState(() => (restored?.shortPct !== undefined ? Number(restored.shortPct) : 40));
 
   const presets = (arr) => arr.map((v) => ({ value: v, label: v === 0 ? '0 ₫' : chip(v, lang) }));
 
@@ -545,7 +554,43 @@ export default function Ladder() {
     [monthlySavings, strategy, customAllocations, totalMonths, bankRates]
   );
 
-  const { data: result, loading, initialized } = useServerCalc('ladder', ladderPayload, INITIAL_LADDER_DATA);
+  const {
+    data: result,
+    loading,
+    isDirty,
+    run,
+  } = useServerCalc('ladder', ladderPayload, INITIAL_LADDER_DATA, {
+    mode: 'manual',
+    minLoadingMs: 320,
+    onSuccess: (resData) => {
+      const rowsArr = Array.isArray(resData?.timelineRows) ? resData.timelineRows : [];
+      const finalRow = rowsArr[rowsArr.length - 1];
+      recordToolRun({
+        tool: 'ladder',
+        title: `${bank.name} · ${compact(monthlySavings, lang)}${tx('/th', '/mo', '/月')} (${totalMonths}${tx('T', 'm', 'ヶ月')})`,
+        householdMode,
+        summary: `${compact(resData?.finalPortfolioValue || 0, lang)} · +${compact(resData?.finalMonthlyYield || 0, lang)}${tx('/th', '/mo', '/月')}`,
+        metrics: [
+          { label: tx('Tổng danh mục', 'Portfolio', '総資産'), value: compact(resData?.finalPortfolioValue || 0, lang), tone: 'indigo' },
+          { label: tx('Lãi / tháng', 'Yield / mo', '毎月利息'), value: `+${compact(resData?.finalMonthlyYield || 0, lang)}`, tone: 'emerald' },
+          { label: tx('Sổ đang chạy', 'Active CDs', '保有口数'), value: `${finalRow?.activePackagesCount ?? 0}`, tone: 'default' },
+        ],
+        inputs: {
+          monthlySavings,
+          householdMode,
+          monthlyExpense,
+          totalMonths,
+          bankId,
+          strategy,
+          inputMode,
+          shortTerm,
+          longTerm,
+          shortPct,
+        },
+        accessToken: getAccessToken(),
+      });
+    },
+  });
 
   const totalDeposited = monthlySavings * totalMonths;
   const totalInterest = Math.max(0, result.finalPortfolioValue - totalDeposited);
@@ -600,6 +645,18 @@ export default function Ladder() {
 
       <WorkspaceSplit
         resultsId="ladder-results"
+        runAction={{
+          onRun: run,
+          isDirty,
+          loading,
+          label: tx('Chạy mô phỏng bậc thang', 'Run Ladder Model', 'ラダー試算を実行'),
+          loadingLabel: tx('Đang chạy mô hình bậc thang...', 'Running Ladder Simulation...', 'ラダー試算中...'),
+          dirtyLabel: tx(
+            'Chiến lược bậc thang vừa thay đổi — bấm "Chạy mô phỏng bậc thang" để cập nhật danh mục sổ.',
+            'Ladder settings changed — click "Run Ladder Model" to refresh passbooks.',
+            '設定が変更されました。「ラダー試算を実行」を押してください。'
+          ),
+        }}
         mobileSummary={{
           eyebrow: `${bank.name} · ${lastRow?.activePackagesCount || 0} ${pkgUnit} (${totalMonths}${tx('T', 'm', 'ヶ月')})`,
           value: (
@@ -815,11 +872,12 @@ export default function Ladder() {
         }
         results={
           <div className="space-y-5">
-          {!initialized && loading ? (
-            <ResultsSkeleton />
+          {loading ? (
+            <CalculationLoader
+              title={tx('Đang mô phỏng bậc thang & xếp kệ sổ kỳ hạn...', 'Simulating rotating ladder tranches...', '階段式定期ポートフォリオを試算中...')}
+            />
           ) : (
-            <div className={cx('space-y-5 animate-fade transition-opacity', loading && 'opacity-80')}>
-              {loading && <div className="loading-bar rounded-full" />}
+            <div className="space-y-5 animate-fade">
 
               {/* Headline Card */}
               <Card className="relative overflow-hidden p-5 sm:p-7">
@@ -971,6 +1029,8 @@ export default function Ladder() {
               <LadderPackageExplorer rows={result.timelineRows} splitLabel={splitLabel} />
 
               <RateDisclaimer />
+
+              <SavePlanPromptCard />
 
               <FeedbackWidget
                 toolId="ladder"

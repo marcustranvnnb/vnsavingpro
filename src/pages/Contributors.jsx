@@ -579,7 +579,7 @@ export default function Contributors() {
                       {tx('Support / Donate', 'Support / Donate', 'サポート / 寄付')}
                     </div>
                     <p className="mt-1 text-[11px] text-zinc-400">
-                      {tx('Tiếp sức duy trì server & cào lãi suất 09:00', 'Support hosting & daily bank rate sync', 'サーバー維持と毎日の金利同期を支援')}
+                      {tx('Tiếp sức duy trì server & cập nhật lãi suất đầu tháng', 'Support hosting & monthly 1st bank rate sync', 'サーバー維持と毎月1日の金利同期を支援')}
                     </p>
                   </div>
                 </div>

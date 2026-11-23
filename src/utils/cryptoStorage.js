@@ -14,6 +14,8 @@ const ALLOWED_KEYS = new Set([
   'CUSTOM_REFERRAL_CODES',
   'PLANNER_STATE',
   'USER_FEEDBACK_LOG',
+  'CALC_HISTORY_LOG',
+  'TOOL_RESTORE_STATE',
 ]);
 
 const ALLOWED_BANKS = new Set(['cake', 'tnex', 'timo', 'liobank']);
@@ -357,6 +359,47 @@ export function validateBySchema(key, raw) {
         });
       }
       return clean;
+    }
+
+    case 'CALC_HISTORY_LOG': {
+      if (!Array.isArray(value)) return null;
+      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
+      const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
+      const validTones = new Set(['default', 'emerald', 'indigo', 'amber']);
+      return value
+        .filter((item) => isPlainObject(item) && validTools.has(item.tool))
+        .slice(0, 40)
+        .map((item) => ({
+          id: sanitizeText(item.id || item.clientRunId, 64) || `run_${Date.now().toString(36)}`,
+          clientRunId: sanitizeText(item.clientRunId || item.id, 64),
+          tool: item.tool,
+          title: sanitizeText(item.title, 140),
+          householdMode: validModes.has(item.householdMode) ? item.householdMode : 'INDIVIDUAL',
+          summary: sanitizeText(item.summary, 240),
+          metrics: Array.isArray(item.metrics)
+            ? item.metrics
+                .filter((m) => isPlainObject(m))
+                .slice(0, 6)
+                .map((m) => ({
+                  label: sanitizeText(m.label, 60),
+                  value: sanitizeText(m.value, 60),
+                  tone: validTones.has(m.tone) ? m.tone : 'default',
+                }))
+            : [],
+          inputs: isPlainObject(item.inputs) ? item.inputs : {},
+          createdAt: sanitizeText(item.createdAt, 40) || new Date().toISOString(),
+        }));
+    }
+
+    case 'TOOL_RESTORE_STATE': {
+      if (!isPlainObject(value)) return null;
+      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
+      if (!validTools.has(value.tool) || !isPlainObject(value.inputs)) return null;
+      return {
+        tool: value.tool,
+        inputs: value.inputs,
+        restoredAt: sanitizeText(value.restoredAt, 40) || new Date().toISOString(),
+      };
     }
 
     default:

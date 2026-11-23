@@ -252,7 +252,7 @@ export default function Rates() {
     <>
       <PageHeader
         icon={BarChart3}
-        eyebrow={tx(`Dữ liệu lãi suất ${updatedAt}`, `Live Bank Rates · ${updatedAt}`, `最新金利データ · ${updatedAt}`)}
+        eyebrow={tx(`Cập nhật đầu mỗi tháng · ${updatedAt}`, `Monthly 1st Sync · ${updatedAt}`, `毎月1日自動同期 · ${updatedAt}`)}
         title={tx('So sánh lãi suất ngân hàng số', 'Compare Digital Bank Interest Rates', 'ネット銀行 定期預金金利比較')}
         description={tx(
           'Bảng lãi suất niêm yết của Cake, Timo, LioBank và TNEX. Nhấn vào bất kỳ mức lãi suất nào để cập nhật theo chương trình ưu đãi riêng của bạn.',
