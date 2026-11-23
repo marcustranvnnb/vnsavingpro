@@ -28,6 +28,9 @@ import Home from './pages/Home.jsx';
 // Tool pages are code-split so the home page loads fast (Chart.js only loads with the planner).
 const pages = {
   plan: lazy(() => import('./pages/Planner.jsx')),
+  fx: lazy(() => import('./pages/FxManager.jsx')),
+  salary: lazy(() => import('./pages/SalaryInsurance.jsx')),
+  ecosystem: lazy(() => import('./pages/Ecosystem.jsx')),
   rates: lazy(() => import('./pages/Rates.jsx')),
   calculator: lazy(() => import('./pages/Calculator.jsx')),
   ladder: lazy(() => import('./pages/Ladder.jsx')),

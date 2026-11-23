@@ -15,7 +15,9 @@ const DEV_CSP =
 function vercelApiPlugin() {
   const routes = {
     '/api/rates': 'api/rates.js',
+    '/api/fx': 'api/fx.js',
     '/api/calculate': 'api/calculate.js',
+    '/api/ecosystem': 'api/ecosystem.js',
     '/api/feedback': 'api/feedback.js',
     '/api/plans': 'api/plans.js',
     '/api/history': 'api/history.js',

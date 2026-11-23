@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft,
+  ArrowLeftRight,
   ArrowRight,
   BarChart3,
   Check,
   Home as HomeIcon,
   PiggyBank,
+  Receipt,
   Sparkles,
   Target,
   User,
@@ -80,6 +82,16 @@ export default function OnboardingModal({ open, onClose, initialMode = 'INDIVIDU
     if (goalFocus === 'RATES_COMPARE') {
       notify(tx('Đã lưu hồ sơ gợi ý · Mở bảng xếp hạng lãi suất', 'Starter preferences saved · Opening Bank Rates', '初期設定を保存・金利ランキングへ移動'));
       navigate(href('rates'));
+      return;
+    }
+    if (goalFocus === 'FX_MANAGER') {
+      notify(tx('Đã lưu hồ sơ gợi ý · Mở Quản trị Ngoại tệ FX', 'Starter preferences saved · Opening FX Manager', '初期設定を保存・外貨FX管理へ移動'));
+      navigate(href('fx'));
+      return;
+    }
+    if (goalFocus === 'SALARY_2026') {
+      notify(tx('Đã lưu hồ sơ gợi ý · Mở Tính Lương & BHXH Luật 2026', 'Starter preferences saved · Opening 2026 Salary & BHXH', '初期設定を保存・給与2026へ移動'));
+      navigate(href('salary'));
       return;
     }
     notify(tx('Đã khởi tạo thông số mẫu · Mở lộ trình của bạn', 'Starter plan ready · Opening your Roadmap', 'プラン初期値を反映しました'));
@@ -158,6 +170,26 @@ export default function OnboardingModal({ open, onClose, initialMode = 'INDIVIDU
         `Đối chiếu Cake, TNEX, Timo, LioBank (cao nhất ${pct(top12.rate, 2, lang)}/năm kỳ hạn 12T).`,
         `Compare Cake, TNEX, Timo & LioBank (up to ${pct(top12.rate, 2, lang)} p.a. for 12M).`,
         `Cake・TNEX・Timo・LioBankを比較（12ヶ月最高 ${pct(top12.rate, 2, lang)}）。`
+      ),
+    },
+    {
+      id: 'FX_MANAGER',
+      icon: ArrowLeftRight,
+      title: tx('Quản trị Ngoại tệ & Tỷ giá Vietcombank (FX)', 'Manage Multi-Currency & FX Rates', '外貨FX・Vietcombank為替管理'),
+      desc: tx(
+        'Định giá USD, EUR, JPY... quy đổi VND và so sánh ngưỡng hoà vốn với gửi tiết kiệm.',
+        'Track USD/EUR/JPY net worth and compare FX yields against VND bank deposits.',
+        '米ドル・円などの換算総額とVND定期預金との比較を試算します。'
+      ),
+    },
+    {
+      id: 'SALARY_2026',
+      icon: Receipt,
+      title: tx('Tính Lương, Thuế 5 bậc & BHXH Luật 2026', '2026 Salary Gross–Net, 5-Bracket PIT & BHXH', '2026年新法 給与・所得税・社会保険'),
+      desc: tx(
+        'Áp dụng giảm trừ 15,5tr/6,2tr, 5 bậc thuế mới và chuyển thẳng Lương Net vào Kế hoạch.',
+        'Apply 15.5M/6.2M deductions, 5 brackets & send Net income into your Planner.',
+        '基礎控除15.5M・5段階税率で手取りを計算しプランナーへ連動します。'
       ),
     },
   ];
@@ -419,7 +451,11 @@ export default function OnboardingModal({ open, onClose, initialMode = 'INDIVIDU
               <Sparkles className="size-3.5" />
               {goalFocus === 'RATES_COMPARE'
                 ? tx('Mở bảng lãi suất ngay', 'View Bank Rates Now', '金利ランキングへ')
-                : tx('Xem lộ trình cá nhân hoá', 'Open Personalized Roadmap', '専用プランを作成する')}
+                : goalFocus === 'FX_MANAGER'
+                  ? tx('Mở Quản trị Ngoại tệ FX', 'Open FX Manager', '外貨FX管理へ')
+                  : goalFocus === 'SALARY_2026'
+                    ? tx('Mở Lương & BHXH 2026', 'Open 2026 Payroll Tool', '給与2026へ')
+                    : tx('Xem lộ trình cá nhân hoá', 'Open Personalized Roadmap', '専用プランを作成する')}
               <ArrowRight className="size-3.5" />
             </Button>
           )}

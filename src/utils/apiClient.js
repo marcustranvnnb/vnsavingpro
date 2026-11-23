@@ -617,3 +617,88 @@ export async function revokeCollabInviteFromApi(id, accessToken) {
   }
   return json;
 }
+
+/* ── v2.0 FX Rates, Saved State & Wealth Ecosystem Helpers ───────────────── */
+
+export function loadSavedFxState() {
+  return cryptoStorage.load('FX_PORTFOLIO_STATE', {}) || {};
+}
+
+export function saveFxState(state) {
+  return cryptoStorage.save('FX_PORTFOLIO_STATE', state);
+}
+
+export function loadSavedSalaryState() {
+  return cryptoStorage.load('SALARY_STATE', {}) || {};
+}
+
+export function saveSalaryState(state) {
+  return cryptoStorage.save('SALARY_STATE', state);
+}
+
+export async function fetchFxRatesFromApi(forceRefresh = false) {
+  const url = forceRefresh ? '/api/fx?refresh=1' : '/api/fx';
+  const res = await fetch(url);
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export async function fetchEcosystemOverviewFromApi(accessToken = null, resource = 'overview') {
+  const headers = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  const res = await fetch(`/api/ecosystem?resource=${encodeURIComponent(resource)}`, { headers });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+async function postEcosystemAction(body, accessToken = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  const res = await fetch('/api/ecosystem', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  handlePotentialPocLock(res, json);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
+export function cloneTemplateFromApi(templateId, accessToken = null) {
+  return postEcosystemAction({ action: 'clone_template', templateId }, accessToken);
+}
+
+export function publishTemplateToApi(payload, accessToken) {
+  return postEcosystemAction({ action: 'publish_template', ...payload }, accessToken);
+}
+
+export function voteTemplateToApi({ templateId, realismRating, comment = '' }, accessToken) {
+  return postEcosystemAction({ action: 'vote_template', templateId, realismRating, comment }, accessToken);
+}
+
+export function applyExpertToApi(credentials, accessToken) {
+  return postEcosystemAction({ action: 'apply_expert', ...credentials }, accessToken);
+}
+
+export function manageHouseholdLifecycleApi(payload, accessToken) {
+  return postEcosystemAction(payload, accessToken);
+}
+
+export function manageStewardMandateApi(payload, accessToken) {
+  return postEcosystemAction(payload, accessToken);
+}

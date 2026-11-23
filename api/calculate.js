@@ -6,6 +6,9 @@ import {
   calculatePassiveIncomeRoadmap,
   simulateLadderingMatrix,
 } from './_lib/calculator.js';
+import { calculateFxPortfolio } from './_lib/fxCalculator.js';
+import { getLiveFxSnapshotAsync } from './_lib/fxRatesCache.js';
+import { calculateSocialBenefits, calculateVietnamSalary } from './_lib/salaryVietnam.js';
 import { evaluatePlanFeasibility } from './_lib/feasibilityEvaluator.js';
 import { computeHouseholdAnalysis, getRecommendedEmergencyMonths } from './_lib/householdAnalytics.js';
 import { readJsonBody } from './_lib/http.js';
@@ -328,6 +331,42 @@ export default async function handler(req, res) {
         });
       }
       return res.status(200).json({ impact, futureNominalNeeded, rows });
+    }
+
+    case 'fx_portfolio': {
+      const fxSnap = await getLiveFxSnapshotAsync();
+      const result = calculateFxPortfolio({
+        holdings: payload.holdings,
+        convertFrom: payload.convertFrom,
+        convertTo: payload.convertTo,
+        convertAmount: payload.convertAmount,
+        rateType: payload.rateType,
+        targetRates: payload.targetRates,
+        benchmarkVndRate: payload.benchmarkVndRate,
+        currencies: fxSnap.currencies,
+        lang,
+      });
+      return res.status(200).json({
+        ...result,
+        fxUpdatedAt: fxSnap.updatedAt,
+        fxSource: fxSnap.source,
+      });
+    }
+
+    case 'salary_gross_net': {
+      const result = calculateVietnamSalary({
+        ...payload,
+        lang,
+      });
+      return res.status(200).json(result);
+    }
+
+    case 'social_benefits': {
+      const result = calculateSocialBenefits({
+        ...payload,
+        lang,
+      });
+      return res.status(200).json(result);
     }
 
     default:

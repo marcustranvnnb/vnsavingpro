@@ -230,7 +230,7 @@ export function Logo({ className }) {
   );
 }
 
-function MoreMenu({ route, extraTools = [], onOpenData, onOpenOnboarding, align = 'left' }) {
+function MoreMenu({ route, extraTools = [], topRateLabel = '', onOpenData, onOpenOnboarding, align = 'left' }) {
   const { lang, tx } = useI18n();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [route]);
@@ -258,7 +258,7 @@ function MoreMenu({ route, extraTools = [], onOpenData, onOpenOnboarding, align 
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             className={cx(
-              'absolute top-full z-50 mt-2 w-80 max-w-[92vw] animate-pop rounded-2xl border border-white/10 bg-elevated p-2 shadow-2xl',
+              'absolute top-full z-50 mt-2 max-h-[75dvh] w-80 max-w-[92vw] overflow-y-auto animate-pop rounded-2xl border border-white/10 bg-elevated p-2 shadow-2xl',
               align === 'right' ? 'right-0' : 'left-0'
             )}
           >
@@ -276,8 +276,15 @@ function MoreMenu({ route, extraTools = [], onOpenData, onOpenOnboarding, align 
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.04] ring-1 ring-inset ring-white/[0.07]">
                     <t.icon className="size-4 text-indigo-300" />
                   </span>
-                  <span>
-                    <span className="block text-sm font-medium text-white">{t.label}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-2 text-sm font-medium text-white">
+                      <span className="truncate">{t.label}</span>
+                      {t.id === 'rates' && topRateLabel && (
+                        <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-300">
+                          {topRateLabel}
+                        </span>
+                      )}
+                    </span>
                     <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">{t.desc}</span>
                   </span>
                 </a>
@@ -420,6 +427,7 @@ function renderFeaturedNavLink({ t, route, topRateLabel, compact = false }) {
   const active = route === t.id;
   const isPlan = t.id === 'plan';
   const isRates = t.id === 'rates';
+  const isSalary = t.id === 'salary';
 
   if (isPlan) {
     return (
@@ -449,10 +457,10 @@ function renderFeaturedNavLink({ t, route, topRateLabel, compact = false }) {
         'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl transition-colors',
         compact ? 'px-2 py-1 text-xs font-medium' : 'px-3 py-1.5 text-[13px] lg:text-sm',
         active
-          ? isRates
+          ? isRates || isSalary
             ? 'bg-emerald-500/15 font-medium text-emerald-100 ring-1 ring-inset ring-emerald-400/35'
             : 'bg-white/[0.08] font-medium text-white'
-          : isRates
+          : isRates || isSalary
             ? 'text-zinc-200 hover:bg-emerald-500/[0.08] hover:text-white'
             : 'text-zinc-400 hover:bg-white/[0.04] hover:text-white'
       )}
@@ -461,6 +469,11 @@ function renderFeaturedNavLink({ t, route, topRateLabel, compact = false }) {
       {isRates && topRateLabel && (
         <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-400/25">
           {topRateLabel}
+        </span>
+      )}
+      {isSalary && (
+        <span className="rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-emerald-300 ring-1 ring-inset ring-emerald-400/25">
+          2026
         </span>
       )}
     </a>
@@ -513,9 +526,8 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
   const { mode, duoPosture, width, isCoverScreen } = useDisplayMode();
   const { banks, getRate } = useRates();
   const allTools = getLocalizedTools(lang);
-  const primary = allTools.filter((t) => t.primary);
-  const featured = primary.slice(0, 3);
-  const overflowTools = [...primary.slice(3), ...allTools.filter((t) => !t.primary)];
+  const featured = allTools.filter((t) => ['plan', 'fx', 'salary', 'ecosystem'].includes(t.id));
+  const overflowTools = allTools.filter((t) => !['plan', 'fx', 'salary', 'ecosystem'].includes(t.id));
 
   const top12m = banks.reduce((best, b) => {
     const r = getRate(b, '12M');
@@ -552,6 +564,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
             <MoreMenu
               route={route}
               extraTools={overflowTools}
+              topRateLabel={topRateLabel}
               onOpenData={onOpenData}
               onOpenOnboarding={onOpenOnboarding}
               align="right"
@@ -584,6 +597,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
               <MoreMenu
                 route={route}
                 extraTools={overflowTools}
+                topRateLabel={topRateLabel}
                 onOpenData={onOpenData}
                 onOpenOnboarding={onOpenOnboarding}
               />
@@ -609,6 +623,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
               <MoreMenu
                 route={route}
                 extraTools={overflowTools}
+                topRateLabel={topRateLabel}
                 onOpenData={onOpenData}
                 onOpenOnboarding={onOpenOnboarding}
               />
@@ -623,7 +638,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
     );
   }
 
-  // Desktop mode: streamlined Brand · 3 Featured Tools + Explore · Language + Account
+  // Desktop mode: streamlined Brand · 4 v2.0 Pillars + Explore · Language + Account
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-canvas/75 backdrop-blur-xl">
       <PageContainer className="flex h-14 items-center justify-between gap-4">
@@ -631,11 +646,12 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
           <Logo />
           <VersionBadge compact />
         </div>
-        <nav className="flex items-center gap-1.5">
+        <nav className="flex items-center gap-1">
           {featured.map((t) => renderFeaturedNavLink({ t, route, topRateLabel }))}
           <MoreMenu
             route={route}
             extraTools={overflowTools}
+            topRateLabel={topRateLabel}
             onOpenData={onOpenData}
             onOpenOnboarding={onOpenOnboarding}
           />

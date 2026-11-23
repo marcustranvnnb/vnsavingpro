@@ -4,7 +4,18 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
-## 0. Completed in Version 1.12.0.0 (2026-11-23 — Silent Auto-Layout, Highlighted Header, Branded Splash, Onboarding, Shared Household Planning & CIC/Advisors Roadmap)
+## 0. Completed in Version 2.0.0.0 (2026-11-23 — Wealth Platform, 4 Roles, FX Manager & Vietnam 2026 Statutory Payroll/BHXH)
+
+- [x] **4-Role Ecosystem (`/ecosystem`, [api/ecosystem.js](../../api/ecosystem.js))**: Built Individual (with Couple switching & Couple→Family upgrade via `household_spaces`), Verified Financial Expert (degrees/certifications verification + Expert eligibility to also earn Community-Voted Planner status), Community-Voted Planner (`proofVerified + >=10 votes + >=4.2★ + >=3 clones` enabling 1-click template cloning into `/plan`), and Financial Steward (revocable delegation mandates via `steward_mandates`).
+- [x] **FX Currency & Exchange Rate Manager (`/fx`, [FxManager.jsx](../../src/pages/FxManager.jsx), [api/fx.js](../../api/fx.js))**: Live Vietcombank XML feed (`15m` Edge cache), Cash/Transfer/Sell converter, multi-currency holdings portfolio (`FX_PORTFOLIO_STATE`), `-5%..+10%` sensitivity stress-test, target rate watchlist & VND bank savings hurdle.
+- [x] **Vietnam 2026 Salary, PIT & Social Insurance Calculator (`/salary`, [SalaryInsurance.jsx](../../src/pages/SalaryInsurance.jsx), [salaryVietnam.js](../../api/_lib/salaryVietnam.js))**: Implements NQ 110/2025 (`15.5M/6.2M`), 5-bracket PIT Law 109/2025 (+ comparison vs 2025 7-bracket tax savings), Decree 161/2026 (`2.53M` reference salary), Decrees 293/2025 & 399/2026 regional minimum wages, Employment Law 74/2025 (`5×` UI cap), and BHXH Law 41/2024 (Maternity + Điều 70 Lump-Sum) with 1-click Net-to-Planner transfer.
+- [x] **Profile Lifecycle & Multi-Suite History ([Profile.jsx](../../src/pages/Profile.jsx), [Home.jsx](../../src/pages/Home.jsx), [Layout.jsx](../../src/components/Layout.jsx), [OnboardingModal.jsx](../../src/components/OnboardingModal.jsx))**: Added v2.0 role badges, Couple switch / Couple→Family upgrade controls, `fx`/`salary` history filters, and updated Home/Header/Onboarding across `vi`/`en`/`ja`.
+- [ ] **Manual Owner SQL Action Pending**:
+  - Run [supabase/migrations/20261123_v200_wealth_platform.sql](../../supabase/migrations/20261123_v200_wealth_platform.sql) (after `v1.11` & `v1.12` migrations if not yet applied) in Supabase SQL Editor (`gvgyztwpjvjvztwhwnue`).
+
+---
+
+## 0a. Completed in Version 1.12.0.0 (2026-11-23 — Silent Auto-Layout, Highlighted Header, Branded Splash, Onboarding, Shared Household Planning & CIC/Advisors Roadmap)
 
 - [x] **Hidden Display Mode Selector (`v1.12.0.0`)**: Removed manual `DisplayModeSwitcher`, Footer display pills, `MobileTabBar` display grid, and `Profile` display card; restricted [DisplayModeContext.jsx](../../src/layout/DisplayModeContext.jsx) & `LayoutModeBanner` strictly to QA `?layout=`/`?posture=` query params so responsive/foldable layouts adapt silently.
 - [x] **Streamlined Header & Flagship Spotlights ([Layout.jsx](../../src/components/Layout.jsx))**: Consolidated Desktop/Duo/Tablet `TopNav` to highlight **Lập kế hoạch** (gradient pill) and **Lãi suất** (live 12M yield badge) alongside `Khám phá`, `LanguageSwitcher`, and `UserMenu`.

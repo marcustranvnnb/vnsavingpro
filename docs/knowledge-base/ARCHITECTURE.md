@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v1.12.0.0 Streamlined Header · Splash · Onboarding · Shared Household Planning)
+# VnSavingPro — Architecture & Technical Reference (v2.0.0.0 Wealth Platform · 4 Roles · FX Manager · Vietnam 2026 Payroll/BHXH)
 
 ## 1. High-Level Architecture
 
@@ -7,42 +7,27 @@ flowchart TD
     Entry["src/main.jsx"] --> App["src/App.jsx (SplashScreen + OnboardingModal + Shell)"]
     App --> State["src/state.jsx (Clean History Router + RatesCtx + ToastCtx)"]
     State -->|GET /api/rates| ApiRates["api/rates.js (Edge Cached + Supabase Snapshot)"]
-    App --> Layout["src/components/Layout.jsx (Highlighted TopNav, MobileTabBar, Footer)"]
-    App --> Modal["src/components/DataModal.jsx (Supabase Cloud Sync, JSON/CSV Backup)"]
-    App --> Cookie["src/components/CookieBanner.jsx + cookieManager.js"]
-    App --> Pages["React.lazy() Tool Pages + Home.jsx"]
-    Pages -->|useServerCalc auto/manual| ApiClient["src/utils/apiClient.js (Run CTA + Onboarding + Collabs)"]
-    ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Rate-Limited Serverless Handler)"]
-    ApiCalc --> ServerLib["api/_lib/{calculator,feasibilityEvaluator}.js (Secret Server-Only)"]
-    Pages -->|FeedbackWidget| ApiFeedback["api/feedback.js -> api/_lib/supabase.js"]
-    ApiRates --> Supabase["Supabase Free Tier Postgres (+ household_collaborations, calculation_history)"]
-    ApiFeedback --> Supabase
-    Modal -->|POST/GET /api/plans| ApiPlans["api/plans.js"] --> Supabase
-    Pages -->|GET/POST/DELETE /api/history| ApiHistory["api/history.js"] --> Supabase
+    FxPage["FxManager.jsx (/fx)"] -->|GET /api/fx| ApiFx["api/fx.js (Vietcombank XML + 15m Edge Cache)"]
+    EcoPage["Ecosystem.jsx (/ecosystem) + Profile.jsx"] -->|GET/POST /api/ecosystem| ApiEco["api/ecosystem.js (Roles, Clones, Experts, Households, Stewards)"]
+    Pages["React.lazy() Pages (Planner, FxManager, SalaryInsurance, Ecosystem, Rates...)"] -->|useServerCalc| ApiClient["src/utils/apiClient.js"]
+    ApiClient -->|POST /api/calculate| ApiCalc["api/calculate.js (Savings + fx_portfolio + salary_gross_net + social_benefits)"]
+    ApiCalc --> ServerLib["api/_lib/{calculator,feasibilityEvaluator,fxCalculator,salaryVietnam}.js (Secret Server-Only)"]
+    Pages -->|GET/POST/DELETE /api/history| ApiHistory["api/history.js"] --> Supabase["Supabase Free Tier Postgres"]
     Pages -->|GET/POST/DELETE /api/collaborations| ApiCollab["api/collaborations.js"] --> Supabase
-    Pages -->|Google Docs Export| GDocs["src/utils/googleDocsExporter.js (docs.new + .doc)"]
+    ApiEco --> Supabase
 ```
 
-## 2. Proprietary Algorithm Protection (`api/_lib/` & `api/calculate.js`)
+## 2. Proprietary Algorithm Protection & Vercel Function Budget (`10 / 12`)
 
-- **Zero Client Exposure**: `calculator.js`, `feasibilityEvaluator.js`, `householdAnalytics.js`, and `supabase.js` (`SUPABASE_SERVICE_ROLE_KEY`) live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and contain only UI components and API requests.
-- **Supabase Free Tier Persistence (`supabase/schema.sql` + `api/_lib/supabase.js`)**:
-  - Zero-dependency server-side PostgREST client (`sbSelect`, `sbInsert`, `sbUpsert`, `sbPatch`, `sbDelete`) using native `fetch` with a 3.5s timeout and automatic fallback to in-memory/bundled defaults when `SUPABASE_URL` / keys are not yet configured.
-  - Tables: `public.bank_rate_snapshots`, `public.user_feedback`, `public.saved_plans`, `public.profiles`, `public.calculation_history`, `public.household_collaborations`, `public.usage_quotas`, and `public.quota_alerts_log` (protected with RLS policies).
-- **Endpoints**:
-  - `GET /api/rates` ([api/rates.js](../../api/rates.js)): Serves bank rates + `RATES_UPDATED_AT` + `syncSchedule: 'monthly_day_1'` + `pocValidationReached` + pre-computed `defaultQuickEstimate` (`vi`/`en`/`ja`) from `getLiveRatesSnapshotAsync()` (`public, s-maxage=86400, stale-while-revalidate=604800`, 6h memory cache; `?keepalive=1` bypasses cache with `no-store` for 5-day anti-pause pings).
-  - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, and `inflation` with bounded per-IP sliding-window rate limiting ([rateLimit.js](../../api/_lib/rateLimit.js): `120 req/min`, capped `2000` IP entries).
-  - `GET`/`POST`/`DELETE /api/history` ([api/history.js](../../api/history.js)): Rate-limited (`60 req/min`), authenticated endpoint (`401` if unauthenticated) storing and restoring calculation/plan run snapshots with automatic **50-row retention cap per user** in `calculation_history` (or per-user memory fallback).
-  - `GET`/`POST`/`DELETE /api/collaborations` ([api/collaborations.js](../../api/collaborations.js)): Rate-limited (`45 req/min`) Collaborative Household Planning API (`COUPLE` & `FAMILY`). `GET ?preview=CODE` returns non-PII invite metadata only (`ownerDisplayName`, `householdMode`, `role`, `title`, `status`, `expiresAt`); creating, accepting (`/profile?invite=CODE`), syncing shared `planPayload`, and revoking/leaving strictly require a verified Bearer JWT (`401` otherwise), capped at 15 active invites per owner with optional Resend invite emails.
-  - `GET`/`POST`/`DELETE /api/feedback` ([api/feedback.js](../../api/feedback.js)): Rate-limited (`60 GET/min`, `30 POST/min`). `GET /api/feedback?public=1` is CDN cached (`s-maxage=300`) returning anonymized contributor notes with financial numbers stripped; raw admin `GET /api/feedback` strictly requires `CRON_SECRET` or `SUPABASE_SERVICE_ROLE_KEY` Bearer authorization (`401`). Direct `anon`/`authenticated` Postgres `INSERT` is revoked.
-  - `GET`/`POST`/`DELETE /api/plans` ([api/plans.js](../../api/plans.js)): Rate-limited (`90 GET/min`, `40 write/min`). Saves and loads sanitized financial plans using 6–12 character share codes (`saved_plans` via `service_role`; unauthenticated `anon` direct Data API access is revoked).
-  - `GET /api/quota-status` ([api/quota-status.js](../../api/quota-status.js)) & [quotaGuard.js](../../api/_lib/quotaGuard.js) + [resend.js](../../api/_lib/resend.js): Monitors Free-Tier caps with batched telemetry (`CACHE_WINDOW_MS = 300s`, `BATCH_HIT_FLUSH = 50`), CDN caches public status for `300s`, sends deduplicated Resend alerts at **80%, 90%, 95%, and 100%**, and triggers `503 POC_QUOTA_REACHED` when capped.
-  - `GET /api/cron/sync-rates` ([api/cron/sync-rates.js](../../api/cron/sync-rates.js)): Protected webhook/manual scraper endpoint (`CRON_SECRET`) that persists updated bank rate snapshots and retains the newest 24 snapshots.
-- **Automated Monthly 1st (9:00 AM) Rate Scrapers & 5-Day Keepalive (`scripts/` & `.github/workflows/`)**:
-  - `scripts/scrape-tnex.js`, `scripts/scrape-timo.js`, `scripts/scrape-liobank.js`, `scripts/scrape-cake.js`, and `scripts/scrape-all.js` pull official public tariffs + promo PDFs/terms and push snapshots directly to Supabase when credentials are set in GitHub Actions secrets.
-  - `.github/workflows/daily-rates-sync.yml` runs once monthly on **Node.js 24 LTS** (`0 2 1 * *` UTC = 09:00 AM UTC+7 on Day 1) as the single source of truth (duplicate `vercel.json` `crons` removed); `scripts/register-daily-9am-task.ps1` registers the local Windows equivalent.
-  - `.github/workflows/keepalive-supabase.yml` runs every 5 days (`0 3 */5 * *`) pinging `/api/rates?keepalive=1` so Supabase Free Tier stays `ACTIVE_HEALTHY` despite monthly rate updates.
-- **Local Dev/Preview Parity (`vite.config.js`)**: `loadEnv` loads server-only keys into `process.env` and `vercelApiPlugin()` intercepts `/api/rates`, `/api/calculate`, `/api/feedback`, `/api/plans`, `/api/history`, `/api/collaborations`, `/api/quota-status`, and `/api/cron/sync-rates` during `vite dev` and `vite preview`.
+- **Zero Client Exposure**: `calculator.js`, `feasibilityEvaluator.js`, `householdAnalytics.js`, `fxRatesCache.js`, `fxCalculator.js`, `salaryVietnam.js`, and `supabase.js` (`SUPABASE_SERVICE_ROLE_KEY`) live exclusively inside `api/_lib/` and are **never imported by `src/`**. Production Vite bundles (`dist/assets/*.js`) are built with `sourcemap: false` and split into lazy chunks (`FxManager`, `SalaryInsurance`, `Ecosystem`, `supabase`, `charts`, etc.).
+- **Supabase Free Tier Persistence (`supabase/schema.sql` + `20261123_v200_wealth_platform.sql`)**:
+  - Tables: `bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles` (extended with `account_role`, `is_verified_expert`, `expert_verification_status`, `expert_credentials`, `is_community_voted_planner`, `community_planner_score`, `community_total_votes`, `community_total_clones`, `steward_enabled`), `calculation_history` (`plan..inflation, fx, salary`), `household_collaborations`, `household_spaces`, `community_plan_templates`, `community_template_votes`, `steward_mandates`, `usage_quotas`, and `quota_alerts_log`.
+- **10 Serverless Endpoints (`<= 12` Vercel Hobby Cap)**:
+  - `GET /api/fx` ([api/fx.js](../../api/fx.js)): Rate-limited (`90 req/min`), fetches Vietcombank public XML ([fxRatesCache.js](../../api/_lib/fxRatesCache.js)) with 15-min memory/Edge CDN cache (`s-maxage=900, stale-while-revalidate=3600`) and Nov 2026 reference fallback.
+  - `POST /api/calculate` ([api/calculate.js](../../api/calculate.js)): Handles `quick_estimate`, `planner_bundle`, `calculator_bundle`, `ladder`, `career`, `inflation`, `fx_portfolio` ([fxCalculator.js](../../api/_lib/fxCalculator.js)), `salary_gross_net`, and `social_benefits` ([salaryVietnam.js](../../api/_lib/salaryVietnam.js)).
+  - `GET`/`POST /api/ecosystem` ([api/ecosystem.js](../../api/ecosystem.js)): Unified role/community hub (`templates`, `experts`, `clone_template`, `publish_template`, `vote_template`, `apply_expert`, `create_household`, `switch_couple`, `upgrade_couple_to_family`, `create_steward_mandate`, `accept_steward_mandate`, `revoke_steward_mandate`). Protected actions enforce `401` Bearer verification.
+  - `GET /api/rates` ([api/rates.js](../../api/rates.js)), `GET/POST/DELETE /api/history`, `/api/plans`, `/api/collaborations`, `/api/feedback`, `/api/quota-status`, `/api/cron/sync-rates`.
+- **Local Dev/Preview Parity (`vite.config.js`)**: `vercelApiPlugin()` intercepts all 10 routes including `/api/fx` and `/api/ecosystem`.
 
 ## 3. Routing & State Management (`src/state.jsx` & `src/tools.js`)
 

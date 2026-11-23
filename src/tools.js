@@ -1,4 +1,16 @@
-import { Award, Target, BarChart3, Calculator, Layers, Briefcase, TrendingDown, Gift } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  Award,
+  BarChart3,
+  Briefcase,
+  Calculator,
+  Gift,
+  Layers,
+  Receipt,
+  Target,
+  TrendingDown,
+  Users,
+} from 'lucide-react';
 import versionInfo from './version.json';
 
 export const APP_VERSION = versionInfo.displayVersion;
@@ -7,6 +19,16 @@ export const APP_VERSION_DATE = versionInfo.releaseDate;
 export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
+  {
+    version: 'v2.0.0.0',
+    date: '23/11/2026',
+    title: 'VnSavingPro v2.0: Nền tảng Quản lý Tài sản 4 Vai trò, Ngoại tệ FX & Lương–BHXH 2026',
+    items: [
+      'Định vị nền tảng quản lý tài sản cho Cá nhân, Cặp đôi & Gia đình với vòng đời linh hoạt (đổi Cặp đôi, nâng cấp Cặp đôi -> Gia đình, hoặc tạo Gia đình từ đầu).',
+      'Hệ sinh thái 4 Vai trò mới: Cá nhân, Chuyên gia tài chính xác thực, Người lập kế hoạch được cộng đồng bình chọn (kèm tính năng Clone mẫu thực tế 1 chạm) và Người quản trị tài chính.',
+      'Ra mắt Bộ công cụ Tỷ giá Ngoại tệ FX (Vietcombank trực tiếp + so sánh lãi tiết kiệm VND) và Bộ Lương–Thuế TNCN 5 bậc (NQ 110 & Luật 109/2025)–BHXH–Trợ cấp theo Luật 2026.',
+    ],
+  },
   {
     version: 'v1.12.0.0',
     date: '23/11/2026',
@@ -118,7 +140,7 @@ export const HOME_PAGE = {
   path: '/',
   aliases: ['/trang-chu'],
   label: 'Trang chủ',
-  pageTitle: 'VnSavingPro — Lập Kế Hoạch Thu Nhập Thụ Động & So Sánh Lãi Suất Ngân Hàng Số 2026',
+  pageTitle: 'VnSavingPro v2.0 — Nền Tảng Quản Lý Tài Sản Cá Nhân, Cặp Đôi & Gia Đình',
 };
 
 export const ALL_TOOLS = [
@@ -126,12 +148,49 @@ export const ALL_TOOLS = [
     id: 'plan',
     path: '/plan',
     aliases: ['/ke-hoach', '/thu-nhap-thu-dong'],
-    pageTitle: 'Kế Hoạch Thu Nhập Thụ Động — VnSavingPro',
+    pageTitle: 'Kế Hoạch Tài Sản & Tiết Kiệm Số — VnSavingPro',
     label: 'Thu nhập thụ động',
     short: 'Kế hoạch',
     desc: 'Lập lộ trình thu nhập thụ động hoặc mục tiêu tài sản cho Cá nhân, Cặp đôi & Gia đình, kèm Quỹ dự phòng và Stress-test.',
     icon: Target,
     primary: true,
+    suite: 'savings',
+  },
+  {
+    id: 'fx',
+    path: '/fx',
+    aliases: ['/ngoai-te', '/ty-gia', '/currency'],
+    pageTitle: 'Quản Trị Tỷ Giá Ngoại Tệ FX — VnSavingPro',
+    label: 'Quản trị ngoại tệ',
+    short: 'Ngoại tệ',
+    desc: 'Theo dõi tỷ giá Vietcombank, quy đổi đa ngoại tệ, Stress-test biến động và so sánh với ngưỡng lãi tiết kiệm VND.',
+    icon: ArrowLeftRight,
+    primary: true,
+    suite: 'fx',
+  },
+  {
+    id: 'salary',
+    path: '/salary',
+    aliases: ['/luong', '/bhxh', '/thue-tncn', '/tro-cap'],
+    pageTitle: 'Lương Gross–Net, Thuế TNCN 5 Bậc & BHXH 2026 — VnSavingPro',
+    label: 'Lương, Thuế & BHXH 2026',
+    short: 'Lương & BHXH',
+    desc: 'Tính lương Gross–Net 2026 (giảm trừ 15,5tr/6,2tr, thuế 5 bậc), BHXH, BHTN, thai sản & BHXH 1 lần theo luật mới.',
+    icon: Receipt,
+    primary: true,
+    suite: 'salary',
+  },
+  {
+    id: 'ecosystem',
+    path: '/ecosystem',
+    aliases: ['/he-sinh-thai', '/chuyen-gia', '/mau-ke-hoach', '/quan-tri'],
+    pageTitle: 'Hệ Sinh Thái 4 Vai Trò, Cộng Đồng & Chuyên Gia — VnSavingPro',
+    label: 'Hệ sinh thái & Chuyên gia',
+    short: 'Hệ sinh thái',
+    desc: 'Clone mẫu kế hoạch thực tế được cộng đồng bình chọn, kết nối Chuyên gia xác thực và ủy quyền Quản trị tài chính.',
+    icon: Users,
+    primary: true,
+    suite: 'ecosystem',
   },
   {
     id: 'rates',
@@ -143,6 +202,7 @@ export const ALL_TOOLS = [
     desc: 'Lãi suất TNEX, LioBank, Cake và Timo tự động đồng bộ đầu mỗi tháng theo từng kỳ hạn.',
     icon: BarChart3,
     primary: true,
+    suite: 'savings',
   },
   {
     id: 'calculator',
@@ -154,6 +214,7 @@ export const ALL_TOOLS = [
     desc: 'So sánh 3 cách tính lãi: ngày thực tế, tháng tròn và lãi kép.',
     icon: Calculator,
     primary: true,
+    suite: 'savings',
   },
   {
     id: 'ladder',
@@ -165,6 +226,7 @@ export const ALL_TOOLS = [
     desc: 'Chia tiền gửi bậc thang nhiều kỳ hạn, theo dõi mức phủ Quỹ dự phòng 1T–3T và chia khoản góp 2 người.',
     icon: Layers,
     primary: true,
+    suite: 'savings',
   },
   {
     id: 'career',
@@ -175,6 +237,7 @@ export const ALL_TOOLS = [
     short: 'Tăng lương',
     desc: 'Mô phỏng tác động tăng lương & nhảy việc cho 1 hoặc 2 người đi làm để rút ngắn thời gian tự do tài chính.',
     icon: Briefcase,
+    suite: 'savings',
   },
   {
     id: 'inflation',
@@ -185,6 +248,7 @@ export const ALL_TOOLS = [
     short: 'Lạm phát',
     desc: 'Lãi suất thực sau lạm phát và sức mua của khoản thu nhập thụ động theo thời gian.',
     icon: TrendingDown,
+    suite: 'savings',
   },
   {
     id: 'contributors',
@@ -195,6 +259,7 @@ export const ALL_TOOLS = [
     short: 'Vinh danh',
     desc: 'Tri ân người dùng và cộng đồng Unikorn đã góp ý, đánh giá & tiếp sức giúp VnSavingPro hoàn thiện qua từng phiên bản.',
     icon: Award,
+    suite: 'ecosystem',
   },
   {
     id: 'referral',
@@ -287,6 +352,48 @@ const TOOL_I18N = {
       desc: '個人・カップル・家族向けに目標金額や毎月の不労所得、緊急資金、ストレステストを一括設計します。',
     },
   },
+  fx: {
+    en: {
+      label: 'FX Currency Manager',
+      short: 'FX Rates',
+      pageTitle: 'Live FX Exchange Rates & Portfolio Manager — VnSavingPro',
+      desc: 'Live Vietcombank FX table, multi-currency portfolio valuation, sensitivity stress-test & VND bank hurdle comparison.',
+    },
+    ja: {
+      label: '外貨・為替管理',
+      short: '外貨FX',
+      pageTitle: '外貨為替レート・マルチ通貨資産管理 — VnSavingPro',
+      desc: 'Vietcombankリアルタイムレート、多通貨評価、為替ストレステスト、VND定期預金との損益分岐比較。',
+    },
+  },
+  salary: {
+    en: {
+      label: 'Salary, Tax & Social Ins. 2026',
+      short: 'Salary 2026',
+      pageTitle: 'Vietnam 2026 Salary Gross–Net, PIT & Social Insurance — VnSavingPro',
+      desc: 'Calculate Gross/Net under 2026 5-bracket PIT & deductions (15.5M/6.2M), BHXH 41/2024 & Employment Law 74/2025 benefits.',
+    },
+    ja: {
+      label: '給与・所得税・社会保険 2026',
+      short: '給与2026',
+      pageTitle: 'ベトナム2026年新法対応 給与・所得税・社会保険試算 — VnSavingPro',
+      desc: '2026年5段階個人所得税・基礎控除15.5M/6.2M対応のGross⇔Net計算および失業・出産・一時金給付試算。',
+    },
+  },
+  ecosystem: {
+    en: {
+      label: 'Ecosystem & Advisors',
+      short: 'Ecosystem',
+      pageTitle: '4-Role Ecosystem, Voted Templates & Experts — VnSavingPro',
+      desc: 'Clone community-voted plan templates, connect with verified financial experts, and delegate to a Financial Steward.',
+    },
+    ja: {
+      label: 'エコシステム・専門家',
+      short: '専門家・型',
+      pageTitle: '4役割エコシステム・人気プラン複製・専門家連携 — VnSavingPro',
+      desc: 'コミュニティ選出の実証プラン複製、認定ファイナンシャル専門家検索、資産管理スチュワード委任。',
+    },
+  },
   rates: {
     en: {
       label: 'Bank Rates',
@@ -375,16 +482,16 @@ const TOOL_I18N = {
 
 const EXTRA_TITLE_I18N = {
   home: {
-    en: 'VnSavingPro — Vietnam Digital Bank Passive Income Planner & Rate Comparator',
-    ja: 'VnSavingPro — ベトナム定期預金・不労所得ロードマップ設計',
+    en: 'VnSavingPro v2.0 — Personal, Couple & Family Wealth Management Platform',
+    ja: 'VnSavingPro v2.0 — 個人・カップル・家族向け総合資産管理プラットフォーム',
   },
   auth: {
     en: 'Sign In & Account — VnSavingPro',
     ja: 'ログイン・新規登録 — VnSavingPro',
   },
   profile: {
-    en: 'Profile & Saved Plans — VnSavingPro',
-    ja: 'プロフィール・保存済みプラン — VnSavingPro',
+    en: 'Profile, Role Journey & Shared Spaces — VnSavingPro',
+    ja: 'プロフィール・役割・世帯スペース管理 — VnSavingPro',
   },
 };
 
@@ -406,12 +513,30 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Streamlined Header · Branded Splash · 3-Step Onboarding · Shared Household Planning';
-  if (lang === 'ja') return 'ヘッダー刷新・起動画面・3ステップ初期設定・家族共同プラン対応';
+  if (lang === 'en') return 'Wealth Platform v2.0 · 4 User Roles · FX Manager · Vietnam 2026 Payroll & BHXH';
+  if (lang === 'ja') return '資産管理プラットフォーム v2.0・4役割・外貨FX・ベトナム2026年給与/社会保険';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.0.0.0': {
+    en: {
+      title: 'VnSavingPro v2.0: 4-Role Wealth Ecosystem, FX Manager & Vietnam 2026 Payroll/BHXH',
+      items: [
+        'Evolved into a complete Personal, Couple & Family Wealth Platform with flexible household lifecycle actions (switch Couples, upgrade Couple -> Family, or create a Family space from scratch).',
+        'Introduced 4 distinct User Roles: Individual, Verified Financial Expert, Community-Voted Planner (with 1-click plan template cloning — also open to Experts), and Financial Steward.',
+        'Added the FX Currency & Exchange Rate Manager (live Vietcombank feed + VND bank yield hurdle) and Vietnam 2026 Salary/PIT (5-bracket Law 109/2025 + NQ 110)/BHXH 41/2024 Calculator.',
+      ],
+    },
+    ja: {
+      title: 'VnSavingPro v2.0：4役割エコシステム・外貨FX管理・2026年新法給与＆社会保険',
+      items: [
+        '個人・カップル・家族の総合資産管理へ進化し、パートナー変更やカップルから家族へのアップグレードに対応しました。',
+        '個人、認定専門家、コミュニティ選出プランナー（実証プランの1クリック複製・専門家も取得可能）、資産管理スチュワードの4役割を新設。',
+        'Vietcombank連動の外貨FX管理と、2026年新5段階所得税・社会保険・給付金シミュレーターを公開しました。',
+      ],
+    },
+  },
   'v1.12.0.0': {
     en: {
       title: 'Streamlined Header, Branded Splash, 3-Step Onboarding & Shared Household Planning',

@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ArrowUpRight,
+  Award,
   BookmarkPlus,
   Check,
   Clock,
   Cloud,
   Copy,
+  Crown,
   ExternalLink,
   History,
   KeyRound,
@@ -17,12 +20,14 @@ import {
   Save,
   Share2,
   Shield,
+  Sparkles,
   Trash2,
+  UserCheck,
   UserPlus,
   Users,
   User as UserIcon,
 } from 'lucide-react';
-import { Badge, Button, Card, CardHeader, PageHeader, cx } from '../components/ui.jsx';
+import { Badge, Button, Card, CardHeader, PageHeader, Progress, cx } from '../components/ui.jsx';
 import { DualPaneSection } from '../components/AdaptiveLayout.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
@@ -34,9 +39,11 @@ import {
   deleteCalculationHistoryFromApi,
   deleteCloudPlanFromApi,
   fetchCollaborationsFromApi,
+  fetchEcosystemOverviewFromApi,
   fetchMyCalculationHistoryFromApi,
   fetchMyCloudPlansFromApi,
   loadLocalCalculationHistory,
+  manageHouseholdLifecycleApi,
   openAuthPrompt,
   previewCollabInviteFromApi,
   removeLocalCalculationHistoryEntry,
@@ -51,6 +58,8 @@ import { cryptoStorage, isPlainObject } from '../utils/cryptoStorage.js';
 function getHistoryToolMeta(tool, tx) {
   const map = {
     plan: { label: tx('Kế hoạch', 'Planner', 'プラン'), tone: 'brand' },
+    fx: { label: tx('Ngoại tệ', 'FX Rates', '外貨FX'), tone: 'success' },
+    salary: { label: tx('Lương & BHXH', 'Salary 2026', '給与2026'), tone: 'warning' },
     calculator: { label: tx('Tính lãi', 'Calculator', '利息計算'), tone: 'success' },
     ladder: { label: tx('Bậc thang', 'Ladder', 'ラダー'), tone: 'brand' },
     career: { label: tx('Tăng lương', 'Career', 'キャリア'), tone: 'warning' },
@@ -113,6 +122,10 @@ export default function Profile({ params }) {
   const [invitePreview, setInvitePreview] = useState(null);
   const [invitePreviewError, setInvitePreviewError] = useState('');
 
+  const [ecoStatus, setEcoStatus] = useState(null);
+  const [mySpaces, setMySpaces] = useState([]);
+  const [lifecycleBusy, setLifecycleBusy] = useState('');
+
   const [historyItems, setHistoryItems] = useState(() => loadLocalCalculationHistory());
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyFilter, setHistoryFilter] = useState('all');
@@ -174,8 +187,15 @@ export default function Profile({ params }) {
     if (!token) return;
     setCollabsLoading(true);
     try {
-      const res = await fetchCollaborationsFromApi(token);
-      setCollabs(res.items || []);
+      const [collabRes, ecoRes] = await Promise.all([
+        fetchCollaborationsFromApi(token),
+        fetchEcosystemOverviewFromApi(token, 'overview').catch(() => null),
+      ]);
+      setCollabs(collabRes.items || []);
+      if (ecoRes) {
+        setEcoStatus(ecoRes.myStatus || null);
+        setMySpaces(ecoRes.mySpaces || []);
+      }
     } catch {
       // ignore if collaborations table is not yet migrated
     } finally {
@@ -645,12 +665,55 @@ export default function Profile({ params }) {
     }
   };
 
+  const handleHouseholdLifecycle = async (action, extra = {}) => {
+    const token = getAccessToken();
+    if (!token) return;
+    setLifecycleBusy(action);
+    try {
+      const currentPlan = cryptoStorage.load('PLANNER_STATE', {});
+      const res = await manageHouseholdLifecycleApi(
+        {
+          action,
+          planPayload: isPlainObject(currentPlan) ? currentPlan : {},
+          ...extra,
+        },
+        token
+      );
+      if (res?.space) {
+        setMySpaces((prev) => [
+          res.space,
+          ...prev.map((s) => {
+            if (action === 'switch_couple' && s.id === res.archivedSpaceId) return { ...s, status: 'archived' };
+            if (action === 'upgrade_couple_to_family' && s.id === res.upgradedFromId) return { ...s, status: 'upgraded' };
+            return s;
+          }),
+        ]);
+        if (isPlainObject(res.space.planPayload)) {
+          cryptoStorage.save('PLANNER_STATE', res.space.planPayload);
+        }
+      }
+      if (action === 'switch_couple') {
+        notify(tx('Đã lưu trữ Cặp đôi cũ (giữ nguyên lịch sử) và mở không gian Cặp đôi mới!', 'Archived previous Couple safely & opened a fresh Couple space!', '旧カップルをアーカイブし新しいカップルを作成しました！'));
+      } else if (action === 'upgrade_couple_to_family') {
+        notify(tx('Đã nâng cấp từ Cặp đôi → Gia đình giữ nguyên vốn và lộ trình!', 'Upgraded Couple → Family while preserving capital & plan!', 'カップルから家族プランへアップグレードしました！'));
+      } else {
+        notify(tx('Đã tạo không gian Gia đình mới từ đầu!', 'Created new Family space!', '新しい家族スペースを作成しました！'));
+      }
+    } catch (err) {
+      notify(err?.message || tx('Không thể cập nhật vòng đời không gian', 'Could not update household lifecycle', '更新できませんでした'));
+    } finally {
+      setLifecycleBusy('');
+    }
+  };
+
   const filteredHistory =
     historyFilter === 'all' ? historyItems : historyItems.filter((item) => item.tool === historyFilter);
 
   const historyTabs = [
     { id: 'all', label: tx('Tất cả', 'All', 'すべて') },
     { id: 'plan', label: tx('Kế hoạch', 'Planner', 'プラン') },
+    { id: 'fx', label: tx('Ngoại tệ', 'FX Rates', '外貨FX') },
+    { id: 'salary', label: tx('Lương & BHXH', 'Salary 2026', '給与2026') },
     { id: 'calculator', label: tx('Tính lãi', 'Calculator', '利息計算') },
     { id: 'ladder', label: tx('Bậc thang', 'Ladder', 'ラダー') },
     { id: 'career', label: tx('Tăng lương', 'Career', 'キャリア') },
@@ -709,6 +772,67 @@ export default function Profile({ params }) {
                     <Badge tone="success">{tx('Đã xác thực', 'Verified', '認証済み')}</Badge>
                   </div>
                 </div>
+              </div>
+            </Card>
+
+            <Card className="border-indigo-400/20 bg-gradient-to-br from-indigo-500/[0.06] via-surface to-amber-500/[0.04] p-5">
+              <CardHeader
+                title={tx('Vai trò & Danh hiệu v2.0', 'Wealth Roles & Badges (v2.0)', 'v2.0 役割・認定ステータス')}
+                description={tx(
+                  '4 vai trò: Cá nhân · Chuyên gia xác thực · Cộng đồng bình chọn · Quản trị tài chính.',
+                  '4 roles: Individual · Verified Expert · Community Voted · Steward.',
+                  '4つの役割：個人・認定専門家・選出プランナー・スチュワード。'
+                )}
+                right={<Crown className="size-4 text-amber-300" />}
+              />
+              <div className="mt-3.5 flex flex-wrap gap-1.5">
+                <Badge tone="brand">{tx('Cá nhân / Gia đình', 'Individual / Household', '個人・世帯')}</Badge>
+                {(profile?.is_verified_expert || ecoStatus?.isVerifiedExpert) && (
+                  <Badge tone="success">
+                    <UserCheck className="size-3" /> {tx('Chuyên gia xác thực', 'Verified Expert', '認定専門家')}
+                  </Badge>
+                )}
+                {!profile?.is_verified_expert &&
+                  (profile?.expert_verification_status === 'pending' ||
+                    ecoStatus?.expertVerificationStatus === 'pending') && (
+                    <Badge tone="warning">
+                      {tx('Chờ duyệt Chuyên gia', 'Expert Pending', '専門家審査中')}
+                    </Badge>
+                  )}
+                {(profile?.is_community_voted_planner || ecoStatus?.isCommunityVotedPlanner) && (
+                  <Badge tone="warning">
+                    <Award className="size-3" /> {tx('Cộng đồng bình chọn', 'Community Voted', 'コミュニティ選出')}
+                  </Badge>
+                )}
+                {(profile?.steward_enabled || ecoStatus?.stewardEnabled) && (
+                  <Badge tone="success">{tx('Người Quản trị Tài chính', 'Financial Steward', '資産管理スチュワード')}</Badge>
+                )}
+              </div>
+
+              <div className="mt-3.5 rounded-xl bg-white/[0.03] p-3 text-xs">
+                <div className="flex items-center justify-between gap-2 text-zinc-300">
+                  <span>{tx('Tiến độ danh hiệu Cộng đồng bình chọn:', 'Community Planner Progress:', 'コミュニティ選出進捗：')}</span>
+                  <span className="font-mono font-semibold text-amber-300">
+                    {ecoStatus?.communityTotalVotes ?? profile?.community_total_votes ?? 0}/10 Votes ·{' '}
+                    {ecoStatus?.communityTotalClones ?? profile?.community_total_clones ?? 0}/3 Clones
+                  </span>
+                </div>
+                <Progress
+                  value={Math.min(
+                    100,
+                    ((ecoStatus?.communityTotalVotes ?? profile?.community_total_votes ?? 0) / 10) * 100
+                  )}
+                  tone="emerald"
+                  className="mt-2"
+                />
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button as="a" href={href('ecosystem')} size="sm" variant="secondary" className="w-full">
+                  <Sparkles className="size-3.5 text-indigo-300" />
+                  {tx('Mở Hệ sinh thái (Clone · Chuyên gia · Quản trị)', 'Open Ecosystem Hub', 'エコシステムを開く')}
+                  <ArrowUpRight className="size-3.5" />
+                </Button>
               </div>
             </Card>
 
@@ -821,14 +945,101 @@ export default function Profile({ params }) {
           <div className="space-y-6">
             <Card className="border-indigo-400/20 p-5">
               <CardHeader
-                title={tx('Mời lập kế hoạch cùng nhau (Cặp đôi · Gia đình)', 'Shared Household Planning (Couple · Family)', '共同プランニング（カップル・家族）')}
+                title={tx('Mời lập kế hoạch cùng nhau (Cặp đôi · Gia đình)', 'Shared Household Planning & Lifecycle (Couple · Family)', '共同プラン・世帯ライフサイクル管理')}
                 description={tx(
-                  'Tạo không gian hoạch định chung cho 2 người hoặc gia đình: gửi link mời, đồng bộ thông số kế hoạch từ máy này và cùng mở trực tiếp trong trang Kế hoạch.',
-                  'Invite a partner or family member via shareable link or optional email to co-own and sync your household savings plan.',
-                  'パートナーや家族をリンク／メールで招待し、最新の積立プランを共有・同期できます。'
+                  'Tạo không gian chung cho 2 người hoặc gia đình, chuyển sang Cặp đôi mới, nâng cấp Cặp đôi → Gia đình giữ nguyên vốn hoặc tạo Gia đình từ đầu.',
+                  'Collaborate with partners, switch Couples safely while archiving old spaces, upgrade Couple → Family, or create a Family space from scratch.',
+                  'パートナー招待、カップル切替（履歴保護）、カップル→家族昇格、新規家族作成に対応しています。'
                 )}
                 right={<Users className="size-4 text-indigo-300" />}
               />
+
+              {/* v2.0 Household Lifecycle Controls */}
+              <div className="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.04] p-3.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-indigo-200">
+                    {tx('Vòng đời Không gian Cặp đôi & Gia đình (v2.0)', 'Household Space Lifecycle (v2.0)', '世帯ライフサイクル操作 (v2.0)')}
+                  </span>
+                  <a href={href('ecosystem')} className="text-[11px] font-medium text-emerald-300 hover:underline">
+                    {tx('Ủy quyền Người Quản trị Tài chính →', 'Delegate to Financial Steward →', 'スチュワード委任 →')}
+                  </a>
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={Boolean(lifecycleBusy)}
+                    onClick={() => handleHouseholdLifecycle('switch_couple')}
+                  >
+                    {lifecycleBusy === 'switch_couple'
+                      ? tx('Đang chuyển...', 'Switching...', '処理中...')
+                      : tx('Chuyển sang Cặp đôi mới', 'Switch to New Couple', '新カップルへ切替')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    disabled={Boolean(lifecycleBusy)}
+                    onClick={() => handleHouseholdLifecycle('upgrade_couple_to_family', { dependentsCount: 1 })}
+                  >
+                    {lifecycleBusy === 'upgrade_couple_to_family'
+                      ? tx('Đang nâng cấp...', 'Upgrading...', '昇格中...')
+                      : tx('Nâng cấp Cặp đôi → Gia đình', 'Upgrade Couple → Family', 'カップル→家族へ昇格')}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="ring-1 ring-inset ring-white/10"
+                    disabled={Boolean(lifecycleBusy)}
+                    onClick={() =>
+                      handleHouseholdLifecycle('create_household', {
+                        householdMode: 'FAMILY',
+                        dependentsCount: 1,
+                      })
+                    }
+                  >
+                    <Plus className="size-3.5" />
+                    {tx('Tạo Gia đình từ đầu', 'New Family from Scratch', '最初から家族を作成')}
+                  </Button>
+                </div>
+
+                {mySpaces.length > 0 && (
+                  <div className="mt-3 space-y-1.5 border-t border-white/[0.06] pt-2.5">
+                    {mySpaces.slice(0, 4).map((sp) => (
+                      <div
+                        key={sp.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-black/25 px-3 py-1.5 text-xs"
+                      >
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-medium text-white">{sp.title}</span>
+                          <Badge tone="brand">{getHouseholdBadgeLabel(sp.householdMode, tx)}</Badge>
+                          <Badge tone={sp.status === 'active' ? 'success' : sp.status === 'upgraded' ? 'warning' : 'neutral'}>
+                            {sp.status === 'active'
+                              ? tx('Đang dùng', 'Active', '利用中')
+                              : sp.status === 'upgraded'
+                                ? tx('Đã nâng cấp', 'Upgraded', '昇格済')
+                                : tx('Đã lưu trữ', 'Archived', '保管済')}
+                          </Badge>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isPlainObject(sp.planPayload) && Object.keys(sp.planPayload).length > 0) {
+                              cryptoStorage.save('PLANNER_STATE', sp.planPayload);
+                            }
+                            navigate(href('plan', { hh: sp.householdMode }));
+                          }}
+                          className="text-[11px] font-medium text-indigo-300 hover:text-white"
+                        >
+                          {tx('Mở kế hoạch →', 'Open Plan →', '開く →')}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {invitePreview && invitePreview.status !== 'revoked' && (
                 <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-400/30 bg-emerald-500/[0.08] p-3.5">

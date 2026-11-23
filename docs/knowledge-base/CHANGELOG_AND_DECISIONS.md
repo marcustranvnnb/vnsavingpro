@@ -4,6 +4,20 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-23] — Version 2.0.0.0: Personal, Couple & Family Wealth Platform (4 Roles, Community Cloning, Live FX Manager & Vietnam 2026 Payroll/PIT/BHXH)
+
+- **Request**: Reposition VnSavingPro as a Personal, Couple & Family Wealth Management Platform with 4 user roles/journeys (`Individual` with Couple-switching and Couple→Family upgrades, `Verified Financial Expert`, `Community-Voted Planner` with cloneable realistic templates — also earnable by Experts, and `Financial Steward`), upgraded Digital Bank Savings tools, an FX Exchange Rate Management suite, and a Vietnam 2026 Statutory Payroll / PIT / Social Insurance suite.
+- **Changes Implemented**:
+  - **Major Version Bump (`v2.0.0.0`)**: Ran `node scripts/bump-version.js major`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and [src/tools.js](../../src/tools.js) (adding `/fx`, `/salary`, `/ecosystem` routes + trilingual metadata & `v2.0.0.0` highlights).
+  - **Database Schema (`supabase/`)**: Created [supabase/migrations/20261123_v200_wealth_platform.sql](../../supabase/migrations/20261123_v200_wealth_platform.sql) & mirrored in [supabase/schema.sql](../../supabase/schema.sql) (extending `profiles` & `calculation_history` and adding RLS-hardened `household_spaces`, `community_plan_templates`, `community_template_votes`, and `steward_mandates`); updated [AuthContext.jsx](../../src/contexts/AuthContext.jsx) with graceful fallback column loading.
+  - **Serverless Engines & Endpoints (`10 / 12` Vercel Free-Tier Functions)**:
+    - Built FX engine ([fxRatesCache.js](../../api/_lib/fxRatesCache.js), [fxCalculator.js](../../api/_lib/fxCalculator.js), [api/fx.js](../../api/fx.js)) pulling Vietcombank XML with `s-maxage=900` Edge caching and VND deposit hurdle comparisons.
+    - Built Vietnam 2026 statutory engine ([salaryVietnam.js](../../api/_lib/salaryVietnam.js)) covering `2026_H2` (`NQ 110/2025`, 5-bracket `Luật 109/2025`, `NĐ 161/2026`, `NĐ 293/2025`, `Luật BHXH 41/2024`, `Luật Việc làm 74/2025`), `2027` forecast (`NĐ 399/2026`), and `2025` legacy comparison, wired via [api/calculate.js](../../api/calculate.js) & [api/history.js](../../api/history.js).
+    - Built Ecosystem hub ([api/ecosystem.js](../../api/ecosystem.js)) handling templates, realism voting, 1-click cloning, Verified Expert applications, Couple switching / Couple→Family upgrades, and Financial Steward mandates; registered routes in [vite.config.js](../../vite.config.js).
+  - **Frontend Suites, Profile Lifecycle & Navigation**: Created [FxManager.jsx](../../src/pages/FxManager.jsx), [SalaryInsurance.jsx](../../src/pages/SalaryInsurance.jsx), and [Ecosystem.jsx](../../src/pages/Ecosystem.jsx); updated [App.jsx](../../src/App.jsx), [cryptoStorage.js](../../src/utils/cryptoStorage.js), [apiClient.js](../../src/utils/apiClient.js), [Layout.jsx](../../src/components/Layout.jsx), [OnboardingModal.jsx](../../src/components/OnboardingModal.jsx), [Home.jsx](../../src/pages/Home.jsx), and [Profile.jsx](../../src/pages/Profile.jsx) (`v2.0` roles, Couple/Family lifecycle buttons, `fx`/`salary` history tabs).
+
+---
+
 ## [2026-11-23] — Version 1.12.0.0: Streamlined Header, Branded Splash Screen, 3-Step Onboarding, Collaborative Household Planning & CIC/Advisor Roadmap
 
 - **Request**: Hide manual screen-mode selector UI, streamline cluttered header while highlighting key tools, add a branded initial entry loading splash screen, remove repetitive planning CTAs on Homepage, add partner/family collaborative planning inside Profile, design a structured 3-step onboarding flow, plan CIC credit scoring, and plan a financial advisor/butler connector backed by Vietnam market research.

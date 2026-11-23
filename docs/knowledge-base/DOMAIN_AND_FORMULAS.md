@@ -89,3 +89,34 @@ All 4 banks comply with SBV ceiling caps (`0.50%/yr` non-term, `4.75%/yr` for `1
 | **CakeBank** | `cake` | VPBank | 4.75% | 6.90% | 6.90% | 6.90% (6M–24M) / 9.1% ưu đãi | Auto-scraped from `cake.vn/tien-gui/tien-gui-tieu-chuan` (17 terms, `21/10/2026`) & `tien-gui-co-ky-han-tich-luy` (`6.70%`), Rút gốc từng phần |
 | **Timo** | `timo` | BVBank | 4.75% | 6.70% | 6.90% | 6.90% (12M) | Auto-scraped from `timo.vn/tiet-kiem-co-ky-han/` (`6–11M`: `6.70%`, `12M`: `6.90%`, `15–24M`: `6.70%`) |
 | **LioBank** | `liobank` | OCB | 4.75% | 5.90% | 6.20% | 6.20% mặc định / **8.20%** CTKM | Auto-scraped from `deposit-tariffs` (effective `11/11/2026`) + dynamic CTKM PDF (`6–9M: 8.00%`, `10–12M: 8.20%`, `15–24M: 7.70%`), Ống heo Pigg `4.75%` |
+
+---
+
+## 4. Foreign Exchange (FX) Management Engine (`api/_lib/fxRatesCache.js` & `api/_lib/fxCalculator.js`)
+
+- **Data Source**: Vietcombank official public XML feed (`portal.vietcombank.com.vn/UserControls/TVPortal.TyGia/pXML.aspx`), cached 15 minutes (`s-maxage=900`) with Nov 2026 reference fallback.
+- **Conversion Basis**: `FX → VND` applies bank `transfer` (or `buy` cash) rate; `VND → FX` applies bank `sell` rate; `FX_A → FX_B` routes through VND `(amount × A_buy) / B_sell`.
+- **Break-Even vs VND Digital Bank Savings**:
+  $$\text{Hurdle \%/yr} = r_{\text{VND 12M benchmark}} + \overline{\text{Spread}}_{\text{buy-sell \%}}$$
+- **Stress-Test**: Simulates `-5%`, `-2%`, `+2%`, `+5%`, `+10%` spot shifts across non-VND currency holdings while keeping VND cash 1:1.
+
+---
+
+## 5. Vietnam 2026 Statutory Payroll, 5-Bracket PIT & Social Insurance (`api/_lib/salaryVietnam.js`)
+
+Supports **3 statutory regimes**: `2026_H2` (active default from 01/07/2026), `2027` (NĐ 399/2026/NĐ-CP forecast from 01/01/2027), and `2025` (legacy comparison):
+- **Personal & Dependent Deductions (`NQ 110/2025/UBTVQH15`)**: `15,500,000 VND/month` taxpayer + `6,200,000 VND/month` per dependent (replacing `11M` / `4.4M`).
+- **5-Bracket Progressive PIT (`Luật Thuế TNCN 109/2025/QH15`)**:
+  - Bracket 1 (`0–10M`): `5%`
+  - Bracket 2 (`10M–30M`): `10%`
+  - Bracket 3 (`30M–60M`): `20%`
+  - Bracket 4 (`60M–100M`): `30%`
+  - Bracket 5 (`>100M`): `35%`
+- **Reference Salary & Caps**: `2,530,000 VND/month` (`NĐ 161/2026/NĐ-CP` & `Luật BHXH 41/2024/QH15`), capping BHXH (8%) & BHYT (1.5%) base at `20 × 2,530,000 = 50,600,000 VND`; BHTN (1%) capped at `20 × LTTV`.
+- **Regional Minimum Wages**:
+  - `2026` (`NĐ 293/2025/NĐ-CP`): `5.31M / 4.73M / 4.14M / 3.70M`
+  - `2027` (`NĐ 399/2026/NĐ-CP`): `5.70M / 5.08M / 4.45M / 4.04M`
+- **Social Benefits**:
+  - **Unemployment (`Luật Việc làm 74/2025/QH15`)**: `60% × avgSalary6m`, capped uniformly at `5 × LTTV` across all sectors (`26.55M` Region I in 2026; `28.50M` in 2027).
+  - **Maternity (`Luật BHXH 41/2024/QH15`)**: Voluntary birth grant `2,000,000 VND/child` (Điều 95); Mandatory birth lump-sum `2 × referenceLevel` (`5,060,000 VND/child`) + 6m salary replacement + recovery/father leave.
+  - **BHXH Lump-Sum (Điều 70)**: Preserves 12-month standard withdrawal only for pre-01/07/2025 contributors; post-01/07/2025 contributors require statutory exceptions (`(1.5 × yearsBefore2014 + 2 × yearsFrom2014) × avgSalaryTotal`).

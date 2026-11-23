@@ -17,6 +17,8 @@ const ALLOWED_KEYS = new Set([
   'CALC_HISTORY_LOG',
   'TOOL_RESTORE_STATE',
   'ONBOARDING_STATE',
+  'FX_PORTFOLIO_STATE',
+  'SALARY_STATE',
 ]);
 
 const ALLOWED_BANKS = new Set(['cake', 'tnex', 'timo', 'liobank']);
@@ -364,7 +366,7 @@ export function validateBySchema(key, raw) {
 
     case 'CALC_HISTORY_LOG': {
       if (!Array.isArray(raw)) return null;
-      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
+      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary']);
       const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
       const validTones = new Set(['default', 'emerald', 'indigo', 'amber']);
       return raw
@@ -394,7 +396,7 @@ export function validateBySchema(key, raw) {
 
     case 'TOOL_RESTORE_STATE': {
       if (!isPlainObject(raw)) return null;
-      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation']);
+      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary']);
       if (!validTools.has(raw.tool) || !isPlainObject(raw.inputs)) return null;
       return {
         tool: raw.tool,
@@ -406,13 +408,67 @@ export function validateBySchema(key, raw) {
     case 'ONBOARDING_STATE': {
       if (!isPlainObject(raw)) return null;
       const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
-      const validGoals = new Set(['PASSIVE_INCOME', 'TARGET_AMOUNT', 'RATES_COMPARE']);
+      const validGoals = new Set(['PASSIVE_INCOME', 'TARGET_AMOUNT', 'RATES_COMPARE', 'FX_MANAGER', 'SALARY_2026']);
       return {
         completed: Boolean(raw.completed),
         dismissed: Boolean(raw.dismissed),
         householdMode: validModes.has(raw.householdMode) ? raw.householdMode : 'INDIVIDUAL',
         goalFocus: validGoals.has(raw.goalFocus) ? raw.goalFocus : 'PASSIVE_INCOME',
         completedAt: sanitizeText(raw.completedAt || new Date().toISOString(), 40),
+      };
+    }
+
+    case 'FX_PORTFOLIO_STATE': {
+      if (!isPlainObject(raw)) return null;
+      const cleanHoldings = Array.isArray(raw.holdings)
+        ? raw.holdings
+            .filter((h) => isPlainObject(h) && /^[A-Z]{3}$/.test(String(h.code || '').toUpperCase()))
+            .slice(0, 20)
+            .map((h) => ({
+              code: String(h.code).toUpperCase(),
+              amount: clampNum(h.amount, 0, 0, 100_000_000_000),
+              note: sanitizeText(h.note || '', 60),
+            }))
+        : [];
+      const cleanTargets = Array.isArray(raw.targetRates)
+        ? raw.targetRates
+            .filter((t) => isPlainObject(t) && /^[A-Z]{3}$/.test(String(t.code || '').toUpperCase()))
+            .slice(0, 12)
+            .map((t) => ({
+              code: String(t.code).toUpperCase(),
+              targetRate: clampNum(t.targetRate, 0, 0, 10_000_000),
+              direction: t.direction === 'below' ? 'below' : 'above',
+            }))
+        : [];
+      return {
+        convertFrom: /^[A-Z]{3}$/.test(String(raw.convertFrom || '')) ? String(raw.convertFrom) : 'USD',
+        convertTo: /^[A-Z]{3}$/.test(String(raw.convertTo || '')) ? String(raw.convertTo) : 'VND',
+        convertAmount: clampNum(raw.convertAmount, 1000, 0, 100_000_000_000),
+        rateType: raw.rateType === 'cash' ? 'cash' : 'transfer',
+        benchmarkVndRate: clampNum(raw.benchmarkVndRate, 6.9, 0, 25),
+        holdings: cleanHoldings,
+        targetRates: cleanTargets,
+      };
+    }
+
+    case 'SALARY_STATE': {
+      if (!isPlainObject(raw)) return null;
+      return {
+        mode: raw.mode === 'NET_TO_GROSS' ? 'NET_TO_GROSS' : 'GROSS_TO_NET',
+        amount: clampNum(raw.amount, 30_000_000, 0, 10_000_000_000),
+        partnerAmount: clampNum(raw.partnerAmount, 0, 0, 10_000_000_000),
+        householdMode: ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(raw.householdMode)
+          ? raw.householdMode
+          : 'INDIVIDUAL',
+        region: [1, 2, 3, 4].includes(Number(raw.region)) ? Number(raw.region) : 1,
+        dependents: Math.round(clampNum(raw.dependents, 0, 0, 20)),
+        regime: ['2026_H2', '2027', '2025'].includes(raw.regime) ? raw.regime : '2026_H2',
+        insuranceBaseMode: ['FULL', 'MIN_WAGE', 'CUSTOM'].includes(raw.insuranceBaseMode)
+          ? raw.insuranceBaseMode
+          : 'FULL',
+        customInsuranceBase: clampNum(raw.customInsuranceBase, 15_000_000, 0, 10_000_000_000),
+        taxExemptAllowance: clampNum(raw.taxExemptAllowance, 0, 0, 500_000_000),
+        includeUnionFee: Boolean(raw.includeUnionFee),
       };
     }
 

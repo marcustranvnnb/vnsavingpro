@@ -62,11 +62,25 @@ export function AuthProvider({ children }) {
       return null;
     }
 
-    const { data, error } = await client
+    const baseCols = 'id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at';
+    const v2Cols = `${baseCols}, account_role, is_verified_expert, expert_verification_status, expert_credentials, is_community_voted_planner, community_planner_score, community_total_votes, community_total_clones, steward_enabled`;
+
+    let { data, error } = await client
       .from('profiles')
-      .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
+      .select(v2Cols)
       .eq('id', user.id)
       .maybeSingle();
+
+    if (error) {
+      // Fallback gracefully if v2.0 columns have not yet been migrated in Supabase
+      const fallbackRes = await client
+        .from('profiles')
+        .select(baseCols)
+        .eq('id', user.id)
+        .maybeSingle();
+      data = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (!error && data) {
       setProfile(data);
@@ -89,7 +103,7 @@ export function AuthProvider({ children }) {
         },
         { onConflict: 'id' }
       )
-      .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
+      .select(baseCols)
       .single();
 
     if (created) {

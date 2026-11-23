@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import {
+  ArrowLeftRight,
   ArrowRight,
   ArrowUpRight,
   Award,
   Cloud,
   Coffee,
+  Crown,
   ExternalLink,
   FileSpreadsheet,
   Heart,
@@ -12,12 +14,14 @@ import {
   Lock,
   LogIn,
   MessageSquarePlus,
+  Receipt,
   RefreshCw,
   ShieldCheck,
   Sparkles,
   Star,
   ThumbsUp,
   User,
+  UserCheck,
   Users,
   Zap,
 } from 'lucide-react';
@@ -362,12 +366,12 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                 <h1
                   className={cx(
                     'mt-5 font-semibold leading-[1.12] tracking-tight text-white',
-                    isMobileMode ? 'text-3xl' : 'text-3xl sm:mt-6 sm:text-5xl lg:text-[54px]'
+                    isMobileMode ? 'text-3xl' : 'text-3xl sm:mt-6 sm:text-5xl lg:text-[52px]'
                   )}
                 >
-                  {tx('Biến tiền tiết kiệm thành ', 'Turn monthly savings into ', '毎月の貯蓄を')}
+                  {tx('Quản lý tài sản toàn diện cho ', 'Wealth Management for ', '個人・カップル・家族のための')}
                   <span className="text-gradient">
-                    {tx('thu nhập thụ động', 'predictable passive income', '安定した不労所得へ')}
+                    {tx('Cá nhân, Cặp đôi & Gia đình', 'Individuals, Couples & Families', '総合資産マネジメント')}
                   </span>
                 </h1>
                 <p
@@ -377,9 +381,9 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                   )}
                 >
                   {tx(
-                    'Lập lộ trình tài chính chuẩn xác cho Cá nhân, Cặp đôi & Gia đình — biết rõ cần gửi bao nhiêu, lấp Quỹ dự phòng thế nào và chọn ngân hàng số nào lãi cao nhất. Tự động tối ưu mượt mà trên mọi thiết bị.',
-                    'Build data-driven savings roadmaps for Individuals, Couples & Families — know how much to deposit, how to fill your Emergency Fund, and which Vietnam digital bank pays the highest yield seamlessly on every screen.',
-                    '個人・カップル・家族向けに、毎月の積立額・緊急防衛資金・高金利ネット銀行を正確に試算。あらゆる端末で快適に動作します。'
+                    '3 bộ công cụ quản trị tài sản hợp nhất: Tiết kiệm ngân hàng số, Tỷ giá Ngoại tệ FX (Vietcombank) và Lương–Thuế 5 bậc–BHXH Luật 2026. Kết nối cùng Chuyên gia xác thực, Người lập kế hoạch cộng đồng bình chọn & Quản trị viên tài chính.',
+                    'Three unified wealth engines: Digital Bank Savings, Live FX Management, and Vietnam 2026 Payroll/Tax/Social Insurance — powered by 4 roles: Individuals, Verified Experts, Community-Voted Planners, and Financial Stewards.',
+                    'ネット銀行貯蓄・外貨FX・2026年ベトナム給与＆社会保険の3大ツールを統合。個人、認定専門家、コミュニティ選出プランナー、資産管理スチュワードの4役割に対応。'
                   )}
                 </p>
                 <div className={cx('mt-7 flex gap-3', isMobileMode ? 'flex-col' : 'flex-col sm:mt-8 sm:flex-row')}>
@@ -394,15 +398,16 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                     {tx('Thiết lập nhanh trong 30 giây', '30-Second Quick Setup', '30秒クイック初期設定')}
                     <ArrowRight className="size-4" />
                   </Button>
-                  <Button as="a" href={href('rates')} size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
-                    {tx('So sánh lãi suất 4 ngân hàng', 'Compare 4 Digital Banks', 'ネット銀行金利を比較')}
+                  <Button as="a" href={href('ecosystem')} size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
+                    <Crown className="size-4 text-amber-300" />
+                    {tx('Khám phá Mẫu cộng đồng & Chuyên gia', 'Explore Voted Plans & Experts', '人気プラン・専門家を探す')}
                   </Button>
                 </div>
                 <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 sm:mt-10 sm:gap-6">
                   {[
-                    { k: pct(top.rate, 2, lang), v: tx('Lãi suất cao nhất (12T)', 'Highest 12M Rate', '12ヶ月最高金利') },
-                    { k: tx('3 mô hình', '3 Models', '3モデル'), v: tx('Cá nhân · Đôi · Gia đình', 'Solo · Couple · Family', '個人・カップル・家族') },
-                    { k: tx('Mùng 1', '1st of Mo', '毎月1日'), v: tx('Cập nhật lãi suất đầu tháng', 'Auto-synced 1st of month', '毎月1日自動レート同期') },
+                    { k: tx('3 bộ công cụ', '3 Tool Suites', '3大ツール群'), v: tx('Tiết kiệm · FX · Lương 2026', 'Savings · FX · Payroll 2026', '貯蓄・外貨FX・給与2026') },
+                    { k: tx('4 vai trò', '4 Roles', '4つの役割'), v: tx('Cá nhân · CG · Cộng đồng · QT', 'Solo · Expert · Voted · Steward', '個人・専門家・選出・管理') },
+                    { k: pct(top.rate, 2, lang), v: tx('Lãi 12T cao nhất (mùng 1)', 'Top 12M Rate (1st sync)', '12ヶ月最高金利') },
                   ].map((s) => (
                     <div key={s.v} className="min-w-0">
                       <dt className={cx('font-semibold tracking-tight text-white tabular-nums', isMobileMode ? 'text-base' : 'text-lg sm:text-2xl')}>
@@ -491,14 +496,16 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
         </div>
 
         <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 4 }} hingeAligned className="mt-7">
-          {primary.map((t) => {
+          {primary.slice(0, 4).map((t) => {
             const isPlan = t.id === 'plan';
-            const isRates = t.id === 'rates';
+            const isSalary = t.id === 'salary';
+            const isFx = t.id === 'fx';
+            const isEcosystem = t.id === 'ecosystem';
             const ctaByTool = {
               plan: tx('Thiết kế lộ trình mục tiêu', 'Design Savings Roadmap', '目標ロードマップを作成'),
-              rates: tx('Xem bảng xếp hạng lãi suất', 'View Live Rate Rankings', '金利ランキングを見る'),
-              calculator: tx('Tính lãi 3 phương pháp', 'Compare 3 Calc Methods', '3方式で利息計算'),
-              ladder: tx('Mô phỏng chia sổ bậc thang', 'Simulate Rolling Ladder', 'ラダー分割を試す'),
+              fx: tx('Quy đổi & Quản trị danh mục FX', 'Analyze FX Portfolio', '外貨FXポートフォリオ管理'),
+              salary: tx('Tính Lương 5 bậc & BHXH 2026', 'Compute 2026 Salary & BHXH', '2026年給与・社会保険計算'),
+              ecosystem: tx('Clone mẫu & Kết nối chuyên gia', 'Clone Plans & Meet Experts', 'プラン複製・専門家連携'),
             };
             return (
               <a
@@ -508,31 +515,37 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                   'group relative flex flex-col rounded-2xl border p-5 transition-all hover:-translate-y-0.5',
                   isPlan
                     ? 'border-indigo-400/35 bg-gradient-to-b from-indigo-500/[0.11] to-surface hover:border-indigo-400/60 hover:bg-elevated'
-                    : isRates
+                    : isSalary
                       ? 'border-emerald-400/25 bg-gradient-to-b from-emerald-500/[0.06] to-surface hover:border-emerald-400/50 hover:bg-elevated'
-                      : 'border-white/[0.07] bg-surface hover:border-white/[0.14] hover:bg-elevated'
+                      : isEcosystem
+                        ? 'border-amber-400/25 bg-gradient-to-b from-amber-500/[0.05] to-surface hover:border-amber-400/50 hover:bg-elevated'
+                        : 'border-white/[0.07] bg-surface hover:border-white/[0.14] hover:bg-elevated'
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span
                     className={cx(
                       'flex size-10 items-center justify-center rounded-xl ring-1 ring-inset',
-                      isRates
+                      isSalary
                         ? 'bg-emerald-500/15 ring-emerald-400/30'
-                        : 'bg-indigo-500/12 ring-indigo-400/25'
+                        : isEcosystem
+                          ? 'bg-amber-500/15 ring-amber-400/30'
+                          : 'bg-indigo-500/12 ring-indigo-400/25'
                     )}
                   >
-                    <t.icon className={cx('size-5', isRates ? 'text-emerald-300' : 'text-indigo-300')} />
+                    <t.icon className={cx('size-5', isSalary ? 'text-emerald-300' : isEcosystem ? 'text-amber-300' : 'text-indigo-300')} />
                   </span>
-                  {isPlan && <Badge tone="brand">{tx('Nổi bật', 'Featured', '注目')}</Badge>}
-                  {isRates && <Badge tone="success">{pct(top.rate, 2, lang)}</Badge>}
+                  {isPlan && <Badge tone="brand">{tx('Tiết kiệm số', 'Savings Core', '貯蓄プラン')}</Badge>}
+                  {isFx && <Badge tone="neutral">Live VCB</Badge>}
+                  {isSalary && <Badge tone="success">{tx('Luật 2026', '2026 Law', '2026新法')}</Badge>}
+                  {isEcosystem && <Badge tone="warning">{tx('4 Vai trò · Clone', '4 Roles · Clone', '4役割・複製')}</Badge>}
                 </div>
                 <span className="mt-5 text-[15px] font-semibold text-white">{t.label}</span>
                 <span className="mt-1.5 flex-1 text-[13px] leading-relaxed text-zinc-500">{t.desc}</span>
                 <span
                   className={cx(
                     'mt-5 flex items-center gap-1 text-[13px] font-medium transition-colors group-hover:text-white',
-                    isPlan ? 'text-indigo-200' : isRates ? 'text-emerald-200' : 'text-zinc-400'
+                    isPlan ? 'text-indigo-200' : isSalary ? 'text-emerald-200' : isEcosystem ? 'text-amber-200' : 'text-zinc-300'
                   )}
                 >
                   {ctaByTool[t.id] || tx('Khám phá chi tiết', 'Explore details', '詳細を見る')}{' '}
@@ -544,11 +557,11 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
         </AdaptiveGrid>
 
         <AdaptiveGrid
-          cols={{ mobile: 1, tablet: 2, duo: 2, desktop: secondary.length <= 2 ? 2 : 3 }}
+          cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 3 }}
           hingeAligned
           className="mt-3"
         >
-          {secondary.map((t) => (
+          {[...primary.slice(4), ...secondary].map((t) => (
             <a
               key={t.id}
               href={href(t.id)}
