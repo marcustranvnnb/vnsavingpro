@@ -86,8 +86,8 @@ const DEFAULT_FX_STATE = {
   rateType: 'transfer',
   benchmarkVndRate: 6.9,
   holdings: [
-    { code: 'USD', amount: 2500, note: 'Quỹ dự phòng USD' },
-    { code: 'JPY', amount: 150000, note: 'Tích luỹ Yên Nhật' },
+    { code: 'USD', amount: 2500, note: '🤖 [Mẫu Bot / Dummy] Quỹ dự phòng USD tham khảo' },
+    { code: 'JPY', amount: 150000, note: '🤖 [Mẫu Bot / Dummy] Tích luỹ Yên Nhật tham khảo' },
     { code: 'VND', amount: 120_000_000, note: 'Tiền gửi số 12T' },
   ],
   targetRates: [
@@ -383,7 +383,12 @@ export default function FxManager() {
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
                   {tx('2. Danh mục nắm giữ (VND & Ngoại tệ)', '2. Multi-Currency Holdings', '2. 保有通貨資産')}
                 </h3>
-                <Badge tone="neutral">{formState.holdings.length}</Badge>
+                <div className="flex items-center gap-1.5">
+                  {formState.holdings.some((h) => String(h.note || '').includes('[Mẫu Bot')) && (
+                    <Badge tone="neutral">🤖 {tx('Có dòng mẫu', 'Includes Dummy', 'サンプル含む')}</Badge>
+                  )}
+                  <Badge tone="neutral">{formState.holdings.length}</Badge>
+                </div>
               </div>
 
               <div className="mt-3 space-y-2">

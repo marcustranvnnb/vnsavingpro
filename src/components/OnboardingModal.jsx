@@ -18,6 +18,7 @@ import { href, navigate, useRates, useToast } from '../state.jsx';
 import { applyOnboardingStarter, saveOnboardingState } from '../utils/apiClient.js';
 import { chip, compact, pct } from '../utils/format.js';
 import { Badge, Button, Modal, MoneyField, cx } from './ui.jsx';
+import { LuckyCatMascot } from './LuckyCatMascot.jsx';
 
 const MODE_DEFAULTS = {
   INDIVIDUAL: { capital: 50_000_000, saving: 10_000_000, passive: 12_000_000, targetCap: 500_000_000 },
@@ -201,6 +202,30 @@ export default function OnboardingModal({ open, onClose, initialMode = 'INDIVIDU
       title={tx('Thiết lập lộ trình trong 30 giây', '30-Second Quick Setup', '30秒クイックプラン設定')}
     >
       <div className="space-y-5">
+        {/* Lucky Cat Onboarding Companion */}
+        <div className="cute-cat-card flex items-center gap-3 rounded-2xl border px-3.5 py-2.5">
+          <LuckyCatMascot mood={step === 3 ? 'celebrate' : 'scholar'} size="sm" />
+          <p className="text-xs leading-relaxed text-amber-100">
+            {step === 1
+              ? tx(
+                  'Meow~ Chào bạn! Miu Vàng sẽ giúp bạn chọn cấu hình hộ gia đình phù hợp nhất chỉ trong 3 bước.',
+                  'Meow~ Welcome! Miu Vang will tailor your household wealth profile in 3 cozy steps.',
+                  'ニャ〜！ミウちゃんが3ステップでぴったりの家計モデルを案内するよ。'
+                )
+              : step === 2
+                ? tx(
+                    'Bước 2 rồi! Chọn mục tiêu bạn háo hức khám phá nhất để Miu Vàng tính lộ trình nhé.',
+                    'Step 2! Pick the goal you are most excited to explore first.',
+                    'ステップ2！最初に確認したい目標を選ぼうニャ。'
+                  )
+                : tx(
+                    'Tuyệt lắm! Chốt vài con số khởi đầu rồi cùng Miu Vàng gieo hạt lộ trình thôi 🎉',
+                    'Almost there! Set a quick starter figure and launch your personalized roadmap 🎉',
+                    'あと少し！初期値を決めてロードマップへ出発しよう 🎉'
+                  )}
+          </p>
+        </div>
+
         {/* Stepper */}
         <div className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.03] px-3 py-2 ring-1 ring-inset ring-white/[0.06]">
           <div className="flex items-center gap-1.5">

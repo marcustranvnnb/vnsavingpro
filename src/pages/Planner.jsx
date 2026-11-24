@@ -33,6 +33,10 @@ import { compact, chip, duration, fmt, pct, vnd } from '../utils/format.js';
 import { AdaptiveGrid, WorkspaceSplit } from '../components/AdaptiveLayout.jsx';
 import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { HouseholdInsightsCard } from '../components/HouseholdInsightsCard.jsx';
+import { UnifiedNetWorthCard } from '../components/UnifiedNetWorthCard.jsx';
+import { LuckyCatMascot } from '../components/LuckyCatMascot.jsx';
+import { loadWealthTrees, saveWealthTrees } from '../utils/apiClient.js';
+import { recommendTreeSpecies } from '../data/wealthTreesData.js';
 import {
   Badge,
   BankMark,
@@ -2150,6 +2154,80 @@ export default function Planner({ params = {} }) {
 
           {/* Household Analysis, Emergency Fund & Stress-Test */}
           {householdAnalysis && <HouseholdInsightsCard analysis={householdAnalysis} roadmap={roadmap} />}
+
+          {/* 360 Unified Household Net Worth Summary */}
+          <UnifiedNetWorthCard compact />
+
+          {/* Plant a Vietnamese Wealth Tree Seed from this Roadmap */}
+          {(() => {
+            const yrs = Math.max(1, Number(roadmap?.yearsNeeded) || 4);
+            const matchedSpecies = recommendTreeSpecies(yrs);
+            return (
+              <Card className="cute-cat-card p-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <LuckyCatMascot mood="gardener" size="sm" className="shrink-0" />
+                    <div className="space-y-1">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+                        <span>{matchedSpecies.emoji}</span>
+                        {tx('Gieo hạt Cây Kế Hoạch Việt Nam cho lộ trình này', 'Sow a Vietnamese Wealth Tree for this Plan', 'このプランからベトナム資産ツリーを植える')}
+                      </div>
+                      <p className="text-sm font-medium text-white">
+                        {matchedSpecies.name[lang] || matchedSpecies.name.vi}{' '}
+                        <span className="text-xs font-normal text-zinc-400">
+                          ({matchedSpecies.horizonBadge[lang] || matchedSpecies.horizonBadge.vi})
+                        </span>
+                      </p>
+                      <p className="text-xs text-zinc-400">
+                        {matchedSpecies.description[lang] || matchedSpecies.description.vi}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="primary"
+                      onClick={() => {
+                        const existing = loadWealthTrees();
+                        const newTree = {
+                          id: `tree_${Date.now().toString(36)}`,
+                          title:
+                            goalType === 'TARGET_AMOUNT'
+                              ? `${tx('Mục tiêu', 'Goal', '目標')} ${compact(targetAmount, lang)} (${bank.name})`
+                              : `${tx('Thụ động', 'Passive', '不労所得')} ${compact(target, lang)} (${bank.name})`,
+                          speciesId: matchedSpecies.id,
+                          householdMode,
+                          targetCapital: roadmap.requiredPrincipal || targetAmount || 500_000_000,
+                          initialCapital: capital || 0,
+                          monthlyPlanned: roadmap.requiredMonthlyDeposit || saving || 10_000_000,
+                          expectedYears: yrs,
+                          createdAt: new Date().toISOString().slice(0, 10),
+                          mysteryUnlocked: false,
+                          mysteryFruitId: matchedSpecies.mysteryFruitId,
+                          isDummy: false,
+                          checkIns: [],
+                        };
+                        saveWealthTrees([newTree, ...existing]);
+                        notify(
+                          tx(
+                            `Đã gieo hạt giống ${matchedSpecies.name.vi}! Mở Vườn Cây để tưới & xác thực tiền đóng.`,
+                            `Planted ${matchedSpecies.name.en}! Open Tree Garden to verify deposits.`,
+                            `${matchedSpecies.name.ja}の種を植えました！`
+                          )
+                        );
+                      }}
+                    >
+                      🌱 {tx('Gieo hạt ngay', 'Sow Seed', '種を植える')}
+                    </Button>
+                    <Button as="a" href={href('garden')} size="sm" variant="secondary">
+                      {tx('Mở Vườn Cây →', 'Open Garden →', 'ガーデンへ →')}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
 
           {/* Chart / bank comparison */}
           <Card className="p-5 sm:p-6">

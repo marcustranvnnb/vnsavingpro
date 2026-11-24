@@ -2,12 +2,15 @@ import {
   ArrowLeftRight,
   Award,
   BarChart3,
+  BookOpen,
   Briefcase,
   Calculator,
   Gift,
+  Landmark,
   Layers,
   Receipt,
   Target,
+  Trees,
   TrendingDown,
   Users,
 } from 'lucide-react';
@@ -19,6 +22,73 @@ export const APP_VERSION_DATE = versionInfo.releaseDate;
 export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
+  {
+    version: 'v2.5.1.0',
+    date: '24/11/2026',
+    title: 'Đồng Bộ Toàn Nền Tảng v2.5 & Tài Khoản Demo 1 Chạm (demo@vnsavingpro.vn)',
+    items: [
+      'Ra mắt Tài khoản Demo 1 chạm (demo@vnsavingpro.vn / VnSavingDemo2026!) trong Đăng nhập, Hồ sơ & Trang chủ: tự động nạp sẵn 4 cây Việt Nam trong Khu Vườn Ảo (/garden), Kệ Sổ Thực Tế, thông số Cặp đôi (/plan) và Tài Sản 360° để dùng thử trọn vẹn không cần đăng ký.',
+      'Đồng bộ toàn bộ tiêu đề, nhãn phiên bản động theo v2.5.1.0 và nội dung nổi bật trên Trang chủ, Hệ sinh thái, Hồ sơ, Vườn Ảo, Blog, CIC & Bảo mật ngân hàng số.',
+    ],
+  },
+  {
+    version: 'v2.5.0.0',
+    date: '24/11/2026',
+    title: 'Khu Vườn Ảo Việt Nam 3 Thời Tiết & 14 Giống Cây Đặc Sản (/garden)',
+    items: [
+      'Nâng cấp /garden thành Khu Vườn Ảo Toàn Cảnh: nhìn thấy tất cả các cây kế hoạch của bạn cùng mọc trên một mảnh vườn với 3 chế độ thời tiết (Ban mai nắng ấm ☀️ · Mưa rào tưới mát 🌧️ · Đêm trăng đom đóm 🌙) và Mèo Chiêu Tài Miu Vàng tuần tra chăm vườn.',
+      'Mở rộng từ 6 lên 14 giống cây Việt Nam 3 miền: Sen Hồng Đồng Tháp (0.25–1N), Quất Tứ Liên Hà Nội (0.5–1.5N), Thanh Long Bình Thuận (0.5–2N), Đào Bích Nhật Tân (1–2.5N), Dừa Xiêm Xanh Bến Tre (2–3.5N), Cà Phê Tây Nguyên (2–4N), Vải Thiều Lục Ngạn (3–5N), Xoài Cát Hòa Lộc (3–5N), Vú Sữa Lò Rèn (4–6N), Bưởi Da Xanh (4–7N), Sầu Riêng Ri6 (5–10N), Chè Shan Tuyết Cổ Thụ Hà Giang (6–12N), Tre Ngà Thánh Gióng (8–25N), Mai Vàng & Trầm Hương (10–40N).',
+      'Thêm Bách Khoa 14 Loài Cây & Quả Bí Ẩn cùng thao tác chạm trực tiếp vào từng cây trong vườn ảo để tưới cây và thu hoạch Quả Bí Ẩn.',
+    ],
+  },
+  {
+    version: 'v2.4.0.0',
+    date: '24/11/2026',
+    title: 'Linh vật Mèo Chiêu Tài Miu Vàng & Trải nghiệm Dễ thương',
+    items: [
+      'Ra mắt linh vật Mèo Chiêu Tài "Miu Vàng" (Maneki-neko) đồng hành xuyên suốt VnSavingPro với 5 biểu cảm SVG (Vẫy tay chiêu tài, Mèo làm vườn đội nón lá, Mèo cố vấn đeo kính, Mèo ăn mừng tung hoa vàng & Mèo cổ vũ).',
+      'Thêm tính năng Xoa đầu Mèo Chiêu Tài tích điểm Hên & Rút Quẻ Lộc Tiết Kiệm mỗi ngày (8 quẻ đại cát 3 ngôn ngữ VI/EN/JA) ngay trên Header, Footer & Trang chủ.',
+      'Đưa Mèo Làm Vườn Miu Vàng đứng canh bên cạnh từng Cây Kế Hoạch Việt Nam trong /garden và hướng dẫn từng bước Onboarding 30 giây.',
+    ],
+  },
+  {
+    version: 'v2.3.0.0',
+    date: '24/11/2026',
+    title: 'Khu Vườn Cây Kế Hoạch Việt Nam & Quả Bí Ẩn (/garden)',
+    items: [
+      'Gieo hạt giống kế hoạch tài chính với 6 loài cây đặc sản Việt Nam khớp theo số năm dự kiến (Thanh Long 1–2N, Cà Phê Tây Nguyên 2–4N, Xoài Cát Hòa Lộc 3–5N, Bưởi Da Xanh 4–7N, Sầu Riêng Ri6 5–10N, Mai Vàng & Trầm Hương 10+N).',
+      'Xác thực tiền đã đóng hàng tháng (hoặc đối chiếu Kệ Sổ Thực Tế) giúp cây nảy mầm, trổ hoa và tự động tăng tốc sinh trưởng nếu bạn gửi vượt kế hoạch; theo dõi cùng lúc nhiều cây cho nhiều kế hoạch.',
+      'Chạm mốc 100% thu hoạch để mở khóa Quả Bí Ẩn hiếm (Quả Hồng Ngọc Thanh Long, Xoài Kim Cương Hòa Lộc, Sầu Riêng Hoàng Kim Ri6, Trầm Hương Kỳ Nam...).',
+    ],
+  },
+  {
+    version: 'v2.2.0.1',
+    date: '24/11/2026',
+    title: 'Minh bạch Dữ liệu Mẫu / Bot Tham khảo trên Toàn Nền tảng',
+    items: [
+      'Gắn nhãn rõ ràng 🤖 "Bot tạo · Dữ liệu mẫu tham khảo" trên toàn bộ mẫu kế hoạch seed, hồ sơ chuyên gia minh họa (/ecosystem), bài viết Blog biên soạn mẫu (/blog), sổ tiết kiệm mẫu, danh mục FX khởi tạo, mã giới thiệu mẫu (/referral) và nhóm đóng góp minh họa (/contributors).',
+    ],
+  },
+  {
+    version: 'v2.2.0.0',
+    date: '24/11/2026',
+    title: 'Kệ Sổ Tiết Kiệm Thực Tế (.ics) · Tài Sản 360° · CIC & Mua Nhà 2 Giai Đoạn Lãi · Blog Tương Tác',
+    items: [
+      'Ra mắt Kệ Sổ Tiết Kiệm Thực Tế trong Hồ sơ: theo dõi sổ đang gửi tại Cake, Timo, LioBank, TNEX, tính lãi thực tế tới hôm nay theo chuẩn TT14 và xuất file lịch nhắc đáo hạn .ics (Google/Apple Calendar).',
+      'Bổ sung Bảng Cân Đối Tài Sản 360° Hợp Nhất (VND Tiết kiệm + Ngoại tệ FX Vietcombank + Lương Net 2026 + Điểm sức khoẻ 0–100) ngay trên Hồ sơ & Lập kế hoạch.',
+      'Ra mắt Trình mô phỏng Điểm Tín dụng CIC (403–706 · Hạng 1–10 · Cầm cố sổ tiết kiệm) & Bài toán Mua nhà 2 giai đoạn lãi suất vs. Thuê nhà (/cic), cùng Mini-Calculator chạy API trực tiếp trong từng bài viết Blog.',
+    ],
+  },
+  {
+    version: 'v2.1.0.0',
+    date: '24/11/2026',
+    title: 'Bảo mật & Ưu đãi mở tài khoản Ngân hàng số · Blog Tài chính VnSavingPro · Tối ưu v2.0',
+    items: [
+      'Bổ sung chuyên mục Bảo mật Pháp lý (NHNN, Bảo hiểm tiền gửi DIV, sinh trắc học QĐ 2345, khóa vòng chính chủ) & Ưu đãi mở tài khoản cho Cake, Timo, LioBank, TNEX (/referral & tab Bảo mật & Ưu đãi trong Lãi suất) kèm bộ quản lý Mã giới thiệu cá nhân & QR.',
+      'Ra mắt Blog Kiến thức & Chiến lược Tài chính (/blog) với 8 bài phân tích chuyên sâu 3 ngôn ngữ (VI · EN · JA), tìm kiếm, lưu bài đọc sau và liên kết trực tiếp tới từng công cụ tính toán.',
+      'Khắc phục lưu bình chọn/clone mẫu cộng đồng lên Supabase, khôi phục Tab Trợ cấp BHXH từ Hồ sơ, đồng bộ 2 chiều Hồ sơ Quản trị viên và mở rộng sao lưu Cloud/JSON cho Ngoại tệ FX & Lương 2026.',
+    ],
+  },
   {
     version: 'v2.0.0.0',
     date: '23/11/2026',
@@ -140,7 +210,7 @@ export const HOME_PAGE = {
   path: '/',
   aliases: ['/trang-chu'],
   label: 'Trang chủ',
-  pageTitle: 'VnSavingPro v2.0 — Nền Tảng Quản Lý Tài Sản Cá Nhân, Cặp Đôi & Gia Đình',
+  pageTitle: `VnSavingPro ${APP_VERSION} — Quản Lý Tài Sản Cá Nhân, Cặp Đôi, Khu Vườn Ảo & Mèo Chiêu Tài`,
 };
 
 export const ALL_TOOLS = [
@@ -191,6 +261,30 @@ export const ALL_TOOLS = [
     icon: Users,
     primary: true,
     suite: 'ecosystem',
+  },
+  {
+    id: 'cic',
+    path: '/cic',
+    aliases: ['/diem-tin-dung', '/tin-dung-cic', '/mua-nha', '/vay-mua-nha'],
+    pageTitle: 'Điểm Tín Dụng CIC & Vay Mua Nhà 2 Giai Đoạn Lãi — VnSavingPro',
+    label: 'CIC & Vay mua nhà',
+    short: 'CIC & Mua nhà',
+    desc: 'Ước tính điểm CIC 403–706 (không thu thập CCCD), so sánh Cầm cố sổ tiết kiệm & bài toán Mua nhà 2 giai đoạn lãi vs. Thuê nhà.',
+    icon: Landmark,
+    primary: true,
+    suite: 'savings',
+  },
+  {
+    id: 'garden',
+    path: '/garden',
+    aliases: ['/vuon-tai-san', '/cay-ke-hoach', '/cay-tai-san', '/vuon-ao'],
+    pageTitle: 'Khu Vườn Ảo 14 Giống Cây Việt Nam & Quả Bí Ẩn — VnSavingPro',
+    label: 'Vườn cây ảo',
+    short: 'Vườn ảo',
+    desc: 'Dạo bước trong Khu Vườn Ảo 3 thời tiết, gieo trồng 14 giống cây Việt Nam khớp số năm mục tiêu, xác thực tiền đóng & mở Quả Bí Ẩn.',
+    icon: Trees,
+    primary: true,
+    suite: 'savings',
   },
   {
     id: 'rates',
@@ -262,15 +356,26 @@ export const ALL_TOOLS = [
     suite: 'ecosystem',
   },
   {
+    id: 'blog',
+    path: '/blog',
+    aliases: ['/kien-thuc', '/cam-nang', '/bai-viet', '/articles'],
+    pageTitle: 'Blog Kiến Thức & Chiến Lược Tài Chính — VnSavingPro',
+    label: 'Blog tài chính',
+    short: 'Blog',
+    desc: 'Cẩm nang bảo mật ngân hàng số, săn ưu đãi, Thuế TNCN 5 bậc – BHXH 2026, ngoại tệ FX & quản trị tài sản hộ gia đình.',
+    icon: BookOpen,
+    suite: 'ecosystem',
+  },
+  {
     id: 'referral',
     path: '/referral',
-    aliases: ['/uu-dai', '/uu-dai-mo-tai-khoan'],
-    pageTitle: 'Ưu Đãi Mở Tài Khoản Ngân Hàng Số — VnSavingPro',
-    label: 'Ưu đãi mở tài khoản',
-    short: 'Ưu đãi',
-    desc: 'Mã giới thiệu và quà tặng khi mở tài khoản ngân hàng số.',
+    aliases: ['/uu-dai', '/uu-dai-mo-tai-khoan', '/bao-mat-ngan-hang'],
+    pageTitle: 'Bảo Mật & Ưu Đãi Mở Tài Khoản Ngân Hàng Số — VnSavingPro',
+    label: 'Bảo mật & Ưu đãi TK',
+    short: 'Bảo mật & Ưu đãi',
+    desc: 'Pháp lý NHNN, Bảo hiểm tiền gửi, sinh trắc học QĐ 2345 và mã quà mở tài khoản Cake, Timo, LioBank & TNEX.',
     icon: Gift,
-    hidden: true,
+    suite: 'savings',
   },
 ];
 
@@ -394,6 +499,34 @@ const TOOL_I18N = {
       desc: 'コミュニティ選出の実証プラン複製、認定ファイナンシャル専門家検索、資産管理スチュワード委任。',
     },
   },
+  cic: {
+    en: {
+      label: 'CIC Score & Home Loan',
+      short: 'CIC & Loan',
+      pageTitle: 'CIC Credit Health & 2-Stage Home Loan Simulator — VnSavingPro',
+      desc: 'Estimate zero-PII CIC readiness (403–706), passbook pledge vs. early break, and 2-stage mortgage vs. renting.',
+    },
+    ja: {
+      label: 'CIC信用＆住宅ローン',
+      short: 'CIC・住宅',
+      pageTitle: 'CIC信用スコア＆2段階金利住宅ローン比較 — VnSavingPro',
+      desc: '匿名CIC信用スコア（403〜706）、定期預金担保vs中途解約、2段階金利ローンvs賃貸貯蓄を試算します。',
+    },
+  },
+  garden: {
+    en: {
+      label: 'Virtual Wealth Orchard',
+      short: 'Virtual Orchard',
+      pageTitle: 'Virtual Vietnamese Wealth Orchard (14 Species) & Mystery Fruits — VnSavingPro',
+      desc: 'Walk through your living 3-weather Virtual Orchard with 14 native Vietnamese trees, verify deposits to accelerate growth, and unlock Mystery Fruits.',
+    },
+    ja: {
+      label: 'バーチャル資産果樹園',
+      short: 'バーチャル園',
+      pageTitle: 'ベトナム仮想資産果樹園（14樹種）＆神秘の実 — VnSavingPro',
+      desc: '3種類の天候が切り替わるバーチャル果樹園で14種のベトナム在来樹を育て、入金認証で成長加速＆神秘の実を収穫できます。',
+    },
+  },
   rates: {
     en: {
       label: 'Bank Rates',
@@ -478,12 +611,40 @@ const TOOL_I18N = {
       desc: 'VnSavingProの改善に貢献くださった利用者とUnikornコミュニティの皆様をご紹介します。',
     },
   },
+  blog: {
+    en: {
+      label: 'Financial Blog',
+      short: 'Blog',
+      pageTitle: 'Financial Knowledge & Strategy Blog — VnSavingPro',
+      desc: 'Actionable guides on digital bank security, welcome perks, 2026 5-bracket PIT & BHXH, FX break-even & household wealth.',
+    },
+    ja: {
+      label: '資産運用ブログ',
+      short: 'ブログ',
+      pageTitle: '資産形成・法制ナレッジブログ — VnSavingPro',
+      desc: 'ネット銀行の安全性、開設特典、2026年所得税・社会保険、為替損益分岐、家族資産設計を解説します。',
+    },
+  },
+  referral: {
+    en: {
+      label: 'Security & Bank Perks',
+      short: 'Security & Perks',
+      pageTitle: 'Digital Bank Security & Account-Opening Perks — VnSavingPro',
+      desc: 'SBV parent licensing, DIV deposit insurance, NFC Decision 2345 security audit & referral perks for Cake, Timo, LioBank & TNEX.',
+    },
+    ja: {
+      label: '安全性・開設特典',
+      short: '安全性・特典',
+      pageTitle: 'ネット銀行の安全性＆口座開設特典 — VnSavingPro',
+      desc: '母体銀行認可・預金保険・生体認証とCake・Timo・LioBank・TNEXの新規口座開設特典をまとめて確認。',
+    },
+  },
 };
 
 const EXTRA_TITLE_I18N = {
   home: {
-    en: 'VnSavingPro v2.0 — Personal, Couple & Family Wealth Management Platform',
-    ja: 'VnSavingPro v2.0 — 個人・カップル・家族向け総合資産管理プラットフォーム',
+    en: `VnSavingPro ${APP_VERSION} — Personal, Couple & Family Wealth Platform & Virtual Orchard`,
+    ja: `VnSavingPro ${APP_VERSION} — 個人・カップル・家族向け総合資産管理＆バーチャル果樹園`,
   },
   auth: {
     en: 'Sign In & Account — VnSavingPro',
@@ -513,12 +674,130 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Wealth Platform v2.0 · 4 User Roles · FX Manager · Vietnam 2026 Payroll & BHXH';
-  if (lang === 'ja') return '資産管理プラットフォーム v2.0・4役割・外貨FX・ベトナム2026年給与/社会保険';
+  if (lang === 'en') return 'Wealth OS v2.5 · Virtual Orchard (14 Vietnamese Trees) · Miu Vang Lucky Cat · 360° Net Worth';
+  if (lang === 'ja') return '資産管理OS v2.5・14種バーチャル資産果樹園・招き猫ミウちゃん・統合360°';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.5.1.0': {
+    en: {
+      title: 'Full Platform Version Sync & 1-Click Demo Account (demo@vnsavingpro.vn)',
+      items: [
+        'Added 1-Click Demo Account (demo@vnsavingpro.vn / VnSavingDemo2026!) inside Sign-In, Profile, and Home: pre-seeds 4 Vietnamese trees in the Virtual Orchard (/garden), sample Passbooks, Couple Roadmap, and 360° Net Worth for instant hands-on exploration.',
+        'Synced all pages, dynamic titles, and hero showcases across Home, Ecosystem, Profile, Virtual Orchard, CIC, Security & Perks, and Blog to v2.5.1.0.',
+      ],
+    },
+    ja: {
+      title: '全画面バージョン統一＆ワンクリックDemoアカウント (demo@vnsavingpro.vn)',
+      items: [
+        'ワンクリックDemoアカウント（demo@vnsavingpro.vn / VnSavingDemo2026!）を搭載。ログイン不要でバーチャル果樹園4種・保有定期預金・カップル計画・統合360°純資産を即体験できます。',
+        'トップページ・エコシステム・プロフィール・仮想果樹園・CIC・ブログ・安全性ページすべてのバージョン表記を v2.5.1.0 に統一しました。',
+      ],
+    },
+  },
+  'v2.5.0.0': {
+    en: {
+      title: 'Interactive Virtual Wealth Orchard & 14 Native Vietnamese Tree Species (/garden)',
+      items: [
+        'Elevated /garden into an interactive Virtual Orchard Panorama showing all of your followed plan trees side-by-side across 3 dynamic weather modes (Sunny Morning, Nourishing Rain, Starry Firefly Night) with Miu Vang patrolling the garden.',
+        'Expanded from 6 to 14 native Vietnamese trees across all 3 regions and horizons (0.25Y to 40Y), including Dong Thap Pink Lotus, Tu Lien Kumquat, Nhat Tan Peach Blossom, Ben Tre Coconut, Luc Ngan Lychee, Vinh Kim Star Apple, Ha Giang Ancient Shan Tuyet Tea, and Thanh Giong Ivory Bamboo.',
+        'Added a 14-Species Botanical & Mystery Fruit Almanac modal and tap-to-inspect plots inside the Virtual Orchard.',
+      ],
+    },
+    ja: {
+      title: '3天候バーチャル果樹園パノラマ＆ベトナム名木14樹種へ拡大 (/garden)',
+      items: [
+        '保有プランの木々をひとつの仮想庭園に並べて眺められる「バーチャル果樹園パノラマ」を新実装（晴天・恵みの雨・蛍の夜空の3モード＋ミウちゃん園長が巡回）。',
+        'ベトナム全土の名木を6種から14種へ拡大（ドンタップ蓮・トゥーリエン金柑・ニャッタン桃花・ベンチェココナッツ・ルックガンライチ・ヴィンキムスターアップル・ハザン古茶樹・プードン竹など）。',
+        '14種の樹木と神秘の実を一覧できる「植物図鑑（アルマナック）」を追加しました。',
+      ],
+    },
+  },
+  'v2.4.0.0': {
+    en: {
+      title: 'Miu Vang — Lucky Fortune Cat Mascot & Cute Wealth Experience',
+      items: [
+        'Introduced Miu Vang, our animated SVG Lucky Fortune Cat (Maneki-neko) mascot with 5 expressive moods (Waving Koban Paw, Straw-Hat Gardener, Scholar Glasses, Mystery Harvest Celebration, and Cheerleader).',
+        'Added interactive "Pet Miu Vang" lucky counter and Daily Lucky Wealth Fortune Drawer (8 trilingual fortunes) accessible from TopNav, Footer, and Home.',
+        'Integrated Gardener Miu Vang directly into the Vietnamese Wealth Tree canvas (/garden) and step-by-step Onboarding guidance.',
+      ],
+    },
+    ja: {
+      title: '招き猫「ミウちゃん」マスコット＆かわいい資産形成体験',
+      items: [
+        '金運招き猫マスコット「ミウちゃん」を新実装（招きポーズ・麦わら園芸・メガネ先生・収穫お祝い・応援の5種類のSVGアニメーション表情）。',
+        'ヘッダー・フッター・ホーム画面からいつでも遊べる「ミウちゃん撫で撫で＆今日の金運おみくじ（8種・3言語）」を搭載しました。',
+        'ベトナム資産ツリーガーデン (/garden) のイラスト内や30秒クイック設定にもミウちゃんが登場し、毎月の貯蓄を応援します。',
+      ],
+    },
+  },
+  'v2.3.0.0': {
+    en: {
+      title: 'Vietnamese Wealth Tree Garden & Mystery Fruit Harvest (/garden)',
+      items: [
+        'Plant multiple financial plan seeds using 6 native Vietnamese trees matched to goal horizons (Binh Thuan Dragon Fruit 1–2Y, Highlands Coffee 2–4Y, Hoa Loc Mango 3–5Y, Ben Tre Pomelo 4–7Y, Ri6 Durian 5–10Y, Golden Apricot & Agarwood 10+Y).',
+        'Verify monthly deposits (or sync from Real Passbooks) to grow blossoms, boost growth speed automatically when over-depositing, and unlock a rare Mystery Fruit at 100% completion.',
+      ],
+    },
+    ja: {
+      title: 'ベトナム資産育成ツリーガーデン＆神秘の実の収穫 (/garden)',
+      items: [
+        '目標年数に応じた6種類のベトナム在来樹（ドラゴンフルーツ・コーヒー・マンゴー・ポメロ・ドリアン・黄金梅/沈香）を選んで複数プランを育成できます。',
+        '毎月の積立入金を認証（保有定期預金とも同期）すると開花・成長し、計画以上の入金で加速ブーストがかかり、100%達成で神秘の実が開きます。',
+      ],
+    },
+  },
+  'v2.2.0.1': {
+    en: {
+      title: 'Transparent Bot-Created & Dummy Reference Data Labeling Across All Modules',
+      items: [
+        'Explicitly badged every built-in seed, placeholder, or bot-generated reference item across Ecosystem experts/templates, Blog guides, sample Passbooks, default FX holdings, placeholder bank referral codes, and contributor placeholders so users always distinguish real vs. reference data.',
+      ],
+    },
+    ja: {
+      title: 'Bot作成・参考ダミーデータの全画面明示ラベル対応',
+      items: [
+        'エコシステムのサンプル専門家・雛形プラン、ブログ記事、サンプル定期預金・外貨残高、銀行紹介コード例、貢献者プレースホルダーのすべてに「Bot作成・参考ダミーデータ」バッジを明示し、実データとの混同を防止しました。',
+      ],
+    },
+  },
+  'v2.2.0.0': {
+    en: {
+      title: 'Real Passbook Tracker (.ics) · 360° Net Worth · CIC & 2-Stage Home Loan · Interactive Blog Widgets',
+      items: [
+        'Added Real Passbooks Tracker in Profile to track actual Cake/Timo/LioBank/TNEX deposits, live Circular-14 accrued interest, and export 1-click .ics maturity reminder calendars.',
+        'Launched the 360° Unified Household Net Worth & 0–100 Health Score cockpit uniting VND savings, FX portfolio, and 2026 Net income on Profile & Planner.',
+        'Added the zero-PII CIC Credit Health (403–706) + Passbook Pledge + 2-Stage Home Loan vs. Rent simulator (/cic) and embedded live API Mini-Calculators inside Blog posts.',
+      ],
+    },
+    ja: {
+      title: '保有定期預金(.ics)・360°統合資産・CIC＆2段階住宅ローン・記事内シミュレーター',
+      items: [
+        '保有中の実定期預金（Cake・Timo・LioBank・TNEX）の日割り経過利息を自動計算し、1クリックで満期リマインダー(.ics)を出力できるようになりました。',
+        'VND貯蓄・外貨FX資産・2026年手取り収入・返済負担率を一元化した360°世帯資産ダッシュボードを搭載しました。',
+        '匿名CIC信用スコア＆定期担保＆2段階金利住宅ローン比較（/cic）を公開し、ブログ記事内から直接API試算ができるようになりました。',
+      ],
+    },
+  },
+  'v2.1.0.0': {
+    en: {
+      title: 'Digital Bank Security & Account-Opening Perks · Financial Blog (/blog) · v2.0 Stability',
+      items: [
+        'Added comprehensive Digital Bank Security safeguards (SBV parent licenses, DIV Deposit Insurance, Decision 2345 NFC biometrics, closed-loop settlement, 5-point self-audit) & Account-Opening Perks with Custom Referral Codes & QR for Cake, Timo, LioBank & TNEX.',
+        'Launched the trilingual VnSavingPro Financial Blog (/blog) featuring 8 deep-dive strategy & 2026 law articles with search, category filters, reading bookmarks, and interactive tool links.',
+        'Fixed user template DB persistence in Ecosystem, restored Social Benefits run history into Salary Tab 2, added 2-way Steward snapshot sync, and extended Cloud/JSON backups to FX & Salary states.',
+      ],
+    },
+    ja: {
+      title: 'ネット銀行の安全性＆開設特典・資産運用ブログ (/blog)・v2.0改善アップデート',
+      items: [
+        'Cake・Timo・LioBank・TNEXの法的保護（SBV認可・預金保険・決定2345生体認証）＆新規口座開設特典・個人紹介コード管理（QR対応）を追加しました。',
+        '3言語対応の資産運用ブログ（/blog）を公開し、銀行セキュリティ・ラダー貯蓄・2026年税制/社会保険・為替・家族設計に関する8本の解説記事を搭載しました。',
+        'コミュニティテンプレートのDB永続化修正、給与履歴タブ2復元、スチュワード双方向同期、FX/給与データのクラウド・JSONバックアップ対応を実施しました。',
+      ],
+    },
+  },
   'v2.0.0.0': {
     en: {
       title: 'VnSavingPro v2.0: 4-Role Wealth Ecosystem, FX Manager & Vietnam 2026 Payroll/BHXH',

@@ -4,14 +4,65 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0g. Completed in Version 2.5.1.0 (2026-11-24 — Platform Version Sync & 1-Click Demo Account)
+
+- [x] **1-Click Interactive Demo Account (`demo@vnsavingpro.vn` / `VnSavingDemo2026!`) ([AuthContext.jsx](../../src/contexts/AuthContext.jsx), [AuthModal.jsx](../../src/components/AuthModal.jsx), [Layout.jsx](../../src/components/Layout.jsx), [Profile.jsx](../../src/pages/Profile.jsx), [Home.jsx](../../src/pages/Home.jsx))**: Added instant 1-click Demo sign-in (and direct credential match) stored cleanly in `sessionStorage` (`vnsaving_demo_session_v1`), automatically pre-seeding 4 Vietnamese Virtual Orchard trees (`/garden`), sample Couple roadmap (`PLANNER_STATE`), and 2 demo passbooks (`ACTIVE_PASSBOOKS_STATE`), badged `Demo` in Header/Profile with zero impact on live Supabase tables or RLS.
+- [x] **Dynamic Version & Cross-Page Copy Sync ([tools.js](../../src/tools.js), [index.html](../../index.html), [Ecosystem.jsx](../../src/pages/Ecosystem.jsx), [Home.jsx](../../src/pages/Home.jsx), [Profile.jsx](../../src/pages/Profile.jsx))**: Replaced remaining hardcoded `v2.0` strings with dynamic `APP_VERSION` (`v2.5.1.0`) and refreshed Home hero showcase & stats to surface the 14-Tree Virtual Orchard, Miu Vang Mascot, CIC Simulator, 360° Net Worth, Security & Blog.
+
+---
+
+## 0f. Completed in Version 2.5.0.0 (2026-11-24 — Interactive 3-Weather Virtual Orchard & 14 Native Vietnamese Tree Species)
+
+- [x] **14 Native Vietnamese Tree Species & 14 Mystery Fruits ([wealthTreesData.js](../../src/data/wealthTreesData.js), [cryptoStorage.js](../../src/utils/cryptoStorage.js))**: Expanded from 6 to 14 regional Vietnamese trees (`sen_dong_thap`, `quat_tu_lien`, `thanh_long`, `dao_nhat_tan`, `dua_xiem_ben_tre`, `ca_phe`, `vai_thieu_luc_ngan`, `xoai_hoa_loc`, `vusua_lo_ren`, `buoi_da_xanh`, `sau_rieng_ri6`, `che_shan_tuyet`, `tre_nga_thanh_giong`, `mai_tram_huong`) across 8 distinct botanical SVG styles (`lotus`, `bushy`, `pillar`, `bonsai`, `palm`, `broad`, `tall`, `bamboo`) and expanded `WEALTH_TREES_STATE` cap to 30 trees.
+- [x] **Interactive 3-Weather Virtual Orchard Panorama & Botanical Almanac ([WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [Garden.jsx](../../src/pages/Garden.jsx))**: Built `<VirtualOrchardScene />` showing all followed plan trees side-by-side across 3 toggleable atmospheres (`SUNNY_MORNING`, `NOURISHING_RAIN`, `STARRY_FIREFLY`), with Miu Vang patrolling the selected plot, 1-click plot inspection, 4-tree Bot Demo orchard generator, and a 14-Species Botanical & Mystery Fruit Almanac modal.
+
+---
+
+## 0e. Completed in Version 2.4.0.0 (2026-11-24 — Lucky Fortune Cat Mascot "Miu Vàng" & Cute Wealth UX)
+
+- [x] **Animated SVG Lucky Fortune Cat Mascot ([LuckyCatMascot.jsx](../../src/components/LuckyCatMascot.jsx), [index.css](../../src/index.css))**: Built zero-external-asset animated Maneki-neko SVG mascot ("Mèo Chiêu Tài Miu Vàng") with 5 expressive moods (`wave`, `gardener`, `scholar`, `celebrate`, `cheer`), CSS `.animate-paw-wave`, `.animate-cat-float`, `.animate-coin-sparkle`, and warm `.cute-cat-card` styling.
+- [x] **Interactive Petting, Daily Lucky Fortune & Cross-App Integration ([Home.jsx](../../src/pages/Home.jsx), [Layout.jsx](../../src/components/Layout.jsx), [SplashScreen.jsx](../../src/components/SplashScreen.jsx), [WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [OnboardingModal.jsx](../../src/components/OnboardingModal.jsx), [Planner.jsx](../../src/pages/Planner.jsx))**: Added pettable lucky pat counter (`vnsaving_lucky_cat_pats_v1`), 8 trilingual Daily Lucky Wealth Fortunes in `<LuckyCatFortuneModal />` accessible from `TopNav`, `Footer`, and `Home`, waving Miu Vang on `SplashScreen`, gardener Miu Vang inside the `/garden` Vietnamese tree illustration & Mystery Fruit harvest modal, and scholar Miu Vang guiding `OnboardingModal`.
+
+---
+
+## 0d. Completed in Version 2.3.0.0 (2026-11-24 — Vietnamese Wealth Tree Garden & Mystery Fruit Harvest `/garden`)
+
+- [x] **Vietnamese Heritage Wealth Tree Dataset & Accelerated Growth Engine ([wealthTreesData.js](../../src/data/wealthTreesData.js))**: Added 6 native Vietnamese trees mapped by goal horizon (`Thanh Long 1–2Y`, `Cà Phê Tây Nguyên 2–4Y`, `Xoài Cát Hòa Lộc 3–5Y`, `Bưởi Da Xanh Bến Tre 4–7Y`, `Sầu Riêng Ri6 5–10Y`, `Mai Vàng & Trầm Hương 10+Y`), 6 growth stages (`SEED` → `HARVEST`), over-deposit multiplier (`1.0x–2.0x`), months-shortened tracker, and 6 rare Mystery Fruits.
+- [x] **Interactive SVG Orchard, Deposit Verification & Mystery Fruit Unboxing ([WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [Garden.jsx](../../src/pages/Garden.jsx), [Planner.jsx](../../src/pages/Planner.jsx), [Profile.jsx](../../src/pages/Profile.jsx))**: Supports following multiple plan trees simultaneously (`WEALTH_TREES_STATE` in [cryptoStorage.js](../../src/utils/cryptoStorage.js) & [DataModal.jsx](../../src/components/DataModal.jsx)), 1-click seeding from `/plan`, passbook verification check-ins (and sync with Real Passbooks), `🤖 Bot Dummy` demo orchard option, and Mystery Fruit celebration unboxing modal.
+
+---
+
+## 0c. Completed in Version 2.2.0.1 (2026-11-24 — Bot-Created & Dummy Reference Data Transparency)
+
+- [x] **Explicit Bot / Dummy Reference Badges Across Platform**: Tagged all `SEED_EXPERTS` & `SEED_TEMPLATES` in [ecosystem.js](../../api/ecosystem.js) and [Ecosystem.jsx](../../src/pages/Ecosystem.jsx) (`isDummyData`/`isBotCreated`), standardized all [blogData.js](../../src/data/blogData.js) posts & [Blog.jsx](../../src/pages/Blog.jsx) cards to `🤖 VnSavingPro AI Bot` / `Bot biên soạn · Kịch bản mẫu tham khảo`, and badged seeded sample passbooks ([ActivePassbooksTracker.jsx](../../src/components/ActivePassbooksTracker.jsx)), starter FX holdings ([FxManager.jsx](../../src/pages/FxManager.jsx)), placeholder referral codes ([Rates.jsx](../../src/pages/Rates.jsx)), and placeholder contributor groups ([contributorsData.js](../../src/data/contributorsData.js), [Contributors.jsx](../../src/pages/Contributors.jsx)).
+
+---
+
+## 0b. Completed in Version 2.2.0.0 (2026-11-24 — Real Passbooks Tracker (.ics), 360° Unified Net Worth, CIC & 2-Stage Home Loan `/cic` & Interactive Blog Widgets)
+
+- [x] **Real Passbooks Tracker & `.ics` Maturity Calendar ([ActivePassbooksTracker.jsx](../../src/components/ActivePassbooksTracker.jsx), `ACTIVE_PASSBOOKS_STATE`)**: Tracks actual digital bank deposits across Cake, Timo, LioBank, and TNEX with live Circular-14 accrued interest to today, maturity countdowns, Plan vs. Actual % tracking, and RFC-5545 `.ics` calendar export (1-day `VALARM`).
+- [x] **360° Unified Household Net Worth & 0–100 Health Score ([UnifiedNetWorthCard.jsx](../../src/components/UnifiedNetWorthCard.jsx), [Profile.jsx](../../src/pages/Profile.jsx), [Planner.jsx](../../src/pages/Planner.jsx))**: Consolidates VND savings capital, converted FX holdings, 2026 Net salary savings rate, Emergency Fund coverage, and DTI burden into one unified cockpit.
+- [x] **Zero-PII CIC Credit Health, Passbook Pledge & 2-Stage Home Loan Simulator ([cicAndLoanVietnam.js](../../api/_lib/cicAndLoanVietnam.js), [CicLoanSimulator.jsx](../../src/pages/CicLoanSimulator.jsx), `/cic`)**: Server-only 5-pillar CIC scoring (`403–706`, Rank `1–10`, SBV Debt Groups `1–5`), 90-day What-If boost, Passbook Pledge vs. Early Break arbitrage, and Vietnam 2-stage mortgage vs. Rent-and-Save modeling with zero additional Vercel functions (`10 / 12`).
+- [x] **Interactive Server-Backed Blog Mini-Calculators ([Blog.jsx](../../src/pages/Blog.jsx))**: Embedded live `useServerCalc` sandboxes inside Blog articles (`salary_gross_net` for 2026 5-bracket PIT, `inflation` for Fisher real yield, and `quick_estimate` for savings compounding).
+
+---
+
+## 0a. Completed in Version 2.1.0.0 (2026-11-24 — Digital Bank Security & Account Perks, Trilingual Blog `/blog` & v2.0 Stability Fixes)
+
+- [x] **Digital Bank Security & Account-Opening Perks ([bankSecurityAndPerksData.js](../../src/data/bankSecurityAndPerksData.js), [Rates.jsx](../../src/pages/Rates.jsx), `/referral`)**: Added Tab 3 (`Bảo mật & Ưu đãi mở TK`) + `/referral` route detailing 4 legal/technical protection pillars (SBV commercial bank parent licenses, Deposit Insurance DIV, SBV Decision 2345 / Circular 17/2024 NFC biometrics, closed-loop principal settlement), per-bank welcome bonus breakdowns, 1-click referral copy, QR preview, editable `CUSTOM_REFERRAL_CODES` manager, and 5-step interactive user security self-check.
+- [x] **Financial Knowledge & Strategy Blog ([blogData.js](../../src/data/blogData.js), [Blog.jsx](../../src/pages/Blog.jsx), `/blog`)**: Created 7 comprehensive trilingual (`VI/EN/JA`) deep-dive articles across 4 categories (`savings`, `tax_bhxh`, `fx_macro`, `family_wealth`) with keyword search, reading bookmarks, key takeaways cards, metric tables, deep-linked reader mode (`/blog?post=<slug>`), and interactive tool CTAs, highlighted on [Home.jsx](../../src/pages/Home.jsx).
+- [x] **v2.0 Post-Audit Bug Fixes ([ecosystem.js](../../api/ecosystem.js), [SalaryInsurance.jsx](../../src/pages/SalaryInsurance.jsx), [Ecosystem.jsx](../../src/pages/Ecosystem.jsx), [DataModal.jsx](../../src/components/DataModal.jsx))**: Replaced `!templateId.startsWith('tpl_')` with `!SEED_TEMPLATE_IDS.has(templateId)` so user-published templates persist votes/clones/planner promotions to Supabase; fixed `consumeToolRestoreState('salary')` Tab 2 (`social_benefits`) history reopen; implemented 2-way `sync_steward_snapshot` mandate sync; and added `FX_PORTFOLIO_STATE` & `SALARY_STATE` to Cloud Share Codes & JSON backup/restore.
+- [ ] **Optional DB Advisor Polish (`gvgyztwpjvjvztwhwnue`)**: Run [supabase/migrations/20261124_v210_advisor_hardening.sql](../../supabase/migrations/20261124_v210_advisor_hardening.sql) in Supabase SQL Editor (`idx_community_template_votes_voter` + explicit `service_role` policy on `user_feedback`).
+
+---
+
 ## 0. Completed in Version 2.0.0.0 (2026-11-23 — Wealth Platform, 4 Roles, FX Manager & Vietnam 2026 Statutory Payroll/BHXH)
 
 - [x] **4-Role Ecosystem (`/ecosystem`, [api/ecosystem.js](../../api/ecosystem.js))**: Built Individual (with Couple switching & Couple→Family upgrade via `household_spaces`), Verified Financial Expert (degrees/certifications verification + Expert eligibility to also earn Community-Voted Planner status), Community-Voted Planner (`proofVerified + >=10 votes + >=4.2★ + >=3 clones` enabling 1-click template cloning into `/plan`), and Financial Steward (revocable delegation mandates via `steward_mandates`).
 - [x] **FX Currency & Exchange Rate Manager (`/fx`, [FxManager.jsx](../../src/pages/FxManager.jsx), [api/fx.js](../../api/fx.js))**: Live Vietcombank XML feed (`15m` Edge cache), Cash/Transfer/Sell converter, multi-currency holdings portfolio (`FX_PORTFOLIO_STATE`), `-5%..+10%` sensitivity stress-test, target rate watchlist & VND bank savings hurdle.
 - [x] **Vietnam 2026 Salary, PIT & Social Insurance Calculator (`/salary`, [SalaryInsurance.jsx](../../src/pages/SalaryInsurance.jsx), [salaryVietnam.js](../../api/_lib/salaryVietnam.js))**: Implements NQ 110/2025 (`15.5M/6.2M`), 5-bracket PIT Law 109/2025 (+ comparison vs 2025 7-bracket tax savings), Decree 161/2026 (`2.53M` reference salary), Decrees 293/2025 & 399/2026 regional minimum wages, Employment Law 74/2025 (`5×` UI cap), and BHXH Law 41/2024 (Maternity + Điều 70 Lump-Sum) with 1-click Net-to-Planner transfer.
 - [x] **Profile Lifecycle & Multi-Suite History ([Profile.jsx](../../src/pages/Profile.jsx), [Home.jsx](../../src/pages/Home.jsx), [Layout.jsx](../../src/components/Layout.jsx), [OnboardingModal.jsx](../../src/components/OnboardingModal.jsx))**: Added v2.0 role badges, Couple switch / Couple→Family upgrade controls, `fx`/`salary` history filters, and updated Home/Header/Onboarding across `vi`/`en`/`ja`.
-- [ ] **Manual Owner SQL Action Pending**:
-  - Run [supabase/migrations/20261123_v200_wealth_platform.sql](../../supabase/migrations/20261123_v200_wealth_platform.sql) (after `v1.11` & `v1.12` migrations if not yet applied) in Supabase SQL Editor (`gvgyztwpjvjvztwhwnue`).
+- [x] **Verified Live in Supabase (`gvgyztwpjvjvztwhwnue`)**: Confirmed all 12 RLS-enabled tables live via `supabase_mcp:list_tables` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `usage_quotas`, `quota_alerts_log`, `calculation_history`, `household_collaborations`, `household_spaces`, `community_plan_templates`, `community_template_votes`, `steward_mandates`).
 
 ---
 

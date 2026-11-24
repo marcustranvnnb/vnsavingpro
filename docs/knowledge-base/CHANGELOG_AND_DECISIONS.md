@@ -4,6 +4,83 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-24] — Version 2.5.1.0: Full Platform Version Sync, 1-Click Demo Account (`demo@vnsavingpro.vn`) & Production Deploy
+
+- **Request**: Update all website pages and version labels across the site, create a working Demo Account, and deploy the latest release.
+- **Changes Implemented**:
+  - **Version Bump (`v2.5.1.0`)**: Ran `node scripts/bump-version.js patch`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and [src/tools.js](../../src/tools.js) (`APP_VERSION` dynamic titles & `v2.5.1.0` highlights).
+  - **1-Click Demo Account (`demo@vnsavingpro.vn` / `VnSavingDemo2026!`)**: Implemented `DEMO_ACCOUNT_CREDENTIALS`, `signInAsDemo()`, `isDemoSession`, and automatic demo orchard/passbook/planner pre-seeding inside [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx), surfaced via 1-click Demo card inside [src/components/AuthModal.jsx](../../src/components/AuthModal.jsx), [src/pages/Home.jsx](../../src/pages/Home.jsx), [src/components/Layout.jsx](../../src/components/Layout.jsx), and [src/pages/Profile.jsx](../../src/pages/Profile.jsx).
+  - **Cross-Page Version Sync**: Synced `APP_VERSION` (`v2.5.1.0`) across [src/pages/Ecosystem.jsx](../../src/pages/Ecosystem.jsx), [src/pages/Profile.jsx](../../src/pages/Profile.jsx), and [src/pages/Home.jsx](../../src/pages/Home.jsx) hero metrics & copy.
+
+---
+
+## [2026-11-24] — Version 2.5.0.0: Interactive 3-Weather Virtual Orchard & 14 Native Vietnamese Tree Species (`/garden`)
+
+- **Request**: Add more Vietnamese tree varieties and elevate the garden into an interactive Virtual Orchard (*khu vườn ảo*) where users can enter and see all of their trees growing together.
+- **Changes Implemented**:
+  - **Version Bump (`v2.5.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and [src/tools.js](../../src/tools.js) (`v2.5.0.0` trilingual release highlights & `/garden` virtual orchard label).
+  - **14 Vietnamese Species & 14 Mystery Fruits**: Expanded [src/data/wealthTreesData.js](../../src/data/wealthTreesData.js) and [src/utils/cryptoStorage.js](../../src/utils/cryptoStorage.js) to 14 native trees spanning 0.25–40 years (*Sen Hồng Đồng Tháp, Quất Tứ Liên, Thanh Long, Đào Bích Nhật Tân, Dừa Xiêm Bến Tre, Cà Phê Tây Nguyên, Vải Thiều Lục Ngạn, Xoài Cát Hòa Lộc, Vú Sữa Lò Rèn, Bưởi Da Xanh, Sầu Riêng Ri6, Chè Shan Tuyết Cổ Thụ, Tre Ngà Thánh Gióng, Mai Vàng & Trầm Hương*) across 8 SVG silhouettes (`lotus`, `palm`, `bamboo`, `pillar`, `bushy`, `broad`, `tall`, `bonsai`).
+  - **Virtual Orchard Panorama**: Added `<VirtualOrchardScene />`, `<TreeCanopyGlyph />`, 3 weather themes (`ORCHARD_THEMES`), 4-tree Bot Demo generator, and 14-Species Botanical Almanac modal inside [src/components/WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx) and [src/pages/Garden.jsx](../../src/pages/Garden.jsx).
+
+---
+
+## [2026-11-24] — Version 2.4.0.0: Lucky Fortune Cat Mascot ("Mèo Chiêu Tài Miu Vàng") & Cute Wealth Experience
+
+- **Request**: Make VnSavingPro cuter and friendlier with a Lucky Fortune Cat (*Mèo Chiêu Tài* / *Maneki-neko*) as the mascot.
+- **Changes Implemented**:
+  - **Version Bump (`v2.4.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and [src/tools.js](../../src/tools.js) (`v2.4.0.0` trilingual highlights & version labels).
+  - **Animations & Mascot Library**: Added `@keyframes pawWave`, `catFloat`, `coinSparkle`, and `.cute-cat-card` in [src/index.css](../../src/index.css); created [src/components/LuckyCatMascot.jsx](../../src/components/LuckyCatMascot.jsx) with 5 SVG moods (`wave`, `gardener`, `scholar`, `celebrate`, `cheer`), interactive Pet-the-Cat lucky counter, `<LuckyCatTipCard />`, `<LuckyCatHeaderButton />`, and `<LuckyCatFortuneModal />` (8 trilingual wealth fortunes).
+  - **Cross-App Mascot Presence**: Integrated Miu Vang into [src/components/SplashScreen.jsx](../../src/components/SplashScreen.jsx), [src/components/Layout.jsx](../../src/components/Layout.jsx) (`TopNav` + `Footer`), [src/pages/Home.jsx](../../src/pages/Home.jsx), [src/components/WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx) (gardener inside `<VietnameseTreeSvg />` + Mystery Fruit modal celebration), [src/components/OnboardingModal.jsx](../../src/components/OnboardingModal.jsx), and [src/pages/Planner.jsx](../../src/pages/Planner.jsx).
+
+---
+
+## [2026-11-24] — Version 2.3.0.0: Vietnamese Wealth Tree Garden & Mystery Fruit Harvest (`/garden`)
+
+- **Request**: Gamify financial plans as living Vietnamese fruit & blossom trees — applying/following a plan plants a seed, verified deposits make the tree grow across stages, over-depositing accelerates growth speed, users can follow multiple plans and pick native Vietnamese trees matched to plan horizon years, and completing a goal unlocks a Mystery Fruit.
+- **Changes Implemented**:
+  - **Version Bump (`v2.3.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), [src/tools.js](../../src/tools.js) (`/garden` route + trilingual `v2.3.0.0` highlights), and [src/App.jsx](../../src/App.jsx).
+  - **Storage & Cloud/JSON Backup**: Added `WEALTH_TREES_STATE` schema validator in [src/utils/cryptoStorage.js](../../src/utils/cryptoStorage.js), state helpers in [src/utils/apiClient.js](../../src/utils/apiClient.js), and backup coverage in [src/components/DataModal.jsx](../../src/components/DataModal.jsx).
+  - **Tree Species, SVG Stage Visualizer & Multi-Plan Orchard**: Created [src/data/wealthTreesData.js](../../src/data/wealthTreesData.js), [src/components/WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), and [src/pages/Garden.jsx](../../src/pages/Garden.jsx); integrated 1-click seed planting inside [src/pages/Planner.jsx](../../src/pages/Planner.jsx) and compact orchard overview inside [src/pages/Profile.jsx](../../src/pages/Profile.jsx).
+
+---
+
+## [2026-11-24] — Version 2.2.0.1: Transparent Bot-Created & Dummy Reference Data Labeling
+
+- **Request**: Explicitly mark all bot-created / seeded / dummy reference data across the platform so users clearly know what is synthetic reference vs. real data.
+- **Changes Implemented**:
+  - **Version Bump (`v2.2.0.1`)**: Ran `node scripts/bump-version.js build` and updated [src/tools.js](../../src/tools.js).
+  - **Ecosystem Seeds**: Marked `SEED_EXPERTS` & `SEED_TEMPLATES` with `isDummyData`/`isBotCreated`, prefixed demo titles/names/certificates (`DEMO-BOT-*`), and rendered 🤖 Bot-Created callouts + badges in [api/ecosystem.js](../../api/ecosystem.js) and [src/pages/Ecosystem.jsx](../../src/pages/Ecosystem.jsx).
+  - **Blog, Passbooks, FX, Referral & Contributors**: Standardized `author` to `🤖 VnSavingPro AI Bot` in [src/data/blogData.js](../../src/data/blogData.js) + badges in [src/pages/Blog.jsx](../../src/pages/Blog.jsx); badged sample passbooks in [src/components/ActivePassbooksTracker.jsx](../../src/components/ActivePassbooksTracker.jsx), starter FX holdings in [src/pages/FxManager.jsx](../../src/pages/FxManager.jsx), placeholder referral codes in [src/pages/Rates.jsx](../../src/pages/Rates.jsx), and placeholder community groups in [src/data/contributorsData.js](../../src/data/contributorsData.js) & [src/pages/Contributors.jsx](../../src/pages/Contributors.jsx).
+
+---
+
+## [2026-11-24] — Version 2.2.0.0: Batch 1 & 2 — Real Passbooks Tracker (.ics), 360° Unified Net Worth, CIC Credit & 2-Stage Home Loan (`/cic`) & Interactive Blog Widgets
+
+- **Request**: Implement Batch 1 & Batch 2 from the v2.2 roadmap (`ACTIVE_PASSBOOKS_STATE` + `.ics` calendar, 360° Unified Net Worth card, server-backed Blog mini-calculators, and `/cic` Credit Health + Passbook Pledge + 2-Stage Mortgage vs. Rent simulator).
+- **Changes Implemented**:
+  - **Version Bump (`v2.2.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), [src/tools.js](../../src/tools.js) (adding `/cic` route & trilingual `v2.2.0.0` highlights), and [src/App.jsx](../../src/App.jsx).
+  - **Server-Only CIC & 2-Stage Loan Engine**: Created [api/_lib/cicAndLoanVietnam.js](../../api/_lib/cicAndLoanVietnam.js) and wired `action: 'cic_loan_bundle'` into [api/calculate.js](../../api/calculate.js) & `'cic'` into [api/history.js](../../api/history.js) (`0` new Vercel Serverless Functions, staying at `10 / 12`).
+  - **Storage & Backup Schema**: Added `ACTIVE_PASSBOOKS_STATE` & `CIC_LOAN_STATE` schema validators in [src/utils/cryptoStorage.js](../../src/utils/cryptoStorage.js), state helpers in [src/utils/apiClient.js](../../src/utils/apiClient.js), and Cloud/JSON backup support in [src/components/DataModal.jsx](../../src/components/DataModal.jsx).
+  - **Frontend Modules**: Built [src/pages/CicLoanSimulator.jsx](../../src/pages/CicLoanSimulator.jsx), [src/components/ActivePassbooksTracker.jsx](../../src/components/ActivePassbooksTracker.jsx) (with `.ics` calendar export), and [src/components/UnifiedNetWorthCard.jsx](../../src/components/UnifiedNetWorthCard.jsx), integrated into [src/pages/Profile.jsx](../../src/pages/Profile.jsx) and [src/pages/Planner.jsx](../../src/pages/Planner.jsx); added server-backed `<InlineBlogWidget />` to [src/pages/Blog.jsx](../../src/pages/Blog.jsx).
+
+---
+
+## [2026-11-24] — Version 2.1.0.0: Digital Bank Security & Account-Opening Perks, Financial Blog (`/blog`) & v2.0 Stability Hardening
+
+- **Request**: Add Digital Bank Security & Account-Opening Offers ("bảo mật và ưu đãi mở tài khoản của các ngân hàng số") plus a Financial Blog (`/blog`), alongside fixes from the `v2.0.0.0` audit.
+- **Changes Implemented**:
+  - **Version Bump (`v2.1.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and prepended trilingual `v2.1.0.0` release highlights + `/blog` & `/referral` routes in [src/tools.js](../../src/tools.js) and [src/App.jsx](../../src/App.jsx).
+  - **Digital Bank Security & Account Perks**: Created [src/data/bankSecurityAndPerksData.js](../../src/data/bankSecurityAndPerksData.js) (4 legal/technical safeguards: SBV parent commercial bank licenses, Deposit Insurance DIV, SBV Decision 2345 NFC chip-ID biometrics & Smart OTP, Closed-Loop Principal Settlement; per-bank welcome bonus specs & 4-step eKYC onboarding; 5-step user security self-check) and built Tab 3 (`security_perks`) inside [src/pages/Rates.jsx](../../src/pages/Rates.jsx) with 1-click referral copy, QR toggle, editable `CUSTOM_REFERRAL_CODES` storage, and interactive security score checklist.
+  - **Financial Knowledge & Strategy Blog (`/blog`)**: Created [src/data/blogData.js](../../src/data/blogData.js) & lazy-loaded [src/pages/Blog.jsx](../../src/pages/Blog.jsx) with 7 trilingual (`VI/EN/JA`) deep-dive guides across 4 categories, keyword search, bookmarking, key-takeaway highlights, comparison tables, direct tool CTAs, and Homepage spotlight in [src/pages/Home.jsx](../../src/pages/Home.jsx).
+  - **v2.0 Post-Audit Fixes & Advisor SQL**:
+    - Fixed user-published `tpl_<uuid>` template persistence in [api/ecosystem.js](../../api/ecosystem.js) (`!SEED_TEMPLATE_IDS.has(templateId)`).
+    - Added 2-way `sync_steward_snapshot` in [api/ecosystem.js](../../api/ecosystem.js), `syncStewardMandateSnapshot` in [src/utils/apiClient.js](../../src/utils/apiClient.js), and `"Đồng bộ lên hồ sơ"` in [src/pages/Ecosystem.jsx](../../src/pages/Ecosystem.jsx).
+    - Fixed Tab 2 (`social_benefits`) history restore in [src/pages/SalaryInsurance.jsx](../../src/pages/SalaryInsurance.jsx).
+    - Included `FX_PORTFOLIO_STATE` & `SALARY_STATE` in Cloud Share Codes and JSON backups in [src/components/DataModal.jsx](../../src/components/DataModal.jsx).
+    - Added [supabase/migrations/20261124_v210_advisor_hardening.sql](../../supabase/migrations/20261124_v210_advisor_hardening.sql).
+
+---
+
 ## [2026-11-23] — Version 2.0.0.0: Personal, Couple & Family Wealth Platform (4 Roles, Community Cloning, Live FX Manager & Vietnam 2026 Payroll/PIT/BHXH)
 
 - **Request**: Reposition VnSavingPro as a Personal, Couple & Family Wealth Management Platform with 4 user roles/journeys (`Individual` with Couple-switching and Couple→Family upgrades, `Verified Financial Expert`, `Community-Voted Planner` with cloneable realistic templates — also earnable by Experts, and `Financial Steward`), upgraded Digital Bank Savings tools, an FX Exchange Rate Management suite, and a Vietnam 2026 Statutory Payroll / PIT / Social Insurance suite.

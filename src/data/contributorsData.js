@@ -9,10 +9,11 @@ export const UNIKORN_BADGE_IMG_URL = 'https://unikorn.vn/api/widgets/badge/vnsav
 export const VERIFIED_CONTRIBUTORS = [
   {
     id: 'unikorn-explorers',
+    isDummyReference: true,
     name: {
-      vi: 'Cộng đồng Unikorn Explorers',
-      en: 'Unikorn Explorers Community',
-      ja: 'Unikorn Explorers コミュニティ',
+      vi: '🤖 [Nhóm mẫu tham khảo] Cộng đồng Unikorn Explorers',
+      en: '🤖 [Dummy Group Reference] Unikorn Explorers Community',
+      ja: '🤖 [参考プレースホルダー] Unikorn Explorers コミュニティ',
     },
     role: {
       vi: 'Đồng hành ra mắt & góp ý sản phẩm',
@@ -34,10 +35,11 @@ export const VERIFIED_CONTRIBUTORS = [
   },
   {
     id: 'early-adopters-vn',
+    isDummyReference: true,
     name: {
-      vi: 'Nhóm Early Adopters & Beta Testers',
-      en: 'Early Adopters & Beta Testers',
-      ja: 'アーリーアダプター・βテスターの皆様',
+      vi: '🤖 [Nhóm mẫu tham khảo] Early Adopters & Beta Testers',
+      en: '🤖 [Dummy Group Reference] Early Adopters & Beta Testers',
+      ja: '🤖 [参考プレースホルダー] アーリーアダプター・βテスター',
     },
     role: {
       vi: 'Kiểm thử công thức lãi suất & đa thiết bị',

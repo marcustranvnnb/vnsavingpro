@@ -636,6 +636,32 @@ export function saveSalaryState(state) {
   return cryptoStorage.save('SALARY_STATE', state);
 }
 
+export function loadActivePassbooks() {
+  const list = cryptoStorage.load('ACTIVE_PASSBOOKS_STATE', []);
+  return Array.isArray(list) ? list : [];
+}
+
+export function saveActivePassbooks(list) {
+  return cryptoStorage.save('ACTIVE_PASSBOOKS_STATE', Array.isArray(list) ? list : []);
+}
+
+export function loadSavedCicLoanState() {
+  return cryptoStorage.load('CIC_LOAN_STATE', {}) || {};
+}
+
+export function saveCicLoanState(state) {
+  return cryptoStorage.save('CIC_LOAN_STATE', state);
+}
+
+export function loadWealthTrees() {
+  const list = cryptoStorage.load('WEALTH_TREES_STATE', []);
+  return Array.isArray(list) ? list : [];
+}
+
+export function saveWealthTrees(trees) {
+  return cryptoStorage.save('WEALTH_TREES_STATE', Array.isArray(trees) ? trees : []);
+}
+
 export async function fetchFxRatesFromApi(forceRefresh = false) {
   const url = forceRefresh ? '/api/fx?refresh=1' : '/api/fx';
   const res = await fetch(url);
@@ -701,4 +727,8 @@ export function manageHouseholdLifecycleApi(payload, accessToken) {
 
 export function manageStewardMandateApi(payload, accessToken) {
   return postEcosystemAction(payload, accessToken);
+}
+
+export function syncStewardMandateSnapshot({ mandateId, snapshotPayload }, accessToken) {
+  return postEcosystemAction({ action: 'sync_steward_snapshot', mandateId, snapshotPayload }, accessToken);
 }

@@ -29,7 +29,11 @@ import {
 } from 'lucide-react';
 import { Badge, Button, Card, CardHeader, PageHeader, Progress, cx } from '../components/ui.jsx';
 import { DualPaneSection } from '../components/AdaptiveLayout.jsx';
+import { ActivePassbooksTracker } from '../components/ActivePassbooksTracker.jsx';
+import { UnifiedNetWorthCard } from '../components/UnifiedNetWorthCard.jsx';
+import { WealthTreeGarden } from '../components/WealthTreeGarden.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { APP_VERSION } from '../tools.js';
 import { useI18n } from '../i18n/index.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
 import {
@@ -60,6 +64,7 @@ function getHistoryToolMeta(tool, tx) {
     plan: { label: tx('Kế hoạch', 'Planner', 'プラン'), tone: 'brand' },
     fx: { label: tx('Ngoại tệ', 'FX Rates', '外貨FX'), tone: 'success' },
     salary: { label: tx('Lương & BHXH', 'Salary 2026', '給与2026'), tone: 'warning' },
+    cic: { label: tx('CIC & Mua nhà', 'CIC & Loan', 'CIC・住宅'), tone: 'brand' },
     calculator: { label: tx('Tính lãi', 'Calculator', '利息計算'), tone: 'success' },
     ladder: { label: tx('Bậc thang', 'Ladder', 'ラダー'), tone: 'brand' },
     career: { label: tx('Tăng lương', 'Career', 'キャリア'), tone: 'warning' },
@@ -78,6 +83,8 @@ export default function Profile({ params }) {
   const {
     user,
     profile,
+    isDemoSession,
+    signInAsDemo,
     authLoading,
     getAccessToken,
     updateProfile,
@@ -360,6 +367,10 @@ export default function Profile({ params }) {
             </Button>
           </div>
         </Card>
+
+        <UnifiedNetWorthCard />
+        <WealthTreeGarden compact />
+        <ActivePassbooksTracker />
 
         {historyItems.length > 0 && (
           <Card className="p-5">
@@ -714,6 +725,7 @@ export default function Profile({ params }) {
     { id: 'plan', label: tx('Kế hoạch', 'Planner', 'プラン') },
     { id: 'fx', label: tx('Ngoại tệ', 'FX Rates', '外貨FX') },
     { id: 'salary', label: tx('Lương & BHXH', 'Salary 2026', '給与2026') },
+    { id: 'cic', label: tx('CIC & Mua nhà', 'CIC & Loan', 'CIC・住宅') },
     { id: 'calculator', label: tx('Tính lãi', 'Calculator', '利息計算') },
     { id: 'ladder', label: tx('Bậc thang', 'Ladder', 'ラダー') },
     { id: 'career', label: tx('Tăng lương', 'Career', 'キャリア') },
@@ -724,13 +736,21 @@ export default function Profile({ params }) {
     <div className="space-y-6">
       <PageHeader
         icon={UserIcon}
-        eyebrow={tx('Hồ sơ & Tài khoản', 'Profile & Account', 'プロフィール・アカウント')}
-        title={tx('Hồ sơ cá nhân', 'Personal Profile', 'マイプロフィール')}
-        description={tx(
-          'Quản lý thông tin tài khoản, tuỳ chọn ngân hàng mặc định và danh sách các kịch bản tiết kiệm của bạn.',
-          'Manage account preferences, default digital bank, household mode, and saved Cloud scenarios.',
-          'アカウント情報・優先ネット銀行・世帯モデル・保存済みクラウドプランを管理します。'
-        )}
+        eyebrow={tx(`Hồ sơ & Tài khoản · ${APP_VERSION}`, `Profile & Account · ${APP_VERSION}`, `プロフィール · ${APP_VERSION}`)}
+        title={isDemoSession ? tx('Hồ sơ Tài khoản Demo', 'Demo Account Profile', 'Demoアカウントプロフィール') : tx('Hồ sơ cá nhân', 'Personal Profile', 'マイプロフィール')}
+        description={
+          isDemoSession
+            ? tx(
+                'Bạn đang trải nghiệm Tài khoản Demo (demo@vnsavingpro.vn) với dữ liệu mẫu minh họa đầy đủ 4 cây Vườn Ảo, Kệ Sổ Thực Tế & Tài Sản 360°.',
+                'You are exploring the interactive Demo Account (demo@vnsavingpro.vn) preloaded with Virtual Orchard trees, sample Passbooks & 360° Net Worth.',
+                'Demoアカウント（demo@vnsavingpro.vn）でバーチャル果樹園・保有預金・統合360°純資産のサンプルを体験中です。'
+              )
+            : tx(
+                'Quản lý thông tin tài khoản, tuỳ chọn ngân hàng mặc định và danh sách các kịch bản tiết kiệm của bạn.',
+                'Manage account preferences, default digital bank, household mode, and saved Cloud scenarios.',
+                'アカウント情報・優先ネット銀行・世帯モデル・保存済みクラウドプランを管理します。'
+              )
+        }
         actions={
           <Button
             variant="danger"
@@ -745,6 +765,33 @@ export default function Profile({ params }) {
           </Button>
         }
       />
+
+      {isDemoSession && (
+        <Card className="border-amber-400/35 bg-gradient-to-r from-amber-500/[0.10] via-surface to-emerald-500/[0.06] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2 font-semibold text-amber-200">
+                <Badge tone="warning">🎭 Tài khoản Demo</Badge>
+                <span>demo@vnsavingpro.vn</span>
+              </div>
+              <p className="text-zinc-300">
+                {tx(
+                  'Mọi thay đổi ở chế độ Demo lưu tạm trên trình duyệt của bạn. Đăng nhập bằng Email/Google thật bất cứ lúc nào để đồng bộ Cloud Supabase.',
+                  'Changes in Demo Mode stay locally in your browser session. Sign in with your real Google/Email anytime for Supabase Cloud Sync.',
+                  'Demoモードの変更はブラウザに一時保存されます。Googleまたはメールでログインするとクラウド同期に切り替わります。'
+                )}
+              </p>
+            </div>
+            <Button type="button" size="sm" variant="secondary" onClick={() => openAuthPrompt('login')}>
+              {tx('Đổi sang Tài khoản thật', 'Switch to Real Account', '本アカウントに切替')}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      <UnifiedNetWorthCard />
+      <WealthTreeGarden compact />
+      <ActivePassbooksTracker />
 
       <DualPaneSection
         ratio="wide-right"
@@ -769,7 +816,11 @@ export default function Profile({ params }) {
                   <p className="truncate text-xs text-zinc-400">{user.email}</p>
                   <div className="mt-1.5 flex items-center gap-2">
                     <Badge tone="brand">{provider}</Badge>
-                    <Badge tone="success">{tx('Đã xác thực', 'Verified', '認証済み')}</Badge>
+                    {isDemoSession ? (
+                      <Badge tone="warning">🎭 Demo Account</Badge>
+                    ) : (
+                      <Badge tone="success">{tx('Đã xác thực', 'Verified', '認証済み')}</Badge>
+                    )}
                   </div>
                 </div>
               </div>
@@ -777,7 +828,7 @@ export default function Profile({ params }) {
 
             <Card className="border-indigo-400/20 bg-gradient-to-br from-indigo-500/[0.06] via-surface to-amber-500/[0.04] p-5">
               <CardHeader
-                title={tx('Vai trò & Danh hiệu v2.0', 'Wealth Roles & Badges (v2.0)', 'v2.0 役割・認定ステータス')}
+                title={tx(`Vai trò & Danh hiệu (${APP_VERSION})`, `Wealth Roles & Badges (${APP_VERSION})`, `役割・認定ステータス (${APP_VERSION})`)}
                 description={tx(
                   '4 vai trò: Cá nhân · Chuyên gia xác thực · Cộng đồng bình chọn · Quản trị tài chính.',
                   '4 roles: Individual · Verified Expert · Community Voted · Steward.',
@@ -958,7 +1009,7 @@ export default function Profile({ params }) {
               <div className="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.04] p-3.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-indigo-200">
-                    {tx('Vòng đời Không gian Cặp đôi & Gia đình (v2.0)', 'Household Space Lifecycle (v2.0)', '世帯ライフサイクル操作 (v2.0)')}
+                    {tx('Vòng đời Không gian Cặp đôi & Gia đình', 'Household Space Lifecycle', '世帯ライフサイクル操作')}
                   </span>
                   <a href={href('ecosystem')} className="text-[11px] font-medium text-emerald-300 hover:underline">
                     {tx('Ủy quyền Người Quản trị Tài chính →', 'Delegate to Financial Steward →', 'スチュワード委任 →')}

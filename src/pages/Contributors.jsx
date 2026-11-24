@@ -271,7 +271,14 @@ export default function Contributors() {
                     <h3 className="text-base font-semibold text-white">{c.name[lang]}</h3>
                     <p className="mt-0.5 text-xs text-indigo-300">{c.role[lang]}</p>
                   </div>
-                  <Badge tone={c.badgeTone}>{c.tag[lang]}</Badge>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone={c.badgeTone}>{c.tag[lang]}</Badge>
+                    {c.isDummyReference && (
+                      <Badge tone="neutral">
+                        🤖 {tx('Dữ liệu nhóm mẫu tham khảo', 'Bot Placeholder Group', '参考プレースホルダー')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-zinc-300">{c.impact[lang]}</p>
               </div>

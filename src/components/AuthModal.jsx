@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Eye, EyeOff, KeyRound, Lock, LogIn, Mail, User, UserPlus } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext.jsx';
+import { Eye, EyeOff, KeyRound, Lock, LogIn, Mail, Sparkles, User, UserPlus } from 'lucide-react';
+import { DEMO_ACCOUNT_CREDENTIALS, useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { useToast } from '../state.jsx';
-import { Button, Modal } from './ui.jsx';
+import { Badge, Button, Modal } from './ui.jsx';
 
 function GoogleIcon() {
   return (
@@ -36,6 +36,7 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
     passwordRecoveryMode,
     signInWithGoogle,
     signInWithEmail,
+    signInAsDemo,
     signUpWithEmail,
     resetPassword,
     updatePassword,
@@ -151,20 +152,68 @@ export function AuthForm({ initialMode = 'signin', externalError = '', onSuccess
     }
   };
 
+  const handleDemoLogin = async () => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      await signInAsDemo();
+      notify(
+        tx(
+          '🎭 Đã đăng nhập Tài khoản Demo (đã nạp sẵn 4 cây Vườn Ảo & Kệ Sổ)!',
+          '🎭 Signed into Demo Account (Virtual Orchard & Passbooks preloaded)!',
+          '🎭 Demoアカウントでログインしました（仮想果樹園＆定期預金サンプル読込済）！'
+        )
+      );
+      onSuccess?.();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const demoCard = (
+    <div className="rounded-2xl border border-amber-400/35 bg-gradient-to-br from-amber-500/[0.10] via-surface to-emerald-500/[0.08] p-3.5 space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-200">
+          <Sparkles className="size-3.5 text-amber-300" />
+          {tx('Tài khoản Demo Trải Nghiệm Ngay', 'Instant 1-Click Demo Account', 'ワンクリックDemoアカウント')}
+        </div>
+        <Badge tone="warning">Demo</Badge>
+      </div>
+      <div className="rounded-xl bg-black/30 px-3 py-2 text-[11px] text-zinc-300 space-y-0.5 font-mono">
+        <div>Email: <strong className="text-white">{DEMO_ACCOUNT_CREDENTIALS.email}</strong></div>
+        <div>Pass: <strong className="text-white">{DEMO_ACCOUNT_CREDENTIALS.password}</strong></div>
+      </div>
+      <p className="text-[11px] leading-relaxed text-zinc-400">
+        {tx(
+          'Tự động nạp sẵn Khu Vườn Ảo (4 cây Việt Nam), Kệ Sổ Tiết Kiệm & Tài Sản 360° để dùng thử ngay không cần tạo tài khoản.',
+          'Preloads the 4-tree Virtual Orchard, sample Passbooks & 360° Net Worth for immediate hands-on exploration.',
+          '4本のバーチャル木・サンプル預金・360°純資産を自動設定して登録なしですぐ試せます。'
+        )}
+      </p>
+      <Button type="button" size="sm" variant="primary" className="w-full" disabled={busy} onClick={handleDemoLogin}>
+        🎭 {tx('Đăng nhập Tài khoản Demo 1 chạm', 'Sign In to Demo Account (1 Click)', 'Demoアカウントで即体験')}
+      </Button>
+    </div>
+  );
+
   if (!authConfigured) {
     return (
-      <div className="rounded-xl bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-200 ring-1 ring-inset ring-amber-400/20">
-        {tx(
-          'Tính năng đăng nhập chưa có biến môi trường VITE_SUPABASE_URL và VITE_SUPABASE_PUBLISHABLE_KEY. Vui lòng kiểm tra cấu hình Vercel / .env.local.',
-          'Authentication requires VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Please check Vercel / .env.local config.',
-          'ログイン機能には環境変数 VITE_SUPABASE_URL と VITE_SUPABASE_PUBLISHABLE_KEY の設定が必要です。'
-        )}
+      <div className="space-y-3">
+        {demoCard}
+        <div className="rounded-xl bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-200 ring-1 ring-inset ring-amber-400/20">
+          {tx(
+            'Tính năng đăng nhập Supabase chưa có biến môi trường VITE_SUPABASE_URL và VITE_SUPABASE_PUBLISHABLE_KEY. Bạn vẫn có thể sử dụng Tài khoản Demo ở trên bình thường.',
+            'Supabase Cloud Auth requires VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. You can still test with the 1-Click Demo Account above.',
+            'Supabase認証には環境変数が必要ですが、上のDemoアカウントはそのままご利用いただけます。'
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {mode !== 'update_password' && demoCard}
       {mode !== 'update_password' && (
         <>
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-white/[0.04] p-1 ring-1 ring-inset ring-white/[0.07]">

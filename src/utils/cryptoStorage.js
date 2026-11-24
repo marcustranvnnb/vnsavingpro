@@ -19,6 +19,9 @@ const ALLOWED_KEYS = new Set([
   'ONBOARDING_STATE',
   'FX_PORTFOLIO_STATE',
   'SALARY_STATE',
+  'ACTIVE_PASSBOOKS_STATE',
+  'CIC_LOAN_STATE',
+  'WEALTH_TREES_STATE',
 ]);
 
 const ALLOWED_BANKS = new Set(['cake', 'tnex', 'timo', 'liobank']);
@@ -366,7 +369,7 @@ export function validateBySchema(key, raw) {
 
     case 'CALC_HISTORY_LOG': {
       if (!Array.isArray(raw)) return null;
-      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary']);
+      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary', 'cic']);
       const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
       const validTones = new Set(['default', 'emerald', 'indigo', 'amber']);
       return raw
@@ -396,7 +399,7 @@ export function validateBySchema(key, raw) {
 
     case 'TOOL_RESTORE_STATE': {
       if (!isPlainObject(raw)) return null;
-      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary']);
+      const validTools = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary', 'cic']);
       if (!validTools.has(raw.tool) || !isPlainObject(raw.inputs)) return null;
       return {
         tool: raw.tool,
@@ -470,6 +473,121 @@ export function validateBySchema(key, raw) {
         taxExemptAllowance: clampNum(raw.taxExemptAllowance, 0, 0, 500_000_000),
         includeUnionFee: Boolean(raw.includeUnionFee),
       };
+    }
+
+    case 'ACTIVE_PASSBOOKS_STATE': {
+      if (!Array.isArray(raw)) return null;
+      const validOwners = new Set(['SELF', 'PARTNER', 'JOINT']);
+      const validTags = new Set(['EMERGENCY', 'GOAL']);
+      const validRenew = new Set(['PRINCIPAL_AND_INTEREST', 'PRINCIPAL_ONLY', 'CLOSE']);
+      const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+      return raw
+        .filter((item) => isPlainObject(item))
+        .slice(0, 30)
+        .map((item, idx) => ({
+          id: sanitizeReferralCode(item.id || '') || `pb_${idx}_${Date.now().toString(36)}`,
+          bankId: ALLOWED_BANKS.has(item.bankId) ? item.bankId : 'cake',
+          label: sanitizeText(item.label || 'Sổ tiết kiệm', 80),
+          owner: validOwners.has(item.owner) ? item.owner : 'SELF',
+          fundTag: validTags.has(item.fundTag) ? item.fundTag : 'GOAL',
+          principal: clampNum(item.principal, 10_000_000, 50_000, 500_000_000_000),
+          ratePct: clampNum(item.ratePct, 6.9, 0.1, 25),
+          tenureMonths: Math.round(clampNum(item.tenureMonths, 12, 1, 36)),
+          openDate: DATE_RE.test(String(item.openDate || '')) ? String(item.openDate) : '2026-10-01',
+          renewMode: validRenew.has(item.renewMode) ? item.renewMode : 'PRINCIPAL_AND_INTEREST',
+        }));
+    }
+
+    case 'CIC_LOAN_STATE': {
+      if (!isPlainObject(raw)) return null;
+      return {
+        debtGroup: Math.round(clampNum(raw.debtGroup, 1, 1, 5)),
+        lateCount24m: Math.round(clampNum(raw.lateCount24m, 0, 0, 24)),
+        monthlyNetIncome: clampNum(raw.monthlyNetIncome, 28_000_000, 1_000_000, 10_000_000_000),
+        existingMonthlyDebtPayment: clampNum(raw.existingMonthlyDebtPayment, 3_000_000, 0, 5_000_000_000),
+        creditCardLimit: clampNum(raw.creditCardLimit, 50_000_000, 0, 10_000_000_000),
+        creditCardBalance: clampNum(raw.creditCardBalance, 10_000_000, 0, 10_000_000_000),
+        creditAgeYears: clampNum(raw.creditAgeYears, 3, 0, 50),
+        newInquiries6m: Math.round(clampNum(raw.newInquiries6m, 1, 0, 20)),
+        hasCreditCard: raw.hasCreditCard !== false,
+        hasSecuredLoan: Boolean(raw.hasSecuredLoan),
+        hasConsumerCashLoan: Boolean(raw.hasConsumerCashLoan),
+        hasSavingsCollateral: raw.hasSavingsCollateral !== false,
+        passbookPrincipal: clampNum(raw.passbookPrincipal, 200_000_000, 1_000_000, 500_000_000_000),
+        passbookRatePct: clampNum(raw.passbookRatePct, 8.6, 0.5, 20),
+        passbookTenureMonths: Math.round(clampNum(raw.passbookTenureMonths, 12, 1, 36)),
+        monthsAlreadyHeld: clampNum(raw.monthsAlreadyHeld, 8, 0, 35),
+        urgentCashNeeded: clampNum(raw.urgentCashNeeded, 40_000_000, 1_000_000, 500_000_000_000),
+        urgentDaysNeeded: Math.round(clampNum(raw.urgentDaysNeeded, 45, 7, 365)),
+        pledgeSpreadPct: clampNum(raw.pledgeSpreadPct, 1.8, 0.5, 10),
+        assetPrice: clampNum(raw.assetPrice, 2_400_000_000, 50_000_000, 500_000_000_000),
+        downPayment: clampNum(raw.downPayment, 720_000_000, 0, 500_000_000_000),
+        preferentialRatePct: clampNum(raw.preferentialRatePct, 6.8, 0.5, 25),
+        preferentialMonths: Math.round(clampNum(raw.preferentialMonths, 24, 3, 120)),
+        floatingRatePct: clampNum(raw.floatingRatePct, 10.5, 1, 30),
+        loanYears: Math.round(clampNum(raw.loanYears, 20, 1, 35)),
+        repaymentMethod: raw.repaymentMethod === 'ANNUITY' ? 'ANNUITY' : 'DECLINING_BALANCE',
+        annualPrepaymentAmount: clampNum(raw.annualPrepaymentAmount, 50_000_000, 0, 50_000_000_000),
+        earlyRepayPenaltyPct: clampNum(raw.earlyRepayPenaltyPct, 1.5, 0, 10),
+        currentMonthlyRent: clampNum(raw.currentMonthlyRent, 12_000_000, 0, 500_000_000),
+        rentGrowthPct: clampNum(raw.rentGrowthPct, 3.5, 0, 20),
+        assetAppreciationPct: clampNum(raw.assetAppreciationPct, 5.5, -10, 30),
+        savingsYieldPct: clampNum(raw.savingsYieldPct, 8.6, 0.5, 20),
+        compareHorizonYears: Math.round(clampNum(raw.compareHorizonYears, 5, 1, 20)),
+      };
+    }
+
+    case 'WEALTH_TREES_STATE': {
+      if (!Array.isArray(raw)) return null;
+      const validSpecies = new Set([
+        'sen_dong_thap',
+        'quat_tu_lien',
+        'thanh_long',
+        'dao_nhat_tan',
+        'dua_xiem_ben_tre',
+        'ca_phe',
+        'vai_thieu_luc_ngan',
+        'xoai_hoa_loc',
+        'vusua_lo_ren',
+        'buoi_da_xanh',
+        'sau_rieng_ri6',
+        'che_shan_tuyet',
+        'tre_nga_thanh_giong',
+        'mai_tram_huong',
+      ]);
+      const validModes = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
+      const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+      return raw
+        .filter((item) => isPlainObject(item))
+        .slice(0, 30)
+        .map((item, idx) => ({
+          id: sanitizeReferralCode(item.id || '') || `tree_${idx}_${Date.now().toString(36)}`,
+          title: sanitizeText(item.title || 'Kế hoạch gieo mầm', 100),
+          speciesId: validSpecies.has(item.speciesId) ? item.speciesId : 'xoai_hoa_loc',
+          householdMode: validModes.has(item.householdMode) ? item.householdMode : 'INDIVIDUAL',
+          targetCapital: clampNum(item.targetCapital, 500_000_000, 1_000_000, 500_000_000_000),
+          initialCapital: clampNum(item.initialCapital, 50_000_000, 0, 500_000_000_000),
+          monthlyPlanned: clampNum(item.monthlyPlanned, 10_000_000, 100_000, 10_000_000_000),
+          expectedYears: clampNum(item.expectedYears, 4, 0.5, 40),
+          createdAt: DATE_RE.test(String(item.createdAt || '')) ? String(item.createdAt) : new Date().toISOString().slice(0, 10),
+          mysteryUnlocked: Boolean(item.mysteryUnlocked),
+          mysteryFruitId: sanitizeReferralCode(item.mysteryFruitId || ''),
+          isDummy: Boolean(item.isDummy),
+          checkIns: Array.isArray(item.checkIns)
+            ? item.checkIns
+                .filter((c) => isPlainObject(c))
+                .slice(0, 60)
+                .map((c, cIdx) => ({
+                  id: sanitizeReferralCode(c.id || '') || `chk_${cIdx}_${Date.now().toString(36)}`,
+                  amount: clampNum(c.amount, 5_000_000, 50_000, 100_000_000_000),
+                  date: DATE_RE.test(String(c.date || '')) ? String(c.date) : new Date().toISOString().slice(0, 10),
+                  bankId: ALLOWED_BANKS.has(c.bankId) ? c.bankId : 'cake',
+                  proofCode: sanitizeText(c.proofCode || '', 48),
+                  verified: c.verified !== false,
+                  isOverTarget: Boolean(c.isOverTarget),
+                }))
+            : [],
+        }));
     }
 
     default:

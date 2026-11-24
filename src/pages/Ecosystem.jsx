@@ -33,6 +33,7 @@ import {
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { href, navigate, useToast } from '../state.jsx';
+import { APP_VERSION } from '../tools.js';
 import {
   applyExpertToApi,
   cloneTemplateFromApi,
@@ -40,6 +41,7 @@ import {
   manageStewardMandateApi,
   openAuthPrompt,
   publishTemplateToApi,
+  syncStewardMandateSnapshot,
   voteTemplateToApi,
 } from '../utils/apiClient.js';
 import { cryptoStorage, isPlainObject } from '../utils/cryptoStorage.js';
@@ -291,6 +293,34 @@ export default function Ecosystem() {
     notify(tx('Đã thu hồi ủy quyền quản trị', 'Mandate revoked', '委任を取り消しました'));
   };
 
+  const handleSyncMandateSnapshot = async (mandate) => {
+    const token = getAccessToken();
+    if (!token) {
+      openAuthPrompt('login');
+      return;
+    }
+    try {
+      const plannerState = cryptoStorage.load('PLANNER_STATE', {});
+      const res = await syncStewardMandateSnapshot(
+        { mandateId: mandate.id, snapshotPayload: plannerState },
+        token
+      );
+      setData((prev) => ({
+        ...prev,
+        myMandates: prev.myMandates.map((m) => (m.id === mandate.id ? res.mandate : m)),
+      }));
+      notify(
+        tx(
+          `Đã đồng bộ kế hoạch hiện tại lên hồ sơ "${mandate.title}"`,
+          `Synced current plan to "${mandate.title}"`,
+          `「${mandate.title}」へ最新プランを同期しました`
+        )
+      );
+    } catch (err) {
+      notify(err?.message || tx('Không thể đồng bộ hồ sơ ủy quyền', 'Sync failed', '同期エラー'));
+    }
+  };
+
   const filteredTemplates = (data.templates || []).filter((t) => {
     if (modeFilter === 'EXPERT') return t.authorIsExpert;
     if (modeFilter === 'ALL') return true;
@@ -304,7 +334,7 @@ export default function Ecosystem() {
     <div className="space-y-6">
       <PageHeader
         icon={Users}
-        eyebrow={tx('Hệ Sinh Thái VnSavingPro v2.0', 'VnSavingPro v2.0 Ecosystem', 'VnSavingPro v2.0 エコシステム')}
+        eyebrow={tx(`Hệ Sinh Thái VnSavingPro ${APP_VERSION}`, `VnSavingPro ${APP_VERSION} Ecosystem`, `VnSavingPro ${APP_VERSION} エコシステム`)}
         title={tx('4 Vai trò Tài sản · Cộng đồng Bình chọn · Chuyên gia · Quản trị viên', '4 Wealth Roles · Voted Templates · Verified Experts · Financial Stewards', '4役割・人気プラン複製・認定専門家・資産管理委任')}
         description={tx(
           'Khám phá và Clone 1 chạm các mẫu kế hoạch thực tế được cộng đồng bình chọn (từ Cá nhân xuất sắc & Chuyên gia), kết nối Chuyên gia tài chính có bằng cấp xác thực, hoặc ủy quyền cho Người quản trị tài chính hộ gia đình.',
@@ -334,6 +364,14 @@ export default function Ecosystem() {
       {/* TAB 1: Community Templates + Clone + Vote */}
       {tab === 'templates' && (
         <div className="space-y-6">
+          <Callout icon={Sparkles} tone="neutral">
+            {tx(
+              'Lưu ý minh bạch: Các mẫu gắn nhãn 🤖 "Bot tạo · Dữ liệu mẫu tham khảo" là kịch bản mẫu do hệ thống khởi tạo sẵn để bạn thử nghiệm tính năng Clone 1 chạm; các mẫu do thành viên đăng tải sau này sẽ không gắn nhãn này.',
+              'Transparency note: Items badged 🤖 "Bot-Created · Dummy Reference" are pre-seeded demo templates so you can test 1-click cloning safely; real user-submitted templates will not carry this badge.',
+              '透明性について：🤖「Bot作成・参考ダミーデータ」バッジ付きのプランはワンクリック複製を試すための初期サンプルであり、実ユーザー投稿とは明確に区別されています。'
+            )}
+          </Callout>
+
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-1.5">
               {[
@@ -377,6 +415,11 @@ export default function Ecosystem() {
                     {tpl.authorIsCommunityVoted && (
                       <Badge tone="warning">
                         <Crown className="size-3" /> {tx('Cộng đồng bình chọn', 'Community Voted', 'コミュニティ選出')}
+                      </Badge>
+                    )}
+                    {(tpl.isDummyData || tpl.isBotCreated) && (
+                      <Badge tone="neutral">
+                        🤖 {tx('Bot tạo · Dữ liệu mẫu tham khảo', 'Bot-Created · Dummy Reference', 'Bot作成・参考ダミーデータ')}
                       </Badge>
                     )}
                   </div>
@@ -530,6 +573,14 @@ export default function Ecosystem() {
       {/* TAB 2: Verified Experts (+ Dual Community-Voted Badge) */}
       {tab === 'experts' && (
         <div className="space-y-6">
+          <Callout icon={ShieldCheck} tone="neutral">
+            {tx(
+              'Lưu ý minh bạch: Các hồ sơ gắn nhãn 🤖 "Bot tạo · Dữ liệu mẫu tham khảo" là hồ sơ chuyên gia giả lập minh họa giao diện (không phải cố vấn tài chính thực tế). Chuyên gia thật sau khi được kiểm duyệt bằng cấp sẽ hiển thị không kèm nhãn Bot.',
+              'Transparency note: Cards marked 🤖 "Bot-Created · Dummy Reference" are synthetic demo expert profiles for reference only (not real financial advisors). Approved real practitioners appear without this badge.',
+              '透明性について：🤖「Bot作成・参考ダミーデータ」バッジ付きのプロフィールは画面表示用のサンプルであり、実在のアドバイザーではありません。'
+            )}
+          </Callout>
+
           <AdaptiveGrid cols={{ mobile: 1, tablet: 2, duo: 2, desktop: 3 }}>
             {(data.experts || []).map((exp) => (
               <Card key={exp.id} className="flex flex-col justify-between p-5">
@@ -541,6 +592,11 @@ export default function Ecosystem() {
                     {exp.isCommunityVotedPlanner && (
                       <Badge tone="warning">
                         <Crown className="size-3" /> {tx('Cộng đồng bình chọn', 'Community Voted', 'コミュニティ選出')}
+                      </Badge>
+                    )}
+                    {(exp.isDummyData || exp.isBotCreated || String(exp.id).startsWith('exp_')) && (
+                      <Badge tone="neutral">
+                        🤖 {tx('Bot tạo · Dữ liệu mẫu tham khảo', 'Bot-Created · Dummy Reference', 'Bot作成・参考ダミーデータ')}
                       </Badge>
                     )}
                   </div>
@@ -772,7 +828,7 @@ export default function Ecosystem() {
                         {m.householdMode} · {m.scope}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Button
                         size="sm"
                         variant="secondary"
@@ -785,6 +841,15 @@ export default function Ecosystem() {
                       >
                         <ExternalLink className="size-3" /> {tx('Mở kế hoạch', 'Open Plan', '開く')}
                       </Button>
+                      {(m.ownerUserId === user?.id || ['budget_co_manage', 'full_steward'].includes(m.scope)) && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleSyncMandateSnapshot(m)}
+                        >
+                          <RefreshCw className="size-3" /> {tx('Đồng bộ lên hồ sơ', 'Sync Plan', '同期')}
+                        </Button>
+                      )}
                       <Button size="sm" variant="danger" onClick={() => handleRevokeMandate(m.id)}>
                         {tx('Thu hồi', 'Revoke', '解除')}
                       </Button>

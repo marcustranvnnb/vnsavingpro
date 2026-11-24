@@ -4,11 +4,13 @@ import {
   ArrowRight,
   ArrowUpRight,
   Award,
+  BookOpen,
   Cloud,
   Coffee,
   Crown,
   ExternalLink,
   FileSpreadsheet,
+  Gift,
   Heart,
   Home as HomeIcon,
   Lock,
@@ -26,14 +28,16 @@ import {
   Zap,
 } from 'lucide-react';
 import { APP_VERSION, getLocalizedTools } from '../tools.js';
+import { BLOG_POSTS } from '../data/blogData.js';
 import { UNIKORN_BADGE_IMG_URL, UNIKORN_EMBED_URL, UNIKORN_PRODUCT_URL } from '../data/contributorsData.js';
 import { useI18n } from '../i18n/index.jsx';
-import { href, useRates } from '../state.jsx';
+import { href, navigate, useRates, useToast } from '../state.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useServerCalc } from '../utils/apiClient.js';
 import { compact, chip, pct } from '../utils/format.js';
 import { HouseholdModeSwitch } from '../components/HouseholdModeSwitch.jsx';
 import { AdaptiveGrid, DualPaneSection, PageContainer } from '../components/AdaptiveLayout.jsx';
+import { LuckyCatFortuneModal, LuckyCatTipCard } from '../components/LuckyCatMascot.jsx';
 import { useDisplayMode } from '../layout/DisplayModeContext.jsx';
 import { Badge, BankMark, Button, Card, Chip, cx } from '../components/ui.jsx';
 
@@ -320,9 +324,11 @@ function RateSnapshot() {
 
 export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
   const { best, updatedAt } = useRates();
-  const { user, authConfigured } = useAuth();
+  const { user, signInAsDemo } = useAuth();
   const { lang, tx } = useI18n();
+  const notify = useToast();
   const { mode, duoPosture } = useDisplayMode();
+  const [fortuneOpen, setFortuneOpen] = useState(false);
   const top = best('12M');
   const localizedTools = getLocalizedTools(lang);
   const primary = localizedTools.filter((t) => t.primary);
@@ -381,12 +387,12 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                   )}
                 >
                   {tx(
-                    '3 bộ công cụ quản trị tài sản hợp nhất: Tiết kiệm ngân hàng số, Tỷ giá Ngoại tệ FX (Vietcombank) và Lương–Thuế 5 bậc–BHXH Luật 2026. Kết nối cùng Chuyên gia xác thực, Người lập kế hoạch cộng đồng bình chọn & Quản trị viên tài chính.',
-                    'Three unified wealth engines: Digital Bank Savings, Live FX Management, and Vietnam 2026 Payroll/Tax/Social Insurance — powered by 4 roles: Individuals, Verified Experts, Community-Voted Planners, and Financial Stewards.',
-                    'ネット銀行貯蓄・外貨FX・2026年ベトナム給与＆社会保険の3大ツールを統合。個人、認定専門家、コミュニティ選出プランナー、資産管理スチュワードの4役割に対応。'
+                    'Hợp nhất Tiết kiệm ngân hàng số, Khu Vườn Ảo 14 cây Việt Nam, Mèo Chiêu Tài Miu Vàng, Tài Sản 360°, Ngoại tệ FX (Vietcombank), Lương–BHXH 2026 & Điểm CIC – Mua Nhà cùng 4 vai trò cộng đồng.',
+                    'Unifies Digital Bank Savings, 14-Tree Virtual Orchard, Miu Vang Lucky Cat, 360° Net Worth, Live FX (Vietcombank), 2026 Payroll/BHXH & CIC Home Loan — powered by 4 ecosystem roles.',
+                    'ネット銀行貯蓄・14樹種バーチャル果樹園・招き猫ミウちゃん・統合360°純資産・外貨FX・2026年給与＆社保・CIC住宅診断を1つに統合。'
                   )}
                 </p>
-                <div className={cx('mt-7 flex gap-3', isMobileMode ? 'flex-col' : 'flex-col sm:mt-8 sm:flex-row')}>
+                <div className={cx('mt-7 flex flex-wrap gap-3', isMobileMode ? 'flex-col' : 'flex-col sm:mt-8 sm:flex-row')}>
                   <Button
                     type="button"
                     onClick={onOpenOnboarding}
@@ -398,15 +404,29 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                     {tx('Thiết lập nhanh trong 30 giây', '30-Second Quick Setup', '30秒クイック初期設定')}
                     <ArrowRight className="size-4" />
                   </Button>
-                  <Button as="a" href={href('ecosystem')} size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
-                    <Crown className="size-4 text-amber-300" />
-                    {tx('Khám phá Mẫu cộng đồng & Chuyên gia', 'Explore Voted Plans & Experts', '人気プラン・専門家を探す')}
-                  </Button>
+                  {!user ? (
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={async () => {
+                        await signInAsDemo();
+                        notify(tx('🎭 Đã bật Tài khoản Demo! Mời bạn vào Vườn Ảo & Hồ sơ khám phá.', '🎭 Demo Account active! Exploring Virtual Orchard & Profile.', '🎭 Demoアカウントを有効化しました！'));
+                        navigate(href('garden'));
+                      }}
+                      className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}
+                    >
+                      🎭 {tx('Dùng thử Tài khoản Demo 1 chạm', 'Try 1-Click Demo Account', 'ワンクリックDemo体験')}
+                    </Button>
+                  ) : (
+                    <Button as="a" href={href('garden')} size="lg" className={isMobileMode ? 'w-full' : 'w-full sm:w-auto'}>
+                      🏡 {tx('Vào Khu Vườn Ảo (14 Cây)', 'Enter Virtual Orchard', 'バーチャル果樹園へ')}
+                    </Button>
+                  )}
                 </div>
                 <dl className="mt-8 grid max-w-lg grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 sm:mt-10 sm:gap-6">
                   {[
-                    { k: tx('3 bộ công cụ', '3 Tool Suites', '3大ツール群'), v: tx('Tiết kiệm · FX · Lương 2026', 'Savings · FX · Payroll 2026', '貯蓄・外貨FX・給与2026') },
-                    { k: tx('4 vai trò', '4 Roles', '4つの役割'), v: tx('Cá nhân · CG · Cộng đồng · QT', 'Solo · Expert · Voted · Steward', '個人・専門家・選出・管理') },
+                    { k: tx('14 Cây & 360°', '14 Trees & 360°', '14樹種・360°'), v: tx('Vườn Ảo · Sổ thật · CIC', 'Orchard · Passbooks · CIC', '果樹園・預金・CIC') },
+                    { k: tx('3 Bộ & 4 Vai trò', '3 Suites · 4 Roles', '3大ツール・4役割'), v: tx('Tiết kiệm · FX · Lương 2026', 'Savings · FX · Payroll 2026', '貯蓄・外貨FX・給与2026') },
                     { k: pct(top.rate, 2, lang), v: tx('Lãi 12T cao nhất (mùng 1)', 'Top 12M Rate (1st sync)', '12ヶ月最高金利') },
                   ].map((s) => (
                     <div key={s.v} className="min-w-0">
@@ -427,6 +447,22 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
           />
         </PageContainer>
       </section>
+
+      {/* Lucky Fortune Cat Companion Welcome */}
+      <PageContainer as="section" className="pt-8">
+        <LuckyCatTipCard
+          mood="wave"
+          title={tx('Đồng hành cùng ví tiền & vườn cây của bạn ✨', 'Your cozy wealth & orchard guardian ✨', 'あなたの貯蓄と資産ツリーを見守るニャ ✨')}
+          message={tx(
+            'Chạm vào Miu Vàng để nhận lộc may mắn, rút Quẻ Lộc Tiết Kiệm mỗi ngày hoặc ghé thăm Vườn Cây Kế Hoạch Việt Nam để gieo hạt mục tiêu và mở Quả Bí Ẩn!',
+            'Pat Miu Vang for daily good luck, draw your Wealth Fortune card, or visit the Vietnamese Wealth Tree Garden to sow plan seeds & unlock Mystery Fruits!',
+            'ミウちゃんを撫でて金運チャージ！今日のおみくじを引いたり、ベトナム資産ツリーガーデンで神秘の実を育てよう！'
+          )}
+          actionLabel={tx('Rút Quẻ Lộc / Thăm Vườn Cây', 'Draw Fortune', '金運おみくじ')}
+          onAction={() => setFortuneOpen(true)}
+        />
+        <LuckyCatFortuneModal open={fortuneOpen} onClose={() => setFortuneOpen(false)} />
+      </PageContainer>
 
       {/* Household Modes */}
       <PageContainer as="section" className="pt-12 sm:pt-16 lg:pt-20">
@@ -578,6 +614,79 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
             </a>
           ))}
         </AdaptiveGrid>
+      </PageContainer>
+
+      {/* Digital Bank Security, Account Perks & Financial Blog Spotlight */}
+      <PageContainer as="section" className="pb-12 sm:pb-16">
+        <Card className="p-5 sm:p-7">
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/[0.06] pb-5">
+            <div className="max-w-2xl">
+              <div className="mb-2 inline-flex flex-wrap items-center gap-2">
+                <Badge tone="success">
+                  <ShieldCheck className="size-3" /> {tx('Bảo mật NH số & QĐ 2345', 'SBV Security & 2345', '安全性＆生体認証')}
+                </Badge>
+                <Badge tone="warning">
+                  <Gift className="size-3" /> {tx('Ưu đãi mở TK 20k–50k', '20k–50k Welcome Perks', '開設特典 2万〜5万')}
+                </Badge>
+                <Badge tone="brand">
+                  <BookOpen className="size-3" /> {tx('Blog Kiến thức Tài chính', 'Financial Blog', '資産運用ブログ')}
+                </Badge>
+              </div>
+              <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                {tx(
+                  'Bảo mật Ngân hàng số, Ưu đãi Mở Tài khoản & Blog Kiến thức 2026',
+                  'Digital Bank Security, Account-Opening Perks & 2026 Wealth Blog',
+                  'ネット銀行の安全性・口座開設特典＆2026年資産運用ブログ'
+                )}
+              </h2>
+              <p className="mt-1.5 text-xs leading-relaxed text-zinc-400 sm:text-sm">
+                {tx(
+                  'Kiểm chứng pháp lý ngân hàng mẹ, Bảo hiểm tiền gửi VN, lấy mã giới thiệu Cake · Timo · LioBank · TNEX và đọc phân tích chuyên sâu về lãi suất, thuế TNCN 5 bậc & BHXH mới.',
+                  'Verify parent bank SBV licenses, DIV deposit insurance, claim Cake · Timo · LioBank · TNEX referral perks, and explore deep dives on yields, 5-bracket PIT & 2026 BHXH.',
+                  '母体銀行の認可・預金保険、4銀行の紹介特典コード、そして最新の税制・社会保険・為替解説記事をまとめて確認できます。'
+                )}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button as="a" href={href('rates', { tab: 'security' })} variant="secondary" size="sm">
+                <ShieldCheck className="size-3.5 text-emerald-300" />
+                {tx('Bảo mật & Ưu đãi TK', 'Security & Perks', '安全性・開設特典')}
+              </Button>
+              <Button as="a" href={href('blog')} variant="primary" size="sm">
+                <BookOpen className="size-3.5" />
+                {tx('Đọc tất cả Blog', 'Browse All Blog', 'ブログ一覧')}
+              </Button>
+            </div>
+          </div>
+
+          <AdaptiveGrid cols={{ mobile: 1, tablet: 3, duo: 3, desktop: 3 }} hingeAligned className="mt-5">
+            {BLOG_POSTS.filter((p) => p.featured)
+              .slice(0, 3)
+              .map((post) => (
+                <a
+                  key={post.slug}
+                  href={href('blog', { post: post.slug })}
+                  className="card-interactive flex flex-col justify-between rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 hover:border-indigo-400/40 hover:bg-white/[0.04]"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge tone="brand">{post.badge[lang] || post.badge.vi}</Badge>
+                      <span className="text-[11px] text-zinc-500">{post.readMinutes} {tx('phút', 'min', '分')}</span>
+                    </div>
+                    <h3 className="mt-3 line-clamp-2 text-sm font-semibold text-white">
+                      {post.title[lang] || post.title.vi}
+                    </h3>
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-400">
+                      {post.excerpt[lang] || post.excerpt.vi}
+                    </p>
+                  </div>
+                  <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-indigo-300">
+                    {tx('Đọc bài phân tích', 'Read article', '記事を読む')} <ArrowRight className="size-3" />
+                  </span>
+                </a>
+              ))}
+          </AdaptiveGrid>
+        </Card>
       </PageContainer>
 
       {/* Unikorn Community & Hall of Fame Showcase */}
@@ -795,10 +904,9 @@ export default function Home({ onOpenAuth, onOpenData, onOpenOnboarding }) {
                       <User className="size-3.5" /> {tx('Mở Hồ sơ & Kịch bản đã lưu', 'Open Profile & Saved Plans', 'プロフィールを開く')}
                     </Button>
                   ) : (
-                    authConfigured &&
                     onOpenAuth && (
                       <Button type="button" variant="primary" size="sm" onClick={onOpenAuth}>
-                        <LogIn className="size-3.5" /> {tx('Đăng nhập Google / Email', 'Sign in with Google / Email', 'Google / メールでログイン')}
+                        <LogIn className="size-3.5" /> {tx('Đăng nhập & Demo', 'Sign in & Demo', 'ログイン・Demo')}
                       </Button>
                     )
                   )}

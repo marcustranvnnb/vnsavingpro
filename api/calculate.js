@@ -9,6 +9,7 @@ import {
 import { calculateFxPortfolio } from './_lib/fxCalculator.js';
 import { getLiveFxSnapshotAsync } from './_lib/fxRatesCache.js';
 import { calculateSocialBenefits, calculateVietnamSalary } from './_lib/salaryVietnam.js';
+import { calculateCicAndLoanBundle } from './_lib/cicAndLoanVietnam.js';
 import { evaluatePlanFeasibility } from './_lib/feasibilityEvaluator.js';
 import { computeHouseholdAnalysis, getRecommendedEmergencyMonths } from './_lib/householdAnalytics.js';
 import { readJsonBody } from './_lib/http.js';
@@ -363,6 +364,14 @@ export default async function handler(req, res) {
 
     case 'social_benefits': {
       const result = calculateSocialBenefits({
+        ...payload,
+        lang,
+      });
+      return res.status(200).json(result);
+    }
+
+    case 'cic_loan_bundle': {
+      const result = calculateCicAndLoanBundle({
         ...payload,
         lang,
       });

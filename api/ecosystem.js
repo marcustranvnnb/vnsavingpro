@@ -24,60 +24,66 @@ const COMMUNITY_THRESHOLDS = {
 const SEED_EXPERTS = [
   {
     id: 'exp_minhanh_cfp',
-    fullName: 'Nguyễn Minh Anh, CFP®',
-    organization: 'Independent Wealth Advisory · TP.HCM',
+    fullName: '[Mẫu Bot] Nguyễn Minh Anh, CFP® (Dữ liệu tham khảo)',
+    organization: 'Hồ sơ minh họa Bot · Demo Advisory TP.HCM',
     accountRole: 'EXPERT',
     isVerifiedExpert: true,
     isCommunityVotedPlanner: true,
+    isDummyData: true,
+    isBotCreated: true,
     communityPlannerScore: 4.86,
     communityTotalVotes: 42,
     communityTotalClones: 128,
     yearsExperience: 9,
     credentials: {
-      degree: 'Thạc sĩ Tài chính – Ngân hàng (ĐH Kinh tế TP.HCM)',
-      certificates: ['CFP® Certified Financial Planner', 'CWP Vietnam'],
-      licenseId: 'VWA-CFP-2026-014',
+      degree: '[Mẫu tham khảo] Thạc sĩ Tài chính – Ngân hàng',
+      certificates: ['CFP® Sample', 'CWP Sample'],
+      licenseId: 'DEMO-BOT-CFP-014',
     },
     specialties: ['Cặp đôi & Gia đình trẻ', 'Quỹ dự phòng 6–12 tháng', 'Tối ưu gửi bậc thang & Thuế TNCN'],
-    bio: '9 năm hoạch định dòng tiền gia đình & chuyển tiếp tiết kiệm ngân hàng số sang danh mục tài sản bền vững.',
+    bio: '[Dữ liệu mẫu do Bot tạo để tham khảo] Hồ sơ minh họa cách hiển thị Chuyên gia hoạch định dòng tiền gia đình.',
   },
   {
     id: 'exp_hoangnam_cfa',
-    fullName: 'Trần Hoàng Nam, CFA',
-    organization: 'Ho Chi Minh Asset Strategy',
+    fullName: '[Mẫu Bot] Trần Hoàng Nam, CFA (Dữ liệu tham khảo)',
+    organization: 'Hồ sơ minh họa Bot · Demo Asset Strategy',
     accountRole: 'EXPERT',
     isVerifiedExpert: true,
     isCommunityVotedPlanner: true,
+    isDummyData: true,
+    isBotCreated: true,
     communityPlannerScore: 4.74,
     communityTotalVotes: 29,
     communityTotalClones: 84,
     yearsExperience: 11,
     credentials: {
-      degree: 'Cử nhân Tài chính Định lượng (FTU)',
-      certificates: ['CFA Charterholder', 'Chứng chỉ Tư vấn Tài chính UBCKNN'],
-      licenseId: 'CFA-VN-88412',
+      degree: '[Mẫu tham khảo] Cử nhân Tài chính Định lượng',
+      certificates: ['CFA Sample', 'Tư vấn Tài chính Mẫu'],
+      licenseId: 'DEMO-BOT-CFA-884',
     },
     specialties: ['Phân bổ VND & Ngoại tệ FX', 'Lộ trình tự do tài chính sớm', 'Quản trị rủi ro thu nhập trụ cột'],
-    bio: 'Chuyên gia phân tích vĩ mô & phòng vệ tỷ giá đa tiền tệ kết hợp tiền gửi kỳ hạn chuẩn Circular 14.',
+    bio: '[Dữ liệu mẫu do Bot tạo để tham khảo] Hồ sơ minh họa chuyên gia phân tích vĩ mô & phòng vệ tỷ giá đa tiền tệ.',
   },
   {
     id: 'exp_thuytrang_cwp',
-    fullName: 'Lê Thùy Trang, CWP',
-    organization: 'Family Stewardship Vietnam · Hà Nội',
+    fullName: '[Mẫu Bot] Lê Thùy Trang, CWP (Dữ liệu tham khảo)',
+    organization: 'Hồ sơ minh họa Bot · Demo Family Stewardship',
     accountRole: 'EXPERT',
     isVerifiedExpert: true,
     isCommunityVotedPlanner: false,
+    isDummyData: true,
+    isBotCreated: true,
     communityPlannerScore: 4.5,
     communityTotalVotes: 6,
     communityTotalClones: 14,
     yearsExperience: 7,
     credentials: {
-      degree: 'Thạc sĩ Quản trị Rủi ro Tài chính (NEU)',
-      certificates: ['Certified Wealth Planner (CWP)', 'Bảo hiểm & BHXH Tư vấn'],
-      licenseId: 'CWP-HN-2025-071',
+      degree: '[Mẫu tham khảo] Thạc sĩ Quản trị Rủi ro Tài chính',
+      certificates: ['CWP Sample', 'BHXH Tư vấn Mẫu'],
+      licenseId: 'DEMO-BOT-CWP-071',
     },
     specialties: ['Nâng cấp Cặp đôi lên Gia đình', 'Kế hoạch thai sản & giáo dục con', 'Quản trị tài chính ủy quyền'],
-    bio: 'Tư vấn tái cấu trúc dòng tiền cho gia đình đa thế hệ và bảo toàn sức mua trước lạm phát.',
+    bio: '[Dữ liệu mẫu do Bot tạo để tham khảo] Hồ sơ minh họa chuyên gia tái cấu trúc dòng tiền hộ gia đình.',
   },
 ];
 
@@ -85,17 +91,19 @@ const SEED_TEMPLATES = [
   {
     id: 'tpl_couple_hcmc_5yr',
     authorUserId: 'seed_user_1',
-    authorName: 'Minh Khôi & Thảo Vy',
+    authorName: '🤖 [Mẫu Bot] Minh Khôi & Thảo Vy (Tham khảo)',
     authorRole: 'COMMUNITY_PLANNER',
     authorIsExpert: false,
     authorIsCommunityVoted: true,
-    title: 'Cặp đôi 28 tuổi TP.HCM: Tích luỹ 1,2 tỷ trong 5 năm + Quỹ dự phòng 6 tháng',
+    isDummyData: true,
+    isBotCreated: true,
+    title: '[Mẫu Bot] Cặp đôi 28 tuổi TP.HCM: Tích luỹ 1,2 tỷ trong 5 năm + Quỹ dự phòng 6 tháng',
     summary:
-      'Thu nhập tổng 48 triệu/tháng (chia góp theo tỷ lệ 60/40), giữ 6 tháng chi phí cố định ở kỳ hạn linh hoạt và gửi bậc thang 12M.',
+      'Kịch bản giả lập tham khảo: thu nhập tổng 48 triệu/tháng (chia góp 60/40), giữ 6 tháng dự phòng và gửi bậc thang 12M.',
     householdMode: 'COUPLE',
-    proofNotes: 'Sao kê đối chiếu 18 tháng gửi góp liên tục trên Cake & Timo, đạt đúng 32% quỹ mục tiêu.',
+    proofNotes: '[Dữ liệu mẫu do Bot tạo để tham khảo] Kịch bản minh họa kiểm thử 18 tháng gửi góp liên tục trên Cake & Timo.',
     proofVerified: true,
-    tags: ['Cặp đôi', 'Thực tế 18 tháng', 'Quỹ dự phòng 6T'],
+    tags: ['🤖 Dữ liệu mẫu Bot', 'Cặp đôi', 'Quỹ dự phòng 6T'],
     realismScore: 4.91,
     votesCount: 64,
     cloneCount: 193,
@@ -122,17 +130,19 @@ const SEED_TEMPLATES = [
   {
     id: 'tpl_expert_minhanh_passive',
     authorUserId: 'seed_exp_minhanh',
-    authorName: 'Nguyễn Minh Anh, CFP®',
+    authorName: '🤖 [Mẫu Bot] Nguyễn Minh Anh, CFP® (Tham khảo)',
     authorRole: 'EXPERT',
     authorIsExpert: true,
     authorIsCommunityVoted: true,
-    title: '[Chuyên gia] Lộ trình thu nhập thụ động 15 triệu/tháng cho nhân sự văn phòng',
+    isDummyData: true,
+    isBotCreated: true,
+    title: '[Mẫu Bot] Lộ trình thu nhập thụ động 15 triệu/tháng cho nhân sự văn phòng',
     summary:
-      'Thiết kế chuẩn cân bằng thanh khoản: ưu tiên tăng tỷ lệ tiết kiệm theo mức tăng lương 7%/năm kết hợp tái tục kỳ hạn 12M lãi thực dương.',
+      'Kịch bản mẫu tham khảo: tăng mức gửi +7%/năm theo lương kết hợp tái tục kỳ hạn 12M lãi thực dương.',
     householdMode: 'INDIVIDUAL',
-    proofNotes: 'Kiểm chứng qua 12 bộ hồ sơ khách hàng độc thân 25–33 tuổi tại TP.HCM & Hà Nội.',
+    proofNotes: '[Dữ liệu mẫu do Bot tạo để tham khảo] Bộ thông số mẫu giúp người dùng thử nghiệm tính năng Clone 1 chạm.',
     proofVerified: true,
-    tags: ['Chuyên gia CFP®', 'Cộng đồng bình chọn', 'Thu nhập thụ động'],
+    tags: ['🤖 Dữ liệu mẫu Bot', 'Mẫu Chuyên gia', 'Thu nhập thụ động'],
     realismScore: 4.86,
     votesCount: 42,
     cloneCount: 128,
@@ -158,17 +168,19 @@ const SEED_TEMPLATES = [
   {
     id: 'tpl_family_1child_fundfirst',
     authorUserId: 'seed_user_2',
-    authorName: 'Gia đình anh Đức Hạnh',
+    authorName: '🤖 [Mẫu Bot] Gia đình anh Đức Hạnh (Tham khảo)',
     authorRole: 'COMMUNITY_PLANNER',
     authorIsExpert: false,
     authorIsCommunityVoted: true,
-    title: 'Gia đình 1 con nhỏ tại Hà Nội: Bảo vệ trụ cột & Quỹ giáo dục 2 tỷ',
+    isDummyData: true,
+    isBotCreated: true,
+    title: '[Mẫu Bot] Gia đình 1 con nhỏ tại Hà Nội: Bảo vệ trụ cột & Quỹ giáo dục 2 tỷ',
     summary:
-      'Tách biệt chi phí nuôi con 9 triệu/tháng, kích hoạt Fund-First lấp đầy 9 tháng dự phòng trước khi đẩy vốn dài hạn.',
+      'Kịch bản mẫu tham khảo: tách chi phí nuôi con 9 triệu/tháng, kích hoạt Fund-First lấp 9 tháng dự phòng.',
     householdMode: 'FAMILY',
-    proofNotes: 'Đã vận hành thực tế 24 tháng qua 2 đợt biến động thu nhập, không cần phá sổ kỳ hạn dài.',
+    proofNotes: '[Dữ liệu mẫu do Bot tạo để tham khảo] Kịch bản giả lập hộ gia đình dùng để tham khảo cấu trúc Fund-First.',
     proofVerified: true,
-    tags: ['Gia đình', 'Fund-First 9T', 'Chống sốc thu nhập'],
+    tags: ['🤖 Dữ liệu mẫu Bot', 'Gia đình', 'Fund-First 9T'],
     realismScore: 4.78,
     votesCount: 38,
     cloneCount: 112,
@@ -196,17 +208,19 @@ const SEED_TEMPLATES = [
   {
     id: 'tpl_expert_hoangnam_fx_vnd',
     authorUserId: 'seed_exp_hoangnam',
-    authorName: 'Trần Hoàng Nam, CFA',
+    authorName: '🤖 [Mẫu Bot] Trần Hoàng Nam, CFA (Tham khảo)',
     authorRole: 'EXPERT',
     authorIsExpert: true,
     authorIsCommunityVoted: true,
-    title: '[Chuyên gia] Cân bằng Sổ tiết kiệm VND & phòng vệ Ngoại tệ cho thu nhập đa nguồn',
+    isDummyData: true,
+    isBotCreated: true,
+    title: '[Mẫu Bot] Cân bằng Sổ tiết kiệm VND & phòng vệ Ngoại tệ cho thu nhập đa nguồn',
     summary:
-      'Kết hợp dòng thu nhập chính + freelance chuyển về tài sản an toàn, giữ 6 tháng dự phòng và kỷ luật bước tăng 8%/năm.',
+      'Kịch bản mẫu tham khảo: kết hợp thu nhập chính + freelance, giữ 6 tháng dự phòng và bước tăng 8%/năm.',
     householdMode: 'INDIVIDUAL',
-    proofNotes: 'Backtest trên dữ liệu lãi suất 4 ngân hàng số và biến động VND/USD giai đoạn 2022–2026.',
+    proofNotes: '[Dữ liệu mẫu do Bot tạo để tham khảo] Kịch bản giả lập đa nguồn thu phục vụ đối chiếu trên Planner.',
     proofVerified: true,
-    tags: ['Chuyên gia CFA', 'Cộng đồng bình chọn', 'Freelance & Đa nguồn'],
+    tags: ['🤖 Dữ liệu mẫu Bot', 'Mẫu Chuyên gia', 'Freelance'],
     realismScore: 4.74,
     votesCount: 29,
     cloneCount: 84,
@@ -232,6 +246,9 @@ const SEED_TEMPLATES = [
     createdAt: '2026-11-15T14:00:00.000Z',
   },
 ];
+
+const SEED_TEMPLATE_IDS = new Set(SEED_TEMPLATES.map((t) => t.id));
+const SEED_EXPERT_IDS = new Set(SEED_EXPERTS.map((e) => e.id));
 
 // In-memory state mirrors/fallbacks when Supabase tables haven't been migrated yet
 const memoryTemplates = new Map(SEED_TEMPLATES.map((t) => [t.id, { ...t }]));
@@ -283,6 +300,8 @@ function formatTemplate(row) {
     authorRole: row.author_role || row.authorRole || 'INDIVIDUAL',
     authorIsExpert: Boolean(row.author_is_expert ?? row.authorIsExpert),
     authorIsCommunityVoted: Boolean(row.author_is_community_voted ?? row.authorIsCommunityVoted),
+    isDummyData: Boolean(row.isDummyData || SEED_TEMPLATE_IDS.has(row.id)),
+    isBotCreated: Boolean(row.isBotCreated || SEED_TEMPLATE_IDS.has(row.id)),
     title: row.title,
     summary: row.summary || '',
     householdMode: row.household_mode || row.householdMode || 'INDIVIDUAL',
@@ -585,7 +604,7 @@ export default async function handler(req, res) {
       const updated = { ...target, cloneCount: nextCloneCount };
       memoryTemplates.set(target.id, updated);
 
-      if (supabaseConnected && !templateId.startsWith('tpl_')) {
+      if (supabaseConnected && !SEED_TEMPLATE_IDS.has(templateId)) {
         await sbPatch('community_plan_templates', `id=eq.${encodeURIComponent(templateId)}`, {
           clone_count: nextCloneCount,
           updated_at: new Date().toISOString(),
@@ -710,7 +729,7 @@ export default async function handler(req, res) {
       const updated = { ...target, votesCount: newVotes, realismScore: newScore };
       memoryTemplates.set(target.id, updated);
 
-      if (supabaseConnected && !templateId.startsWith('tpl_')) {
+      if (supabaseConnected && !SEED_TEMPLATE_IDS.has(templateId)) {
         await sbUpsert(
           'community_template_votes',
           {
@@ -989,6 +1008,64 @@ export default async function handler(req, res) {
         await sbDelete('steward_mandates', `id=eq.${encodeURIComponent(id)}&owner_user_id=eq.${encodeURIComponent(userId)}`);
       }
       return res.status(200).json({ ok: true, revokedId: id });
+    }
+
+    if (action === 'sync_steward_snapshot') {
+      const mandateId = cleanStr(body.mandateId || body.id, 80);
+      if (!mandateId) {
+        return res.status(400).json({ ok: false, error: 'Missing mandateId' });
+      }
+      const nextPayload = sanitizePlanPayload(body.snapshotPayload);
+      let target = null;
+
+      for (const m of memoryMandates.values()) {
+        if (m.id === mandateId) {
+          target = m;
+          break;
+        }
+      }
+
+      if (supabaseConnected) {
+        const resDb = await sbSelect('steward_mandates', `id=eq.${encodeURIComponent(mandateId)}&limit=1`);
+        if (resDb.ok && Array.isArray(resDb.data) && resDb.data[0]) {
+          target = formatMandate(resDb.data[0]);
+        }
+      }
+
+      if (!target || target.status === 'revoked') {
+        return res.status(404).json({ ok: false, error: 'Không tìm thấy hồ sơ ủy quyền hợp lệ.' });
+      }
+
+      const isOwner = target.ownerUserId === userId;
+      const isAuthorizedSteward =
+        target.stewardUserId === userId &&
+        target.status === 'active' &&
+        ['budget_co_manage', 'full_steward'].includes(target.scope);
+
+      if (!isOwner && !isAuthorizedSteward) {
+        return res.status(403).json({
+          ok: false,
+          error: 'Bạn không có quyền ghi cập nhật snapshot cho hồ sơ ủy quyền này.',
+        });
+      }
+
+      const updated = {
+        ...target,
+        snapshotPayload: nextPayload,
+        updatedAt: nowIso,
+      };
+      if (updated.mandateCode) {
+        memoryMandates.set(updated.mandateCode, updated);
+      }
+
+      if (supabaseConnected) {
+        await sbPatch('steward_mandates', `id=eq.${encodeURIComponent(mandateId)}`, {
+          snapshot_payload: nextPayload,
+          updated_at: nowIso,
+        });
+      }
+
+      return res.status(200).json({ ok: true, mandate: updated });
     }
 
     return res.status(400).json({ ok: false, error: 'Unsupported ecosystem action' });

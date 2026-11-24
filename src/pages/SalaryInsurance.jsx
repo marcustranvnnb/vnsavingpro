@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
   Baby,
@@ -144,15 +144,12 @@ export default function SalaryInsurance() {
   const { user, getAccessToken } = useAuth();
   const notify = useToast();
 
-  const [activeTab, setActiveTab] = useState('payroll');
+  const initialRestored = useMemo(() => consumeToolRestoreState('salary'), []);
+  const [activeTab, setActiveTab] = useState(() => (initialRestored?.benefitType ? 'benefits' : 'payroll'));
 
   const [salaryState, setSalaryState] = useState(() => {
-    const restored = consumeToolRestoreState('salary');
-    if (restored?.benefitType) {
-      return DEFAULT_SALARY_STATE;
-    }
-    if (restored?.amount) {
-      return { ...DEFAULT_SALARY_STATE, ...restored };
+    if (initialRestored && !initialRestored.benefitType && initialRestored.amount) {
+      return { ...DEFAULT_SALARY_STATE, ...initialRestored };
     }
     const saved = loadSavedSalaryState();
     if (saved && Object.keys(saved).length > 0) {
@@ -171,7 +168,7 @@ export default function SalaryInsurance() {
     return DEFAULT_SALARY_STATE;
   });
 
-  const [benefitState, setBenefitState] = useState({
+  const [benefitState, setBenefitState] = useState(() => ({
     benefitType: 'unemployment',
     avgSalary6m: 20_000_000,
     avgSalaryTotal: 18_000_000,
@@ -187,7 +184,8 @@ export default function SalaryInsurance() {
     yearsFrom2014: 5,
     sickDays: 5,
     nonBhtnYears: 1,
-  });
+    ...(initialRestored?.benefitType ? initialRestored : {}),
+  }));
 
   useEffect(() => {
     saveSalaryState(salaryState);

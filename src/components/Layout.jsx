@@ -30,6 +30,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import { href, navigate, useRates, useToast } from '../state.jsx';
 import { pct } from '../utils/format.js';
 import { PageContainer } from './AdaptiveLayout.jsx';
+import { LuckyCatHeaderButton } from './LuckyCatMascot.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
 
 export function LanguageSwitcher({ compact = false, className }) {
@@ -328,16 +329,14 @@ function MoreMenu({ route, extraTools = [], topRateLabel = '', onOpenData, onOpe
 }
 
 function UserMenu({ onOpenAuth, onOpenData, onOpenOnboarding, compact = false }) {
-  const { user, profile, authConfigured, signOut } = useAuth();
+  const { user, profile, isDemoSession, signOut } = useAuth();
   const { tx } = useI18n();
   const notify = useToast();
   const [open, setOpen] = useState(false);
 
-  if (!authConfigured) return null;
-
   if (!user) {
     return (
-      <Button variant="secondary" size="sm" onClick={onOpenAuth} aria-label={tx('Đăng nhập', 'Sign in', 'ログイン')}>
+      <Button variant="secondary" size="sm" onClick={onOpenAuth} aria-label={tx('Đăng nhập & Demo', 'Sign in & Demo', 'ログイン・Demo')}>
         <LogIn className="size-4" />
         {!compact && <span className="hidden sm:inline">{tx('Đăng nhập', 'Sign in', 'ログイン')}</span>}
       </Button>
@@ -363,6 +362,11 @@ function UserMenu({ onOpenAuth, onOpenData, onOpenOnboarding, compact = false })
           </span>
         )}
         {!compact && <span className="hidden max-w-[100px] truncate sm:inline">{displayName}</span>}
+        {isDemoSession && (
+          <span className="rounded bg-amber-500/20 px-1 py-0.5 text-[9px] font-semibold text-amber-200">
+            Demo
+          </span>
+        )}
         <ChevronDown className={cx('size-3 text-zinc-400 transition-transform', open && 'rotate-180')} />
       </button>
       {open && (
@@ -370,7 +374,10 @@ function UserMenu({ onOpenAuth, onOpenData, onOpenOnboarding, compact = false })
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-full z-50 mt-2 w-60 animate-pop rounded-2xl border border-white/10 bg-elevated p-1.5 shadow-2xl">
             <div className="border-b border-white/[0.06] px-3 py-2">
-              <p className="truncate text-xs font-semibold text-white">{displayName}</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate text-xs font-semibold text-white">{displayName}</p>
+                {isDemoSession && <Badge tone="warning">Demo</Badge>}
+              </div>
               <p className="truncate text-[11px] text-zinc-400">{user.email}</p>
             </div>
             <a
@@ -544,6 +551,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
             {!isCoverScreen && <VersionBadge compact />}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <LuckyCatHeaderButton compact />
             <LanguageSwitcher compact />
             <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} compact />
           </div>
@@ -569,6 +577,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
               onOpenOnboarding={onOpenOnboarding}
               align="right"
             />
+            <LuckyCatHeaderButton compact />
             <LanguageSwitcher compact />
             <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} />
           </div>
@@ -602,6 +611,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
                 onOpenOnboarding={onOpenOnboarding}
               />
               <div className="flex shrink-0 items-center gap-1.5">
+                <LuckyCatHeaderButton compact />
                 <LanguageSwitcher compact />
                 <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} compact />
               </div>
@@ -630,6 +640,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            <LuckyCatHeaderButton compact />
             <LanguageSwitcher compact />
             <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} compact />
           </div>
@@ -657,6 +668,7 @@ export function TopNav({ route, onOpenData, onOpenAuth, onOpenOnboarding }) {
           />
         </nav>
         <div className="flex shrink-0 items-center gap-2">
+          <LuckyCatHeaderButton />
           <LanguageSwitcher compact />
           <UserMenu onOpenAuth={onOpenAuth} onOpenData={onOpenData} onOpenOnboarding={onOpenOnboarding} />
         </div>
@@ -884,6 +896,7 @@ export function Footer({ onOpenCookies }) {
           <div className="flex flex-wrap items-center gap-2">
             <span>© 2026 VnSavingPro</span>
             <VersionBadge />
+            <LuckyCatHeaderButton />
             {onOpenCookies && (
               <button
                 type="button"

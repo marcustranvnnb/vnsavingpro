@@ -10,7 +10,7 @@ import {
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
 
-const ALLOWED_TOOLS = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary']);
+const ALLOWED_TOOLS = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary', 'cic']);
 const ALLOWED_MODES = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
 const ALLOWED_TONES = new Set(['default', 'emerald', 'indigo', 'amber']);
 const MAX_ENTRIES_PER_USER = 50;

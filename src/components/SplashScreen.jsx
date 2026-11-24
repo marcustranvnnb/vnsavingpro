@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
 import { APP_VERSION } from '../tools.js';
+import { LuckyCatMascot } from './LuckyCatMascot.jsx';
 
 export default function SplashScreen({ onDone }) {
   const { tx } = useI18n();
@@ -67,18 +68,19 @@ export default function SplashScreen({ onDone }) {
       />
 
       <div className="relative flex w-full max-w-xs flex-col items-center text-center">
-        <div className="relative">
-          <div className="absolute -inset-3 rounded-3xl bg-indigo-500/20 blur-xl animate-pulse" />
+        <div className="relative flex items-center justify-center gap-3">
+          <div className="absolute -inset-4 rounded-full bg-amber-500/15 blur-2xl animate-pulse" />
+          <LuckyCatMascot mood="wave" size="md" className="relative z-10" />
           <img
             src="/logo.png"
             alt="VnSavingPro"
-            width={68}
-            height={68}
-            className="relative size-[68px] rounded-[20px] object-cover ring-1 ring-white/20 shadow-[0_14px_40px_-8px_rgba(99,102,241,0.75)]"
+            width={56}
+            height={56}
+            className="relative z-10 size-14 rounded-[18px] object-cover ring-1 ring-white/20 shadow-[0_14px_40px_-8px_rgba(99,102,241,0.75)]"
           />
         </div>
 
-        <div className="mt-5 flex items-center gap-2">
+        <div className="mt-4 flex items-center gap-2">
           <span className="text-xl font-semibold tracking-tight text-white">
             VnSaving<span className="text-indigo-300">Pro</span>
           </span>
@@ -87,11 +89,11 @@ export default function SplashScreen({ onDone }) {
           </span>
         </div>
 
-        <p className="mt-2 text-xs text-zinc-400">
+        <p className="mt-2 text-xs text-amber-200/90">
           {tx(
-            'Đang khởi tạo lộ trình & đồng bộ lãi suất...',
-            'Initializing roadmap & syncing digital bank rates...',
-            'プラン設計・ネット銀行金利を準備中...'
+            'Meow~ Mèo Chiêu Tài Miu Vàng đang mở két lãi suất & trông vườn cây cho bạn...',
+            'Meow~ Miu Vang Lucky Cat is unlocking rates & tending your wealth orchard...',
+            'ニャ〜！招き猫ミウちゃんが金利表と資産ツリーを準備中...'
           )}
         </p>
 

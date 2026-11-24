@@ -62,6 +62,18 @@
   0%, 100% { opacity: 0.45; }
   50% { opacity: 0.85; }
 }
+@keyframes pawWave {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(14deg); }
+}
+@keyframes catFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes coinSparkle {
+  0%, 100% { opacity: 0.45; transform: scale(0.92); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
 
 @layer base {
   html {
@@ -185,6 +197,28 @@ input[type="number"]::-webkit-outer-spin-button {
   );
   background-size: 200% 100%;
   animation: shimmer 1.6s linear infinite;
+}
+
+.animate-paw-wave {
+  transform-box: fill-box;
+  transform-origin: 50% 88%;
+  animation: pawWave 1.45s ease-in-out infinite;
+}
+
+.animate-cat-float {
+  animation: catFloat 3.2s ease-in-out infinite;
+}
+
+.animate-coin-sparkle {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: coinSparkle 2s ease-in-out infinite;
+}
+
+.cute-cat-card {
+  border-color: rgb(251 191 36 / 0.25);
+  background: linear-gradient(135deg, rgb(251 191 36 / 0.08) 0%, rgb(244 114 182 / 0.06) 45%, rgb(16 185 129 / 0.06) 100%);
+  box-shadow: 0 12px 32px -18px rgb(251 191 36 / 0.45);
 }
 
 .loading-bar {

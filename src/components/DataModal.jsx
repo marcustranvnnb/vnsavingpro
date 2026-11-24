@@ -70,6 +70,11 @@ export function DataModal({ open, onClose, onOpenAuth }) {
     try {
       const plannerState = cryptoStorage.load('PLANNER_STATE', null);
       const savedCustomRates = cryptoStorage.load('CUSTOM_RATES', {});
+      const fxPortfolio = cryptoStorage.load('FX_PORTFOLIO_STATE', null);
+      const salaryState = cryptoStorage.load('SALARY_STATE', null);
+      const activePassbooks = cryptoStorage.load('ACTIVE_PASSBOOKS_STATE', []);
+      const cicLoanState = cryptoStorage.load('CIC_LOAN_STATE', null);
+      const wealthTrees = cryptoStorage.load('WEALTH_TREES_STATE', []);
       const res = await saveCloudPlanToApi({
         title: tx('Kế hoạch VnSavingPro', 'VnSavingPro Plan', 'VnSavingPro プラン'),
         shareCode: cloudCode || undefined,
@@ -77,6 +82,11 @@ export function DataModal({ open, onClose, onOpenAuth }) {
         payload: {
           plan: isPlainObject(plannerState) ? plannerState : {},
           customRates: isPlainObject(savedCustomRates) ? savedCustomRates : {},
+          fxPortfolio: isPlainObject(fxPortfolio) ? fxPortfolio : {},
+          salaryState: isPlainObject(salaryState) ? salaryState : {},
+          activePassbooks: Array.isArray(activePassbooks) ? activePassbooks : [],
+          cicLoanState: isPlainObject(cicLoanState) ? cicLoanState : {},
+          wealthTrees: Array.isArray(wealthTrees) ? wealthTrees : [],
         },
       });
       setCloudCode(res.shareCode);
@@ -133,6 +143,21 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       if (isPlainObject(payload?.plan) && Object.keys(payload.plan).length > 0) {
         cryptoStorage.save('PLANNER_STATE', payload.plan);
       }
+      if (isPlainObject(payload?.fxPortfolio) && Object.keys(payload.fxPortfolio).length > 0) {
+        cryptoStorage.save('FX_PORTFOLIO_STATE', payload.fxPortfolio);
+      }
+      if (isPlainObject(payload?.salaryState) && Object.keys(payload.salaryState).length > 0) {
+        cryptoStorage.save('SALARY_STATE', payload.salaryState);
+      }
+      if (Array.isArray(payload?.activePassbooks) && payload.activePassbooks.length > 0) {
+        cryptoStorage.save('ACTIVE_PASSBOOKS_STATE', payload.activePassbooks);
+      }
+      if (isPlainObject(payload?.cicLoanState) && Object.keys(payload.cicLoanState).length > 0) {
+        cryptoStorage.save('CIC_LOAN_STATE', payload.cicLoanState);
+      }
+      if (Array.isArray(payload?.wealthTrees) && payload.wealthTrees.length > 0) {
+        cryptoStorage.save('WEALTH_TREES_STATE', payload.wealthTrees);
+      }
       const loadedCode = res.plan?.shareCode || clean;
       setCloudCode(loadedCode);
       setInputCode(loadedCode);
@@ -178,6 +203,11 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       customRates: cryptoStorage.load('CUSTOM_RATES', {}),
       customReferralCodes: cryptoStorage.load('CUSTOM_REFERRAL_CODES', {}),
       plannerState: cryptoStorage.load('PLANNER_STATE', null),
+      fxPortfolio: cryptoStorage.load('FX_PORTFOLIO_STATE', null),
+      salaryState: cryptoStorage.load('SALARY_STATE', null),
+      activePassbooks: cryptoStorage.load('ACTIVE_PASSBOOKS_STATE', []),
+      cicLoanState: cryptoStorage.load('CIC_LOAN_STATE', null),
+      wealthTrees: cryptoStorage.load('WEALTH_TREES_STATE', []),
       feedbackLog: Array.isArray(feedbackLog) ? feedbackLog : [],
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
@@ -206,6 +236,21 @@ export function DataModal({ open, onClose, onOpenAuth }) {
       }
       if (data.plannerState && typeof data.plannerState === 'object') {
         cryptoStorage.save('PLANNER_STATE', data.plannerState);
+      }
+      if (data.fxPortfolio && typeof data.fxPortfolio === 'object') {
+        cryptoStorage.save('FX_PORTFOLIO_STATE', data.fxPortfolio);
+      }
+      if (data.salaryState && typeof data.salaryState === 'object') {
+        cryptoStorage.save('SALARY_STATE', data.salaryState);
+      }
+      if (Array.isArray(data.activePassbooks)) {
+        cryptoStorage.save('ACTIVE_PASSBOOKS_STATE', data.activePassbooks);
+      }
+      if (data.cicLoanState && typeof data.cicLoanState === 'object') {
+        cryptoStorage.save('CIC_LOAN_STATE', data.cicLoanState);
+      }
+      if (Array.isArray(data.wealthTrees)) {
+        cryptoStorage.save('WEALTH_TREES_STATE', data.wealthTrees);
       }
       if (Array.isArray(data.feedbackLog)) {
         cryptoStorage.save('USER_FEEDBACK_LOG', data.feedbackLog);
