@@ -207,8 +207,16 @@ const SIZE_CLASSES = {
   lg: 'size-28',
 };
 
+const MASCOT_SPRITE_BY_MOOD = {
+  wave: '/assets/garden/mascot/miu_wave.png',
+  gardener: '/assets/garden/mascot/miu_gardener.png',
+  celebrate: '/assets/garden/mascot/miu_celebrate.png',
+  cheer: '/assets/garden/mascot/miu_celebrate.png',
+  scholar: '/assets/garden/mascot/miu_scholar.png',
+};
+
 /**
- * Animated SVG Lucky Fortune Cat ("Miu Vang" / Maneki-neko) with 5 cute moods.
+ * Animated 3D Chibi Lucky Fortune Cat ("Miu Vang" / Maneki-neko) with SVG fallback.
  */
 export function LuckyCatMascot({
   mood = 'wave',
@@ -219,12 +227,26 @@ export function LuckyCatMascot({
   ariaLabel,
 }) {
   const { tx } = useI18n();
+  const [imgFailed, setImgFailed] = useState(false);
   const isGardener = mood === 'gardener';
   const isScholar = mood === 'scholar';
   const isCelebrate = mood === 'celebrate';
   const isCheer = mood === 'cheer';
+  const spriteSrc = MASCOT_SPRITE_BY_MOOD[mood] || MASCOT_SPRITE_BY_MOOD.wave;
 
-  const body = (
+  const body = !imgFailed ? (
+    <img
+      src={spriteSrc}
+      alt={ariaLabel || tx('Linh vật Mèo Chiêu Tài Miu Vàng', 'Miu Vang Lucky Cat Mascot', '招き猫ミウちゃんマスコット')}
+      onError={() => setImgFailed(true)}
+      draggable={false}
+      className={cx(
+        SIZE_CLASSES[size] || SIZE_CLASSES.md,
+        'animate-cat-float select-none object-contain drop-shadow-[0_8px_14px_rgba(251,191,36,0.34)]',
+        className
+      )}
+    />
+  ) : (
     <svg
       viewBox="0 0 120 120"
       className={cx(

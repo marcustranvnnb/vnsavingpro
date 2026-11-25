@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-25 11:35 (Version 2.6.0.0: Personal 2.5D Isometric Sky Island Garden · 12 Plots · 14 Vietnamese Trees · Miu Vang · Demo Account)
-> **Current Architecture Version**: v2.6.0.0 (Living Wealth OS + 2.5D Isometric Sky Island `/garden` + 1-Click Demo Account + Miu Vang Lucky Cat + Real Passbooks `.ics` + 360° Net Worth + CIC `/cic` + Interactive Blog `/blog` + Security/Perks `/referral` · 10/12 Vercel Functions)
+> **Last Synced**: 2026-11-25 14:11 (Version 2.7.0.0: 2.5D Sky Island Asset Pack · 8 Growth Stages · Core-Linked Houses Lv.1–5 & Live FX)
+> **Current Architecture Version**: v2.7.0.0 (Living Wealth OS + 63 Transparent 2.5D Sky Island Assets + 8 Growth Stages + Core-Linked House Upgrades Lv.1–5 + 3D Miu Vang + Demo Account · 10/12 Vercel Functions)
 > **Deployment Status**: Clean URLs (`/`, `/plan`, `/fx`, `/salary`, `/ecosystem`, `/rates`, `/referral`, `/blog`, ...) live on `main` (`https://github.com/marcustranvnnb/vnsavingpro.git`).
 
 ---
@@ -33,7 +33,7 @@
 | `/salary` | `salary` | [src/pages/SalaryInsurance.jsx](../../src/pages/SalaryInsurance.jsx) | Vietnam 2026 Gross↔Net, 5-bracket PIT (`Law 109/2025` + `NQ 110/2025`), `2.53M` reference salary (`NĐ 161/2026`), regional wages (`NĐ 293/2025` / `NĐ 399/2026`), BHTN (`74/2025`), Maternity & Lump-Sum (`41/2024`) |
 | `/ecosystem` | `ecosystem` | [src/pages/Ecosystem.jsx](../../src/pages/Ecosystem.jsx) | 4-Role Ecosystem hub: vote & 1-click Clone community-voted plan templates, browse/apply Verified Experts, and issue/accept/sync Financial Steward mandates |
 | `/cic` | `cic` | [src/pages/CicLoanSimulator.jsx](../../src/pages/CicLoanSimulator.jsx) | Zero-PII CIC Credit Health (`403–706`, Rank `1–10`, SBV Debt Groups `1–5`), Passbook Pledge vs. Early Break, & 2-Stage Home Loan vs. Rent simulator (`api/_lib/cicAndLoanVietnam.js`) |
-| `/garden` | `garden` | [src/pages/Garden.jsx](../../src/pages/Garden.jsx) | Personal 2.5D Isometric Sky Island Garden ([IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx), [WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [wealthTreesData.js](../../src/data/wealthTreesData.js)): 12 3D island plots, waterfall, thatched hut, crystal fountain, mystic portal, 3 weather modes, move trees across plots, 14 native Vietnamese species (0.25Y–40Y), deposit boosts & 14 Mystery Fruits |
+| `/garden` | `garden` | [src/pages/Garden.jsx](../../src/pages/Garden.jsx) | Personal 2.5D Isometric Sky Island Garden ([IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx), [WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [wealthTreesData.js](../../src/data/wealthTreesData.js), [islandProgressionData.js](../../src/data/islandProgressionData.js), `public/assets/garden/`): 63 transparent 2.5D game sprites, 8-stage biological growth (`SEED` → `HARVEST`), 5 evolving House levels (`Lv.1–5` unlocking `6→12` plots) & 4 landmarks linked directly to Core Plan (`/plan`, Passbooks, `/fx`, `/cic`), live tree sway, watering-can burst FX & 3D Miu Vang |
 | `/rates` | `rates` | [src/pages/Rates.jsx](../../src/pages/Rates.jsx) | Interactive rate comparison matrix (`1W`–`36M`), inline custom rate overrides, detailed bank packages & Tab 3 **Security & Account-Opening Perks** (`CUSTOM_REFERRAL_CODES` + QR + 5-step audit) |
 | `/referral` | `referral` | [src/pages/Rates.jsx](../../src/pages/Rates.jsx) | Direct entry to Digital Bank Legal Security (SBV parent licenses, DIV, Decision 2345 NFC, Closed-Loop rule) & New-Account Referral Perks (`/uu-dai`, `/bao-mat-ngan-hang`) |
 | `/blog` | `blog` | [src/pages/Blog.jsx](../../src/pages/Blog.jsx) | Trilingual Financial Knowledge & Strategy Blog (`/blog`, `/blog?post=<slug>`) with category filters, search, reading bookmarks & direct calculator CTAs |
@@ -46,7 +46,7 @@
 
 ---
 
-## File Registry (v2.6.0.0 Living Wealth OS · 2.5D Isometric Sky Island · 1-Click Demo Account · 14 Vietnamese Trees · Miu Vang Lucky Cat · Passbooks · 360° Net Worth · CIC & Loan)
+## File Registry (v2.7.0.0 Living Wealth OS · 63 Sky Island Assets · 8 Tree Growth Stages · Core-Linked Houses · 3D Miu Vang · Demo Account)
 
 - **Database & Schema (`supabase/`)**: `supabase/schema.sql`, `supabase/migrations/{20261123_v111_security_and_history,20261123_v112_collaborative_planning,20261123_v200_wealth_platform,20261124_v210_advisor_hardening}.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `calculation_history`, `household_collaborations`, `household_spaces`, `community_plan_templates`, `community_template_votes`, `steward_mandates`, `usage_quotas`, `quota_alerts_log` + hardened RLS policies)
 - **Serverless API (`api/`, `10/12` Vercel Free-Tier functions)**: `api/rates.js`, `api/fx.js`, `api/calculate.js`, `api/ecosystem.js`, `api/feedback.js`, `api/plans.js`, `api/history.js`, `api/collaborations.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,fxRatesCache,fxCalculator,salaryVietnam,cicAndLoanVietnam,http,liveRatesCache,rateLimit,supabase,resend,quotaGuard}.js`
@@ -54,5 +54,5 @@
 - **Root, i18n, Layout & State (`src/`)**: `src/main.jsx`, `src/App.jsx`, `src/state.jsx`, `src/tools.js`, `src/version.json`, `src/index.css`, `src/i18n/index.jsx`, `src/layout/{DisplayModeContext.jsx,viewportMetrics.js}`
 - **Pages (`src/pages/`)**: `src/pages/{Home,Planner,FxManager,SalaryInsurance,Ecosystem,CicLoanSimulator,Garden,Rates,Blog,Calculator,Ladder,Career,Inflation,Contributors,Auth,Profile}.jsx` (`referral` routed directly to `Rates` Tab 3)
 - **Shared Components**: `src/components/{Layout,AdaptiveLayout,LuckyCatMascot,IsometricSkyIsland,SplashScreen,OnboardingModal,StageCarousel,SavePlanPromptCard,ActivePassbooksTracker,UnifiedNetWorthCard,WealthTreeGarden,ui,BankPicker,GrowthChart,DataModal,FeedbackWidget,CookieBanner,AuthModal,PocValidationOverlay,HouseholdModeSwitch,HouseholdInsightsCard}.jsx`
-- **Data**: `src/data/{banksData,bankPackagesData,bankSecurityAndPerksData,blogData,wealthTreesData,contributorsData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`
+- **Data & Assets**: `src/data/{banksData,bankPackagesData,bankSecurityAndPerksData,blogData,wealthTreesData,islandProgressionData,contributorsData}.js`, `src/data/scraped/{tnex-latest,timo-latest,liobank-latest,cake-latest}.json`, `public/assets/garden/{sky-island-map.jpg,trees/*.png,stages/*.png,houses/*.png,mascot/*.png,props/*.png}`
 - **Client Utilities**: `src/utils/{apiClient,supabaseClient,googleDocsExporter,format,cryptoStorage,cookieManager}.js`

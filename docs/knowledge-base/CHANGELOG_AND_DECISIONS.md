@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-25] — Version 2.7.0.0: 2.5D Sky Island Asset Pack, 8-Stage Tree Growth, Core-Linked Evolving Houses & Live FX
+
+- **Request**: Design & preview a custom asset pack for the Virtual Garden, ensure all trees evolve from freshly sown seed through fruiting & maturity across 8 stages, allow building/upgrading personal homes & garden landmarks linked directly to the core financial plan (`/plan`), and apply live animations simultaneously.
+- **Changes Implemented**:
+  - **Version Bump (`v2.7.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and [src/tools.js](../../src/tools.js).
+  - **Asset Slicing & Transparency Pipeline**: Created [scripts/slice-garden-assets.ps1](../../scripts/slice-garden-assets.ps1) generating 63 optimized files under `public/assets/garden/` (`sky-island-map.jpg`, 14 mature tree PNGs, 28 stage 1–7 sprites across `fruit`/`bonsai`/`tropical`/`lotus`, 5 evolving house tiers + locked plot PNG, 4 3D chibi Miu Vang poses, Mystery Fruits & garden props).
+  - **8-Stage Evolution & Core Plan Progression**: Upgraded `TREE_GROWTH_STAGES` to 8 stages in [src/data/wealthTreesData.js](../../src/data/wealthTreesData.js), created [src/data/islandProgressionData.js](../../src/data/islandProgressionData.js) (`HOUSE_LEVELS`, `ISLAND_LANDMARKS`, `computeIslandProgression`), upgraded [src/components/LuckyCatMascot.jsx](../../src/components/LuckyCatMascot.jsx) to 3D chibi PNG sprites, rebuilt [src/components/IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx) with calibrated 12-plot overlays, house upgrade builder, watering-can + floating VND reward burst FX & 3 weather animations in [src/index.css](../../src/index.css), and updated [src/components/WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx) + [src/pages/Garden.jsx](../../src/pages/Garden.jsx).
+
+---
+
 ## [2026-11-25] — Version 2.6.0.0: Personal 2.5D Isometric Sky Island Garden (`/garden`)
 
 - **Request**: Upgrade the virtual garden concept into a personal, farm-game-inspired floating island garden (like *Khu vườn trên mây 2*) where users can see and arrange their personal garden.

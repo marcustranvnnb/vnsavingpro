@@ -1,5 +1,5 @@
 // ============================================================
-// CÂY KẾ HOẠCH TÀI SẢN VIỆT NAM (14 LOÀI) & QUẢ BÍ ẨN (VI / EN / JA)
+// CÂY KẾ HOẠCH TÀI SẢN VIỆT NAM (14 LOÀI · 8 CHU KỲ) & QUẢ BÍ ẨN
 // Thuộc tính & chu kỳ sinh trưởng gắn liền với số năm mục tiêu
 // ============================================================
 
@@ -7,6 +7,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'sen_dong_thap',
     emoji: '🪷',
+    family: 'lotus',
     minYears: 0.25,
     maxYears: 1,
     idealYears: 0.5,
@@ -61,6 +62,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'quat_tu_lien',
     emoji: '🍊',
+    family: 'fruit',
     minYears: 0.5,
     maxYears: 1.5,
     idealYears: 1,
@@ -115,6 +117,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'thanh_long',
     emoji: '🌵',
+    family: 'tropical',
     minYears: 0.5,
     maxYears: 2,
     idealYears: 1.5,
@@ -169,6 +172,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'dao_nhat_tan',
     emoji: '🌸',
+    family: 'bonsai',
     minYears: 1,
     maxYears: 2.5,
     idealYears: 2,
@@ -223,6 +227,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'dua_xiem_ben_tre',
     emoji: '🥥',
+    family: 'tropical',
     minYears: 2,
     maxYears: 3.5,
     idealYears: 2.5,
@@ -277,6 +282,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'ca_phe',
     emoji: '☕',
+    family: 'fruit',
     minYears: 2,
     maxYears: 4,
     idealYears: 3,
@@ -331,6 +337,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'vai_thieu_luc_ngan',
     emoji: '🍒',
+    family: 'fruit',
     minYears: 3,
     maxYears: 5,
     idealYears: 3.8,
@@ -385,6 +392,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'xoai_hoa_loc',
     emoji: '🥭',
+    family: 'fruit',
     minYears: 3,
     maxYears: 5,
     idealYears: 4,
@@ -439,6 +447,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'vusua_lo_ren',
     emoji: '🟣',
+    family: 'fruit',
     minYears: 4,
     maxYears: 6,
     idealYears: 5,
@@ -493,6 +502,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'buoi_da_xanh',
     emoji: '🍏',
+    family: 'fruit',
     minYears: 4,
     maxYears: 7,
     idealYears: 5.5,
@@ -547,6 +557,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'sau_rieng_ri6',
     emoji: '🍈',
+    family: 'fruit',
     minYears: 5,
     maxYears: 10,
     idealYears: 7.5,
@@ -601,6 +612,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'che_shan_tuyet',
     emoji: '🍵',
+    family: 'bonsai',
     minYears: 6,
     maxYears: 12,
     idealYears: 8.5,
@@ -655,6 +667,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'tre_nga_thanh_giong',
     emoji: '🎋',
+    family: 'tropical',
     minYears: 8,
     maxYears: 25,
     idealYears: 12,
@@ -709,6 +722,7 @@ export const VIETNAM_WEALTH_TREES = [
   {
     id: 'mai_tram_huong',
     emoji: '🌼',
+    family: 'bonsai',
     minYears: 10,
     maxYears: 40,
     idealYears: 15,
@@ -766,6 +780,7 @@ export const MYSTERY_FRUITS = {
   fruit_lien_hoa_ngoc: {
     id: 'fruit_lien_hoa_ngoc',
     emoji: '🪷',
+    sprite: '/assets/garden/props/fruit_jade.png',
     rarity: { vi: 'Tinh Khôi · Mùa Hoa Đầu', en: 'Pure · First Bloom', ja: '清純・初開花' },
     name: {
       vi: 'Đài Sen Ngọc Liên Hoa',
@@ -781,6 +796,7 @@ export const MYSTERY_FRUITS = {
   fruit_kim_quat_cat_tuong: {
     id: 'fruit_kim_quat_cat_tuong',
     emoji: '🧧',
+    sprite: '/assets/garden/props/fruit_mango.png',
     rarity: { vi: 'Cát Tường · Đón Lộc Tết', en: 'Auspicious · Golden Harvest', ja: '吉祥・新春招福' },
     name: {
       vi: 'Quả Kim Quất Cát Tường',
@@ -796,6 +812,7 @@ export const MYSTERY_FRUITS = {
   fruit_ngoc_thanh_long: {
     id: 'fruit_ngoc_thanh_long',
     emoji: '💎',
+    sprite: '/assets/garden/props/fruit_ruby.png',
     rarity: { vi: 'Hiếm · Thanh Khoản Vàng', en: 'Rare · Liquid Ruby', ja: 'レア・流動性の宝石' },
     name: {
       vi: 'Quả Hồng Ngọc Thanh Long',
@@ -811,6 +828,7 @@ export const MYSTERY_FRUITS = {
   fruit_dao_tien_truong_tho: {
     id: 'fruit_dao_tien_truong_tho',
     emoji: '🍑',
+    sprite: '/assets/garden/props/fruit_ruby.png',
     rarity: { vi: 'Ngọt Ngào · Bích Đào Xuân', en: 'Radiant · Spring Peach', ja: '華麗・春桃の宝実' },
     name: {
       vi: 'Quả Đào Tiên Hồng Ngọc',
@@ -826,6 +844,7 @@ export const MYSTERY_FRUITS = {
   fruit_dua_ngoc_bich: {
     id: 'fruit_dua_ngoc_bich',
     emoji: '🥥',
+    sprite: '/assets/garden/props/fruit_jade.png',
     rarity: { vi: 'Thanh Mát · Miền Tây Ngọc', en: 'Refreshing · Emerald Palm', ja: '爽快・翡翠ヤシ' },
     name: {
       vi: 'Quả Dừa Ngọc Bích Minh Châu',
@@ -841,6 +860,7 @@ export const MYSTERY_FRUITS = {
   fruit_hat_ngoc_bazan: {
     id: 'fruit_hat_ngoc_bazan',
     emoji: '🫘',
+    sprite: '/assets/garden/props/fruit_ruby.png',
     rarity: { vi: 'Quý · Đất Đỏ Tây Nguyên', en: 'Precious · Basalt Gold', ja: '希少・高原の恵み' },
     name: {
       vi: 'Quả Hạt Ngọc Bazan',
@@ -856,6 +876,7 @@ export const MYSTERY_FRUITS = {
   fruit_vai_rong_do: {
     id: 'fruit_vai_rong_do',
     emoji: '🍒',
+    sprite: '/assets/garden/props/fruit_ruby.png',
     rarity: { vi: 'Sử thi · Lệ Chi Tiến Vua', en: 'Epic · Imperial Lychee', ja: 'エピック・皇帝ライチ' },
     name: {
       vi: 'Quả Lệ Chi Rồng Đỏ',
@@ -871,6 +892,7 @@ export const MYSTERY_FRUITS = {
   fruit_xoai_kim_cuong: {
     id: 'fruit_xoai_kim_cuong',
     emoji: '🌟',
+    sprite: '/assets/garden/props/fruit_mango.png',
     rarity: { vi: 'Sử thi · Phù Sa Cửu Long', en: 'Epic · Mekong Amber', ja: 'エピック・メコン琥珀' },
     name: {
       vi: 'Quả Xoài Kim Cương Hòa Lộc',
@@ -886,6 +908,7 @@ export const MYSTERY_FRUITS = {
   fruit_vusua_ngan_ha: {
     id: 'fruit_vusua_ngan_ha',
     emoji: '🔮',
+    sprite: '/assets/garden/props/fruit_jade.png',
     rarity: { vi: 'Sử thi · Tím Mơ Vĩnh Kim', en: 'Epic · Velvet Nebula', ja: 'エピック・銀河星実' },
     name: {
       vi: 'Quả Vú Sữa Ngân Hà Tím',
@@ -901,6 +924,7 @@ export const MYSTERY_FRUITS = {
   fruit_ngoc_xanh_ben_tre: {
     id: 'fruit_ngoc_xanh_ben_tre',
     emoji: '💚',
+    sprite: '/assets/garden/props/fruit_jade.png',
     rarity: { vi: 'Sử thi · Đồng Lòng Gia Đình', en: 'Epic · Family Harmony', ja: 'エピック・家族の調和' },
     name: {
       vi: 'Quả Bưởi Ngọc Bến Tre',
@@ -916,6 +940,7 @@ export const MYSTERY_FRUITS = {
   fruit_hoang_kim_ri6: {
     id: 'fruit_hoang_kim_ri6',
     emoji: '👑',
+    sprite: '/assets/garden/props/fruit_mango.png',
     rarity: { vi: 'Huyền thoại · Vương Giả Tiền Tỷ', en: 'Legendary · Sovereign Gold', ja: '伝説・黄金の王冠' },
     name: {
       vi: 'Quả Sầu Riêng Hoàng Kim Ri6',
@@ -931,6 +956,7 @@ export const MYSTERY_FRUITS = {
   fruit_bach_tra_van_nam: {
     id: 'fruit_bach_tra_van_nam',
     emoji: '❄️',
+    sprite: '/assets/garden/props/fruit_jade.png',
     rarity: { vi: 'Huyền thoại · Bạch Trà Tuyết Sơn', en: 'Legendary · Silver Cloud Bud', ja: '伝説・白雲古茶' },
     name: {
       vi: 'Tinh Hoa Bạch Trà Tuyết Sơn',
@@ -946,6 +972,7 @@ export const MYSTERY_FRUITS = {
   fruit_mang_vang_phu_dong: {
     id: 'fruit_mang_vang_phu_dong',
     emoji: '🎋',
+    sprite: '/assets/garden/props/fruit_mango.png',
     rarity: { vi: 'Thần thoại · Phù Đổng Bất Khuất', en: 'Mythic · Golden Rhizome', ja: '神話・黄金筍' },
     name: {
       vi: 'Búp Măng Vàng Phù Đổng',
@@ -961,6 +988,7 @@ export const MYSTERY_FRUITS = {
   fruit_ky_nam_truyen_doi: {
     id: 'fruit_ky_nam_truyen_doi',
     emoji: '✨',
+    sprite: '/assets/garden/props/fruit_mango.png',
     rarity: { vi: 'Bất hủ · Trầm Hương Kỳ Nam', en: 'Mythic · Eternal Agarwood', ja: '神話級・永遠の伽羅' },
     name: {
       vi: 'Quả Kỳ Nam Truyền Đời',
@@ -976,12 +1004,14 @@ export const MYSTERY_FRUITS = {
 };
 
 export const TREE_GROWTH_STAGES = [
-  { id: 'SEED', minPct: 0, maxPct: 9.99, label: { vi: 'Gieo hạt giống', en: 'Planted Seed', ja: '種まき' } },
-  { id: 'SPROUT', minPct: 10, maxPct: 24.99, label: { vi: 'Nảy mầm xanh', en: 'Fresh Sprout', ja: '発芽・若葉' } },
-  { id: 'SAPLING', minPct: 25, maxPct: 49.99, label: { vi: 'Cây non vươn nhánh', en: 'Young Sapling', ja: '若木・枝張り' } },
-  { id: 'MATURE', minPct: 50, maxPct: 74.99, label: { vi: 'Cây trưởng thành', en: 'Mature Canopy', ja: '成木・茂み' } },
-  { id: 'FLOWERING', minPct: 75, maxPct: 99.99, label: { vi: 'Đơm hoa rực rỡ', en: 'Full Blossom', ja: '満開・開花' } },
-  { id: 'HARVEST', minPct: 100, maxPct: 999, label: { vi: 'Kết trái & Quả Bí Ẩn', en: 'Harvest & Mystery Fruit', ja: '結実＆神秘の実' } },
+  { index: 1, id: 'SEED', minPct: 0, maxPct: 9.99, label: { vi: 'Gieo hạt giống', en: 'Planted Seed', ja: '1. 種まき' } },
+  { index: 2, id: 'SPROUT', minPct: 10, maxPct: 19.99, label: { vi: 'Nảy mầm xanh', en: 'Baby Sprout', ja: '2. 発芽' } },
+  { index: 3, id: 'SEEDLING', minPct: 20, maxPct: 34.99, label: { vi: 'Cây con bén rễ', en: 'Little Seedling', ja: '3. 幼苗・根張り' } },
+  { index: 4, id: 'SAPLING', minPct: 35, maxPct: 49.99, label: { vi: 'Cây non vươn nhánh', en: 'Young Sapling', ja: '4. 若木・枝張り' } },
+  { index: 5, id: 'MATURE', minPct: 50, maxPct: 64.99, label: { vi: 'Trưởng thành xanh tốt', en: 'Lush Mature Green', ja: '5. 成木・青葉' } },
+  { index: 6, id: 'FLOWERING', minPct: 65, maxPct: 79.99, label: { vi: 'Đơm nụ & nở hoa', en: 'Full Blossom', ja: '6. 開花・満開' } },
+  { index: 7, id: 'YOUNG_FRUIT', minPct: 80, maxPct: 94.99, label: { vi: 'Kết trái non', en: 'Young Green Fruit', ja: '7. 若い果実' } },
+  { index: 8, id: 'HARVEST', minPct: 95, maxPct: 999, label: { vi: 'Trĩu quả & Quả Bí Ẩn', en: 'Ripe Harvest & Mystery', ja: '8. 収穫＆神秘の実' } },
 ];
 
 export const ORCHARD_THEMES = [
@@ -1004,6 +1034,22 @@ export const ORCHARD_THEMES = [
 
 export function getTreeSpeciesById(id) {
   return VIETNAM_WEALTH_TREES.find((s) => s.id === id) || VIETNAM_WEALTH_TREES[7];
+}
+
+export function getTreeStageSprite(speciesId, stageIndex = 8) {
+  const species = getTreeSpeciesById(speciesId);
+  const clamped = Math.max(1, Math.min(8, Math.round(Number(stageIndex) || 1)));
+  if (clamped === 8) {
+    return `/assets/garden/trees/${species.id}.png`;
+  }
+  const family = species.family || 'fruit';
+  return `/assets/garden/stages/${family}_s${clamped}.png`;
+}
+
+export function getMysteryFruitSprite(speciesId) {
+  const species = getTreeSpeciesById(speciesId);
+  const fruit = MYSTERY_FRUITS[species.mysteryFruitId];
+  return fruit?.sprite || '/assets/garden/props/fruit_mango.png';
 }
 
 export function recommendTreeSpecies(yearsNeeded = 4) {
@@ -1062,14 +1108,17 @@ export function computeTreeStatus(tree) {
     TREE_GROWTH_STAGES.find((s) => effectivePct >= s.minPct && effectivePct <= s.maxPct) ||
     TREE_GROWTH_STAGES[0];
 
-  const flowersCount = effectivePct >= 75 ? Math.min(12, Math.max(4, Math.floor((effectivePct - 65) / 3))) : effectivePct >= 50 ? 2 : 0;
-  const fruitsCount = rawProgressPct >= 100 ? 6 : effectivePct >= 85 ? Math.floor((effectivePct - 80) / 5) : 0;
+  const flowersCount = effectivePct >= 65 ? Math.min(12, Math.max(4, Math.floor((effectivePct - 55) / 3))) : effectivePct >= 50 ? 2 : 0;
+  const fruitsCount = rawProgressPct >= 100 ? 6 : effectivePct >= 80 ? Math.floor((effectivePct - 75) / 5) : 0;
   const canHarvestMystery = rawProgressPct >= 100;
   const mysteryFruit = MYSTERY_FRUITS[species.mysteryFruitId] || MYSTERY_FRUITS.fruit_xoai_kim_cuong;
+  const stageSprite = getTreeStageSprite(species.id, stage.index);
 
   return {
     species,
     mysteryFruit,
+    stageSprite,
+    mysterySprite: mysteryFruit.sprite || getMysteryFruitSprite(species.id),
     checkInsCount: checkIns.length,
     verifiedDepositsTotal,
     overDepositBonusVnd,

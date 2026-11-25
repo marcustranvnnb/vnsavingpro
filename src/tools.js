@@ -23,6 +23,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v2.7.0.0',
+    date: '25/11/2026',
+    title: 'Bộ Asset 2.5D Đảo Mây · 8 Chu Kỳ Cây · 5 Cấp Nhà Gắn Core Plan & Hiệu Ứng Động',
+    items: [
+      'Trang bị bộ 63 asset 2.5D tách nền chuẩn game (public/assets/garden/): Bản đồ Đảo Mây 2.5D, 14 cây Việt Nam trưởng thành, 28 sprite 7 chu kỳ sinh trưởng đầu, 5 cấp Ngôi Nhà tiến hóa, Ô đất khóa, 4 dáng Miu Vàng 3D & Bộ Quả Bí Ẩn.',
+      'Nâng cấp cây kế hoạch lên đủ 8 Chu Kỳ Sinh Trưởng (Gieo Hạt → Nảy Mầm → Cây Con → Cây Non → Trưởng Thành → Đơm Hoa → Kết Trái Non → Thu Hoạch & Quả Bí Ẩn) kèm thanh xem trước từng chu kỳ 1→8.',
+      'Liên kết trực tiếp Đảo Mây với Kế Hoạch Core (/plan, Kệ Sổ, /fx, /cic): nâng cấp Nhà Lv.1→Lv.5 để mở khóa từ 6 lên 12 ô đất cùng 4 công trình (Đài Phun Nước, Cổng Ngọc, Thác Nước Bứt Tốc, Rương Kho Báu) và bộ hiệu ứng gió thổi, tưới nước bay chữ +VND, mưa rào & đêm trăng đom đóm.',
+    ],
+  },
+  {
     version: 'v2.6.0.0',
     date: '25/11/2026',
     title: 'Đảo Mây Tài Sản 2.5D Isometric Cá Nhân Hóa (/garden)',
@@ -684,12 +694,30 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Wealth OS v2.6 · 2.5D Isometric Sky Island Garden (14 Trees) · Miu Vang · Demo';
-  if (lang === 'ja') return '資産管理OS v2.6・2.5D天空ガーデン（14樹種）・招き猫ミウちゃん・Demo';
+  if (lang === 'en') return 'Wealth OS v2.7 · 2.5D Sky Island Assets · 8 Growth Stages · Core-Linked Houses · FX';
+  if (lang === 'ja') return '資産管理OS v2.7・2.5D天空島アセット・8段階成長・プラン連動ハウス';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.7.0.0': {
+    en: {
+      title: '2.5D Sky Island Game Assets, 8 Growth Stages, Core-Linked Homes & Live FX',
+      items: [
+        'Integrated 63 transparent 2.5D game assets: painted floating Sky Island map, 14 mature Vietnamese trees, 28 progressive growth sprites (stages 1–7), 5 evolving house tiers, 3D Miu Vang poses, and glowing Mystery Fruits.',
+        'Expanded biological evolution from 6 to 8 stages (Planted Seed → Sprout → Seedling → Sapling → Mature Green → Full Blossom → Young Fruit → Harvest & Mystery Fruit) with interactive stage 1–8 preview.',
+        'Linked Sky Island House Upgrades (Lv.1→Lv.5 unlocking 6→12 plots) and 4 Landmarks directly to /plan, Real Passbooks, /fx, and /cic, paired with live tree sway, pouring watering-can bursts, rain streaks, and starry fireflies.',
+      ],
+    },
+    ja: {
+      title: '2.5D天空島アセット・8段階成長サイクル・プラン連動の進化ハウス＆アニメーション',
+      items: [
+        '63点の切り抜き2.5Dゲームアセット（天空島マップ、ベトナム名木14種、成長段階1〜7スプライト28種、進化ハウス5段階、3Dミウちゃん、神秘の実）を一括実装。',
+        '樹木の成長を8段階（種まき→発芽→幼苗→若木→成木→開花→若い果実→収穫＆神秘の実）に拡充し、1〜8段階プレビューにも対応。',
+        '住まいの増築（Lv.1→Lv.5・6〜12区画開放）と4名所を /plan・保有預金・FX・CICと直結させ、風揺れ・水やりエフェクト・雨・蛍のアニメーションを同時適用しました。',
+      ],
+    },
+  },
   'v2.6.0.0': {
     en: {
       title: 'Personal 2.5D Isometric Sky Island Garden (/garden)',

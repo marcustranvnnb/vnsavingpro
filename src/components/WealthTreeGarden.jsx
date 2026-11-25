@@ -22,7 +22,9 @@ import {
   TREE_GROWTH_STAGES,
   VIETNAM_WEALTH_TREES,
   computeTreeStatus,
+  getMysteryFruitSprite,
   getTreeSpeciesById,
+  getTreeStageSprite,
   recommendTreeSpecies,
 } from '../data/wealthTreesData.js';
 import {
@@ -36,311 +38,56 @@ import { compact, vnd } from '../utils/format.js';
 /**
  * Reusable pure SVG renderer supporting all 8 botanical architectures of the 14 Vietnamese species.
  */
-function TreeCanopyGlyph({ status, previewFull = false, onClickMystery, compactScene = false }) {
+function VietnameseTreeSvg({ status, previewFull = false, previewStageIndex = null, onClickMystery }) {
   const { species, stage, acceleratedProgressPct, canHarvestMystery } = status;
   const v = species.visual;
-  const pct = previewFull ? 100 : acceleratedProgressPct;
-  const stageId = previewFull ? 'HARVEST' : stage.id;
-
-  const isPillar = v.style === 'pillar';
-  const isPalm = v.style === 'palm';
-  const isBamboo = v.style === 'bamboo';
-  const isLotus = v.style === 'lotus';
-  const isBushy = v.style === 'bushy';
-  const isTall = v.style === 'tall';
-  const isBonsai = v.style === 'bonsai';
-
-  const showRoots = pct >= 10 && !isLotus;
-  const showTrunk = pct >= 25;
-  const showCanopySmall = pct >= 25 && pct < 50;
-  const showCanopyFull = pct >= 50;
-  const showFlowers = pct >= 75;
-  const showFruits = pct >= 95 || stageId === 'HARVEST';
+  const displayStageIndex = previewFull
+    ? 8
+    : previewStageIndex
+      ? Math.max(1, Math.min(8, previewStageIndex))
+      : stage.index;
+  const displayStageMeta = TREE_GROWTH_STAGES[displayStageIndex - 1] || stage;
+  const pct = previewFull ? 100 : previewStageIndex ? displayStageMeta.minPct : acceleratedProgressPct;
+  const spriteUrl = getTreeStageSprite(species.id, displayStageIndex);
+  const showMysteryGlow = canHarvestMystery || displayStageIndex === 8;
 
   return (
-    <g>
-      {/* Ground or Lotus Pond Base */}
-      {isLotus ? (
-        <g>
-          <ellipse cx="140" cy="216" rx="88" ry="17" fill="#0c4a6e" stroke="#38bdf8" strokeWidth="1.8" opacity="0.9" />
-          <ellipse cx="140" cy="214" rx="70" ry="10" fill="#0284c7" opacity="0.45" />
-          <path d="M98 214 Q140 220 182 214" stroke="#7dd3fc" strokeWidth="1.2" fill="none" opacity="0.6" />
-        </g>
-      ) : (
-        <g>
-          <ellipse cx="140" cy="218" rx="90" ry="16" fill="#1c1917" stroke="#292524" strokeWidth="2" />
-          <ellipse cx="140" cy="215" rx="74" ry="11" fill="#3f2e21" />
-        </g>
-      )}
-
-      {/* Underground roots */}
-      {showRoots && (
-        <g stroke="#78350f" strokeLinecap="round" fill="none" opacity="0.75">
-          <path d="M140 214 Q122 224 98 225" strokeWidth="3" />
-          <path d="M140 214 Q162 224 185 224" strokeWidth="3" />
-          {pct >= 50 && <path d="M140 216 Q135 230 120 232" strokeWidth="2.5" />}
-          {pct >= 50 && <path d="M140 216 Q150 229 166 231" strokeWidth="2.5" />}
-        </g>
-      )}
-
-      {/* Stage 0: SEED */}
-      {stageId === 'SEED' && (
-        <g>
-          <ellipse cx="140" cy="209" rx="10" ry="7" fill="#d97706" stroke="#fbbf24" strokeWidth="1.5" />
-          <path d="M140 202 Q144 191 151 187" stroke="#4ade80" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <ellipse cx="153" cy="186" rx="6" ry="3.5" transform="rotate(-22 153 186)" fill="#4ade80" />
-        </g>
-      )}
-
-      {/* Stage 1: SPROUT */}
-      {stageId === 'SPROUT' && (
-        <g>
-          <path d="M140 214 Q138 186 140 165" stroke="#4ade80" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          <ellipse cx="127" cy="172" rx="13" ry="6.5" transform="rotate(-28 127 172)" fill={v.canopyColor} />
-          <ellipse cx="153" cy="166" rx="14" ry="7" transform="rotate(24 153 166)" fill={v.canopyColor} />
-        </g>
-      )}
-
-      {/* LOTUS ARCHITECTURE */}
-      {showTrunk && isLotus && (
-        <g>
-          {/* Floating Lotus Pads */}
-          <ellipse cx="102" cy="209" rx="28" ry="8" fill={v.canopyDark} stroke={v.canopyColor} strokeWidth="1.5" />
-          <ellipse cx="176" cy="211" rx="26" ry="7.5" fill={v.canopyColor} />
-          <ellipse cx="140" cy="204" rx="22" ry="6.5" fill={v.canopyDark} />
-          {/* Elevated Lotus Leaves */}
-          <path d="M126 208 Q112 172 104 148" stroke="#16a34a" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-          <ellipse cx="102" cy="146" rx="24" ry="8" transform="rotate(-12 102 146)" fill={v.canopyColor} />
-          {showCanopyFull && (
-            <>
-              <path d="M154 208 Q170 168 180 142" stroke="#16a34a" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-              <ellipse cx="182" cy="140" rx="24" ry="8" transform="rotate(14 182 140)" fill={v.canopyColor} />
-            </>
-          )}
-          {/* Main Center Bloom Stem */}
-          <path d="M140 208 Q138 164 140 120" stroke="#22c55e" strokeWidth="4" fill="none" strokeLinecap="round" />
-          {/* Pink Lotus Flower */}
-          {showFlowers && (
-            <g transform="translate(140,115)">
-              <ellipse cx="-16" cy="4" rx="11" ry="19" transform="rotate(-35 -16 4)" fill={v.flowerColor} opacity="0.88" />
-              <ellipse cx="16" cy="4" rx="11" ry="19" transform="rotate(35 16 4)" fill={v.flowerColor} opacity="0.88" />
-              <ellipse cx="-9" cy="-2" rx="10" ry="20" transform="rotate(-16 -9 -2)" fill="#f9a8d4" />
-              <ellipse cx="9" cy="-2" rx="10" ry="20" transform="rotate(16 9 -2)" fill="#f9a8d4" />
-              <ellipse cx="0" cy="-6" rx="9" ry="20" fill="#fdf2f8" stroke={v.flowerColor} strokeWidth="1.5" />
-            </g>
-          )}
-          {/* Golden Seed Pod */}
-          {showFruits && (
-            <g transform="translate(140,103)">
-              <ellipse cx="0" cy="0" rx="10" ry="5" fill="#fde047" stroke="#ca8a04" strokeWidth="1.2" />
-            </g>
-          )}
-        </g>
-      )}
-
-      {/* PALM (COCONUT) ARCHITECTURE */}
-      {showTrunk && isPalm && (
-        <g>
-          <path d="M136 215 Q128 158 144 96 L154 98 Q139 158 148 215 Z" fill={v.trunkColor} />
-          {/* Palm Fronds */}
-          <path d="M148 98 Q106 72 78 106 Q110 92 146 102 Z" fill={v.canopyColor} />
-          <path d="M148 98 Q188 70 218 106 Q184 92 150 102 Z" fill={v.canopyColor} />
-          <path d="M148 96 Q116 54 88 76 Q118 74 146 98 Z" fill={v.canopyDark} />
-          <path d="M148 96 Q178 52 210 74 Q180 72 150 98 Z" fill={v.canopyDark} />
-          {showCanopyFull && (
-            <path d="M148 95 Q148 52 126 48 Q144 70 148 96 Z" fill={v.canopyColor} />
-          )}
-          {showFruits && (
-            <g transform="translate(147,108)">
-              <circle cx="-8" cy="2" r="7" fill={v.fruitColor} stroke="#14532d" strokeWidth="1" />
-              <circle cx="5" cy="4" r="7.5" fill={v.fruitColor} stroke="#14532d" strokeWidth="1" />
-              <circle cx="-1" cy="11" r="7" fill={v.fruitColor} stroke="#14532d" strokeWidth="1" />
-            </g>
-          )}
-        </g>
-      )}
-
-      {/* BAMBOO ARCHITECTURE */}
-      {showTrunk && isBamboo && (
-        <g>
-          {[
-            { x: 122, topY: 96, w: 8 },
-            { x: 140, topY: 74, w: 9.5 },
-            { x: 158, topY: 102, w: 8 },
-          ].map((culm, i) => (
-            <g key={i}>
-              <line x1={culm.x} y1="215" x2={culm.x} y2={culm.topY} stroke={v.trunkColor} strokeWidth={culm.w} strokeLinecap="round" />
-              {[186, 158, 130, 108].map((ny) =>
-                ny > culm.topY ? (
-                  <line
-                    key={ny}
-                    x1={culm.x - culm.w * 0.65}
-                    y1={ny}
-                    x2={culm.x + culm.w * 0.65}
-                    y2={ny}
-                    stroke="#a16207"
-                    strokeWidth="2"
-                  />
-                ) : null
-              )}
-            </g>
-          ))}
-          <ellipse cx="110" cy="112" rx="18" ry="6" transform="rotate(-24 110 112)" fill={v.canopyColor} />
-          <ellipse cx="170" cy="116" rx="18" ry="6" transform="rotate(24 170 116)" fill={v.canopyColor} />
-          {showCanopyFull && (
-            <>
-              <ellipse cx="122" cy="86" rx="22" ry="7" transform="rotate(-16 122 86)" fill={v.canopyDark} />
-              <ellipse cx="158" cy="88" rx="22" ry="7" transform="rotate(16 158 88)" fill={v.canopyColor} />
-              <ellipse cx="140" cy="68" rx="20" ry="6.5" fill={v.canopyColor} />
-            </>
-          )}
-        </g>
-      )}
-
-      {/* DRAGON FRUIT PILLAR */}
-      {showTrunk && isPillar && (
-        <g>
-          <rect x="132" y="132" width="16" height="82" rx="5" fill="#78350f" />
-          <path d="M140 136 Q104 114 96 140" stroke={v.trunkColor} strokeWidth="10" fill="none" strokeLinecap="round" />
-          <path d="M140 136 Q176 112 184 138" stroke={v.trunkColor} strokeWidth="10" fill="none" strokeLinecap="round" />
-          <path d="M140 132 Q132 95 112 104" stroke={v.canopyColor} strokeWidth="9" fill="none" strokeLinecap="round" />
-          {showCanopyFull && (
-            <path d="M140 132 Q152 92 172 102" stroke={v.canopyColor} strokeWidth="9" fill="none" strokeLinecap="round" />
-          )}
-        </g>
-      )}
-
-      {/* STANDARD / BROAD / TALL / BONSAI / BUSHY TRUNK & CANOPY */}
-      {showTrunk && !isPillar && !isLotus && !isPalm && !isBamboo && (
-        <g>
-          <path
-            d={
-              isBonsai
-                ? 'M128 214 Q122 174 144 152 Q156 138 138 118 L149 116 Q168 140 150 162 Q138 178 148 214 Z'
-                : isTall
-                  ? 'M131 214 Q136 158 134 106 L146 106 Q144 158 149 214 Z'
-                  : 'M132 214 Q136 168 134 128 L146 128 Q144 168 148 214 Z'
-            }
-            fill={v.trunkColor}
-          />
-          <path d="M140 154 Q112 134 95 114" stroke={v.trunkColor} strokeWidth="6.5" fill="none" strokeLinecap="round" />
-          <path d="M140 144 Q168 126 186 108" stroke={v.trunkColor} strokeWidth="6" fill="none" strokeLinecap="round" />
-          {showCanopyFull && (
-            <>
-              <path d="M140 132 Q125 104 118 82" stroke={v.trunkColor} strokeWidth="5" fill="none" strokeLinecap="round" />
-              <path d="M140 132 Q156 104 166 84" stroke={v.trunkColor} strokeWidth="5" fill="none" strokeLinecap="round" />
-            </>
-          )}
-        </g>
-      )}
-
-      {/* Young Sapling Canopy */}
-      {showCanopySmall && !isPillar && !isLotus && !isPalm && !isBamboo && (
-        <g>
-          <circle cx="140" cy="116" r={isBushy ? 28 : 32} fill={v.canopyDark} />
-          <circle cx="106" cy="118" r="22" fill={v.canopyColor} />
-          <circle cx="174" cy="114" r="22" fill={v.canopyColor} />
-          <circle cx="140" cy="96" r="26" fill={v.canopyColor} opacity="0.92" />
-        </g>
-      )}
-
-      {/* Full Mature Canopy */}
-      {showCanopyFull && !isPillar && !isLotus && !isPalm && !isBamboo && (
-        <g>
-          <circle cx="90" cy="114" r={isTall ? 36 : 34} fill={v.canopyDark} />
-          <circle cx="190" cy="112" r={isTall ? 36 : 34} fill={v.canopyDark} />
-          <circle cx="140" cy={isTall ? 78 : 86} r={isTall ? 48 : 44} fill={v.canopyDark} />
-          <circle cx="104" cy="94" r="32" fill={v.canopyColor} />
-          <circle cx="176" cy="92" r="32" fill={v.canopyColor} />
-          <circle cx="140" cy={isTall ? 64 : 70} r="38" fill={v.canopyColor} opacity="0.95" />
-        </g>
-      )}
-
-      {/* Blossoms */}
-      {showFlowers && !isLotus && (
-        <g>
-          {[
-            [96, 86],
-            [122, 62],
-            [162, 66],
-            [184, 92],
-            [140, 102],
-            [78, 110],
-            [198, 112],
-          ].map(([fx, fy], idx) => (
-            <g key={idx} transform={`translate(${fx},${fy})`}>
-              <circle cx="0" cy="0" r="4.5" fill={v.flowerColor} />
-              <circle cx="0" cy="0" r="1.8" fill="#f59e0b" />
-            </g>
-          ))}
-        </g>
-      )}
-
-      {/* Heritage Fruits */}
-      {showFruits && !isLotus && !isPalm && (
-        <g>
-          {[
-            [102, 104],
-            [176, 102],
-            [118, 82],
-            [164, 80],
-          ].map(([rx, ry], idx) => (
-            <g key={idx} transform={`translate(${rx},${ry})`}>
-              <circle cx="0" cy="0" r="7" fill={v.fruitColor} stroke="#fff" strokeWidth="1" />
-              <circle cx="-2" cy="-2" r="2" fill="#fff" opacity="0.6" />
-            </g>
-          ))}
-        </g>
-      )}
-
-      {/* Interactive Glowing Mystery Fruit on Crown */}
-      {(canHarvestMystery || previewFull) && (
-        <g
-          transform={`translate(140, ${isTall ? 48 : 56})`}
-          onClick={onClickMystery}
-          className={onClickMystery ? 'cursor-pointer' : undefined}
-        >
-          <circle cx="0" cy="0" r={compactScene ? 19 : 17} fill={v.glowColor} className="animate-coin-sparkle" />
-          <circle cx="0" cy="0" r="11.5" fill="#f59e0b" stroke="#fef08a" strokeWidth="2.5" />
-          <text x="0" y="4" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#ffffff">
-            ?
-          </text>
-        </g>
-      )}
-    </g>
-  );
-}
-
-function VietnameseTreeSvg({ status, previewFull = false, onClickMystery }) {
-  const { species, stage, acceleratedProgressPct, canHarvestMystery } = status;
-  const v = species.visual;
-  const pct = previewFull ? 100 : acceleratedProgressPct;
-
-  return (
-    <div className="relative flex flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-gradient-to-b from-indigo-950/35 via-canvas/70 to-emerald-950/30 p-5">
+    <div className="relative flex flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-gradient-to-b from-sky-950/35 via-canvas/70 to-emerald-950/35 p-5">
       <div
         className="pointer-events-none absolute top-10 size-44 rounded-full blur-3xl transition-opacity duration-500"
         style={{
           background: v.glowColor,
-          opacity: pct >= 50 ? 0.5 : 0.2,
+          opacity: pct >= 50 ? 0.55 : 0.25,
         }}
       />
 
-      <svg
-        viewBox="0 0 280 250"
-        className="relative z-10 h-56 w-full max-w-[290px] drop-shadow-[0_10px_25px_rgba(0,0,0,0.45)]"
-        role="img"
-        aria-label={species.name.vi}
-      >
-        <circle cx="48" cy="36" r="1.5" fill="#fde047" opacity="0.5" />
-        <circle cx="228" cy="48" r="2" fill="#818cf8" opacity="0.6" />
-        <circle cx="204" cy="28" r="1.3" fill="#34d399" opacity="0.55" />
-        <TreeCanopyGlyph status={status} previewFull={previewFull} onClickMystery={onClickMystery} />
-      </svg>
+      <div className="relative z-10 flex h-56 w-full max-w-[260px] items-center justify-center">
+        <img
+          src={spriteUrl}
+          alt={`${species.name[status.lang || 'vi'] || species.name.vi} - ${displayStageMeta.label[status.lang || 'vi']}`}
+          draggable={false}
+          className="animate-tree-sway max-h-52 w-auto object-contain drop-shadow-[0_14px_22px_rgba(0,0,0,0.48)]"
+        />
+
+        {showMysteryGlow && (
+          <button
+            type="button"
+            onClick={onClickMystery}
+            className="animate-coin-sparkle absolute -top-1 right-4 cursor-pointer rounded-full bg-amber-500/20 p-1.5 ring-2 ring-amber-300/60 shadow-[0_0_24px_rgba(251,191,36,0.65)] transition hover:scale-110"
+            title={status.mysteryFruit.name[status.lang || 'vi'] || status.mysteryFruit.name.vi}
+          >
+            <img
+              src={status.mysterySprite}
+              alt={status.mysteryFruit.name.vi}
+              className="size-10 object-contain"
+            />
+          </button>
+        )}
+      </div>
 
       <div className="relative z-10 mt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
-        <Badge tone={pct >= 100 ? 'success' : 'brand'}>
-          {species.emoji} {stage.label[status.lang || 'vi'] || stage.label.vi}
+        <Badge tone={displayStageIndex >= 8 ? 'success' : 'brand'}>
+          {species.emoji} {displayStageIndex}/8 · {displayStageMeta.label[status.lang || 'vi'] || displayStageMeta.label.vi}
         </Badge>
         {status.growthMultiplier > 1 && (
           <Badge tone="warning">
@@ -354,7 +101,7 @@ function VietnameseTreeSvg({ status, previewFull = false, onClickMystery }) {
         title="Mèo Chiêu Tài Miu Vàng đang chăm cây"
       >
         <LuckyCatMascot
-          mood={canHarvestMystery || previewFull ? 'celebrate' : 'gardener'}
+          mood={canHarvestMystery || displayStageIndex === 8 ? 'celebrate' : 'gardener'}
           size="sm"
         />
       </div>
@@ -371,6 +118,8 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
   const [trees, setTrees] = useState(loadWealthTrees);
   const [selectedId, setSelectedId] = useState(() => loadWealthTrees()[0]?.id || '');
   const [previewFull, setPreviewFull] = useState(false);
+  const [previewStageIndex, setPreviewStageIndex] = useState(null);
+  const [wateringBurst, setWateringBurst] = useState(null);
   const [showNewForm, setShowNewForm] = useState(false);
   const [targetPlotIndex, setTargetPlotIndex] = useState(null);
   const [almanacOpen, setAlmanacOpen] = useState(false);
@@ -643,6 +392,13 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
     );
     persistTrees(next, activeTree.id);
     setDepositProof('');
+    setPreviewStageIndex(null);
+
+    const burstTs = Date.now();
+    setWateringBurst({ treeId: activeTree.id, amount: amt, isOver, ts: burstTs });
+    window.setTimeout(() => {
+      setWateringBurst((prev) => (prev?.ts === burstTs ? null : prev));
+    }, 2000);
 
     if (isOver) {
       const extraPct = Math.round(((amt - activeTree.monthlyPlanned) / Math.max(1, activeTree.monthlyPlanned)) * 100);
@@ -779,7 +535,11 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
       <IsometricSkyIsland
         trees={trees}
         selectedId={activeTree?.id || ''}
-        onSelectTree={handleSelectTreeFromScene}
+        wateringBurst={wateringBurst}
+        onSelectTree={(tree) => {
+          setPreviewStageIndex(null);
+          handleSelectTreeFromScene(tree);
+        }}
         onPlantAtPlot={handlePlantAtPlot}
         onMoveTreeToPlot={handleMoveTreeToPlot}
         onWaterSelected={handleSelectTreeFromScene}
@@ -793,7 +553,6 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
         }}
         onOpenAlmanac={() => setAlmanacOpen(true)}
         onSeedDemo={handleSeedDemoOrchard}
-        renderTreeGlyph={(st, opts) => <TreeCanopyGlyph status={st} {...opts} />}
       />
 
       {/* Orchard Action Bar & Custom Planting Form */}
@@ -963,6 +722,7 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
             <VietnameseTreeSvg
               status={activeStatus}
               previewFull={previewFull}
+              previewStageIndex={previewStageIndex}
               onClickMystery={() => activeStatus.canHarvestMystery && handleUnlockMystery()}
             />
 
@@ -1149,30 +909,43 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
               </Button>
             </form>
 
-            {/* Stage Timeline Ladder */}
+            {/* 8 Biological Growth Stages Interactive Ladder */}
             <div className="space-y-2">
-              <div className="text-xs font-medium text-zinc-400">
-                {tx('6 Giai đoạn Sinh trưởng tới Quả Bí Ẩn', '6 Biological Stages to Mystery Fruit', '神秘の実までの6成長段階')}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="font-medium text-zinc-400">
+                  {tx('8 Chu Kỳ Sinh Trưởng (Chạm để xem trước từng giai đoạn)', '8 Biological Growth Stages (Tap any stage to preview)', '8段階の成長サイクル（タップして各段階をプレビュー）')}
+                </span>
+                {previewStageIndex && (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewStageIndex(null)}
+                    className="text-[11px] font-medium text-amber-300 hover:underline"
+                  >
+                    {tx('Về giai đoạn thật', 'Reset live stage', '現在の段階に戻す')}
+                  </button>
+                )}
               </div>
-              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                 {TREE_GROWTH_STAGES.map((st) => {
                   const passed = activeStatus.acceleratedProgressPct >= st.minPct;
-                  const current = st.id === activeStatus.stage.id;
+                  const current = previewStageIndex ? st.index === previewStageIndex : st.id === activeStatus.stage.id;
                   return (
-                    <div
+                    <button
                       key={st.id}
+                      type="button"
+                      onClick={() => setPreviewStageIndex((prev) => (prev === st.index ? null : st.index))}
                       className={cx(
-                        'rounded-lg border p-2 text-center text-[10px]',
+                        'rounded-lg border p-2 text-center text-[10px] transition hover:border-emerald-400/50',
                         current
-                          ? 'border-emerald-400/60 bg-emerald-500/20 font-semibold text-white'
+                          ? 'border-emerald-400/70 bg-emerald-500/25 font-semibold text-white'
                           : passed
-                            ? 'border-indigo-400/30 bg-indigo-500/10 text-indigo-200'
+                            ? 'border-indigo-400/35 bg-indigo-500/12 text-indigo-200'
                             : 'border-white/[0.06] bg-white/[0.015] text-zinc-500'
                       )}
                     >
-                      <div>{Math.round(st.minPct)}%</div>
+                      <div>#{st.index} · {Math.round(st.minPct)}%</div>
                       <div className="mt-0.5 line-clamp-1">{st.label[lang] || st.label.vi}</div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1231,23 +1004,22 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
         className="max-w-3xl"
       >
         <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
-          {VIETNAM_WEALTH_TREES.map((sp) => {
-            const fakeStatus = {
-              species: sp,
-              stage: TREE_GROWTH_STAGES[5],
-              acceleratedProgressPct: 100,
-              canHarvestMystery: true,
-              growthMultiplier: 1,
-            };
-            return (
+          {VIETNAM_WEALTH_TREES.map((sp) => (
               <div
                 key={sp.id}
                 className="flex flex-col gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-3.5 sm:flex-row sm:items-center"
               >
-                <div className="flex size-24 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-indigo-950/50 to-emerald-950/50 ring-1 ring-white/10">
-                  <svg viewBox="0 0 280 250" className="size-22">
-                    <TreeCanopyGlyph status={fakeStatus} previewFull compactScene />
-                  </svg>
+                <div className="relative flex size-24 shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-sky-950/50 to-emerald-950/50 p-1.5 ring-1 ring-white/10">
+                  <img
+                    src={getTreeStageSprite(sp.id, 8)}
+                    alt={sp.name[lang] || sp.name.vi}
+                    className="max-h-20 w-auto object-contain drop-shadow"
+                  />
+                  <img
+                    src={getMysteryFruitSprite(sp.id)}
+                    alt=""
+                    className="absolute -right-1.5 -top-1.5 size-7 object-contain drop-shadow"
+                  />
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -1270,8 +1042,7 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
                   🌱 {tx('Trồng cây này', 'Plant', '植える')}
                 </Button>
               </div>
-            );
-          })}
+          ))}
         </div>
       </Modal>
 
@@ -1285,8 +1056,12 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
           <div className="space-y-4 text-center">
             <div className="flex items-center justify-center gap-3">
               <LuckyCatMascot mood="celebrate" size="md" />
-              <div className="flex size-20 items-center justify-center rounded-full border-2 border-amber-400/50 bg-gradient-to-br from-amber-500/25 to-emerald-500/20 text-4xl shadow-[0_0_40px_rgba(245,158,11,0.45)]">
-                {mysteryModalTree.status.mysteryFruit.emoji}
+              <div className="animate-build-pop flex size-22 items-center justify-center rounded-full border-2 border-amber-400/60 bg-gradient-to-br from-amber-500/25 to-emerald-500/20 p-2 shadow-[0_0_40px_rgba(245,158,11,0.5)]">
+                <img
+                  src={mysteryModalTree.status.mysterySprite}
+                  alt={mysteryModalTree.status.mysteryFruit.name.vi}
+                  className="size-16 object-contain drop-shadow"
+                />
               </div>
             </div>
             <div>

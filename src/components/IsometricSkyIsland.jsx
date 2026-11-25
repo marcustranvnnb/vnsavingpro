@@ -1,8 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ArrowRight,
   BookOpen,
+  CheckCircle2,
   Droplets,
+  Eye,
   Gift,
+  Home,
+  Lock,
   Move,
   Paintbrush,
   Plus,
@@ -11,127 +16,78 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
-import { useToast } from '../state.jsx';
+import { href, useToast } from '../state.jsx';
 import { ORCHARD_THEMES, computeTreeStatus } from '../data/wealthTreesData.js';
+import { HOUSE_LEVELS, computeIslandProgression } from '../data/islandProgressionData.js';
+import {
+  loadActivePassbooks,
+  loadSavedCicLoanState,
+  loadSavedFxState,
+  loadSavedPlannerState,
+} from '../utils/apiClient.js';
 import { compact } from '../utils/format.js';
 import { LuckyCatFortuneModal, LuckyCatMascot } from './LuckyCatMascot.jsx';
 import { Badge, Button, Modal, cx } from './ui.jsx';
 
-const DECOR_KEY = 'vnsaving_sky_island_decor_v1';
+const ISLAND_CONFIG_KEY = 'vnsaving_sky_island_config_v2';
 
-const DEFAULT_DECOR = {
+const DEFAULT_CONFIG = {
   gardenName: '',
-  hut: true,
-  fountain: true,
-  portal: true,
-  waterfall: true,
-  fence: true,
+  builtHouseLevel: 1,
 };
 
-function readDecor() {
+function readIslandConfig() {
   try {
-    const raw = localStorage.getItem(DECOR_KEY);
-    if (!raw) return DEFAULT_DECOR;
-    return { ...DEFAULT_DECOR, ...JSON.parse(raw) };
+    const raw = localStorage.getItem(ISLAND_CONFIG_KEY);
+    if (!raw) return DEFAULT_CONFIG;
+    return { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
   } catch {
-    return DEFAULT_DECOR;
+    return DEFAULT_CONFIG;
   }
 }
 
-function saveDecor(next) {
+function saveIslandConfig(next) {
   try {
-    localStorage.setItem(DECOR_KEY, JSON.stringify(next));
+    localStorage.setItem(ISLAND_CONFIG_KEY, JSON.stringify(next));
   } catch {
-    // ignore storage limits
+    // ignore storage errors
   }
 }
 
-// 2.5D Isometric projection constants (7x6 terrain grid)
-const HALF_W = 54;
-const HALF_H = 27;
-const ORIGIN_X = 560;
-const ORIGIN_Y = 148;
-
-function isoProject(col, row, elev = 0) {
-  const x = ORIGIN_X + (col - row) * HALF_W;
-  const y = ORIGIN_Y + (col + row) * HALF_H - elev;
-  return { x, y };
-}
-
-function IsoVoxel({
-  col,
-  row,
-  elev = 0,
-  depth = 26,
-  topFill = '#65a30d',
-  leftFill = '#78350f',
-  rightFill = '#451a03',
-  stroke = 'rgba(0,0,0,0.22)',
-  children,
-}) {
-  const { x, y } = isoProject(col, row, elev);
-  const topPts = `${x},${y} ${x + HALF_W},${y + HALF_H} ${x},${y + HALF_H * 2} ${x - HALF_W},${y + HALF_H}`;
-  const leftPts = `${x - HALF_W},${y + HALF_H} ${x},${y + HALF_H * 2} ${x},${y + HALF_H * 2 + depth} ${x - HALF_W},${y + HALF_H + depth}`;
-  const rightPts = `${x},${y + HALF_H * 2} ${x + HALF_W},${y + HALF_H} ${x + HALF_W},${y + HALF_H + depth} ${x},${y + HALF_H * 2 + depth}`;
-
-  return (
-    <g>
-      <polygon points={leftPts} fill={leftFill} stroke={stroke} strokeWidth="0.8" />
-      <polygon points={rightPts} fill={rightFill} stroke={stroke} strokeWidth="0.8" />
-      <polygon points={topPts} fill={topFill} stroke={stroke} strokeWidth="0.9" />
-      {children}
-    </g>
-  );
-}
-
-// 12 interactive farm plot coordinates sorted back-to-front
-const PLOT_COORDS = [
-  { plotIndex: 0, col: 1, row: 2 },
-  { plotIndex: 1, col: 2, row: 2 },
-  { plotIndex: 2, col: 4, row: 2 },
-  { plotIndex: 3, col: 5, row: 2 },
-  { plotIndex: 4, col: 1, row: 3 },
-  { plotIndex: 5, col: 2, row: 3 },
-  { plotIndex: 6, col: 3, row: 3 },
-  { plotIndex: 7, col: 4, row: 3 },
-  { plotIndex: 8, col: 5, row: 3 },
-  { plotIndex: 9, col: 2, row: 4 },
-  { plotIndex: 10, col: 3, row: 4 },
-  { plotIndex: 11, col: 4, row: 4 },
+// 12 calibrated soil plot centers (%) matching the 4x3 grid on /assets/garden/sky-island-map.jpg
+// Sorted back-to-front so front trees cleanly overlap back trees
+const SKY_ISLAND_PLOTS = [
+  { plotIndex: 0, left: 54.0, top: 47.0, z: 10 },
+  { plotIndex: 1, left: 46.5, top: 53.0, z: 11 },
+  { plotIndex: 2, left: 61.8, top: 53.2, z: 12 },
+  { plotIndex: 3, left: 38.8, top: 59.2, z: 13 },
+  { plotIndex: 4, left: 54.2, top: 59.4, z: 14 },
+  { plotIndex: 5, left: 69.5, top: 59.6, z: 15 },
+  { plotIndex: 6, left: 31.2, top: 65.4, z: 16 },
+  { plotIndex: 7, left: 46.5, top: 65.6, z: 17 },
+  { plotIndex: 8, left: 62.0, top: 65.8, z: 18 },
+  { plotIndex: 9, left: 39.0, top: 72.0, z: 19 },
+  { plotIndex: 10, left: 54.4, top: 72.2, z: 20 },
+  { plotIndex: 11, left: 46.8, top: 78.4, z: 21 },
 ];
 
-const STATIC_TERRAIN = [
-  // Back mountain / waterfall stones (row 0)
-  { key: 'stone_3_0', col: 3, row: 0, elev: 44, depth: 70, type: 'cliff' },
-  { key: 'stone_4_0', col: 4, row: 0, elev: 32, depth: 58, type: 'cliff' },
-  { key: 'grass_5_0', col: 5, row: 0, elev: 18, depth: 44, type: 'grass' },
-  { key: 'grass_6_0', col: 6, row: 0, elev: 18, depth: 44, type: 'grass' },
-  // Row 1
-  { key: 'stone_0_1', col: 0, row: 1, elev: 14, depth: 42, type: 'stone_portal' },
-  { key: 'grass_1_1', col: 1, row: 1, elev: 10, depth: 36, type: 'grass' },
-  { key: 'grass_2_1', col: 2, row: 1, elev: 8, depth: 34, type: 'grass' },
-  { key: 'water_3_1', col: 3, row: 1, elev: 4, depth: 30, type: 'water' },
-  { key: 'grass_4_1', col: 4, row: 1, elev: 8, depth: 34, type: 'grass' },
-  { key: 'grass_5_1', col: 5, row: 1, elev: 12, depth: 38, type: 'fountain_pad' },
-  { key: 'grass_6_1', col: 6, row: 1, elev: 10, depth: 36, type: 'grass' },
-  // Row 2 stream center & borders
-  { key: 'grass_0_2', col: 0, row: 2, elev: 4, depth: 32, type: 'grass' },
-  { key: 'water_3_2', col: 3, row: 2, elev: 0, depth: 28, type: 'water' },
-  { key: 'grass_6_2', col: 6, row: 2, elev: 4, depth: 30, type: 'grass' },
-  // Row 3 edges
-  { key: 'grass_0_3', col: 0, row: 3, elev: 0, depth: 30, type: 'grass' },
-  // Row 4 side flower beds
-  { key: 'flower_1_4', col: 1, row: 4, elev: 0, depth: 30, type: 'flower_grass' },
-  { key: 'flower_5_4', col: 5, row: 4, elev: 0, depth: 30, type: 'flower_grass' },
-  // Front tip (row 5)
-  { key: 'flower_2_5', col: 2, row: 5, elev: 0, depth: 32, type: 'flower_grass' },
-  { key: 'grass_3_5', col: 3, row: 5, elev: 0, depth: 32, type: 'grass' },
-  { key: 'flower_4_5', col: 4, row: 5, elev: 0, depth: 32, type: 'flower_grass' },
+const NIGHT_FIREFLIES = [
+  { left: '22%', top: '34%', delay: '0s' },
+  { left: '34%', top: '28%', delay: '0.6s' },
+  { left: '48%', top: '18%', delay: '1.1s' },
+  { left: '62%', top: '32%', delay: '0.4s' },
+  { left: '74%', top: '26%', delay: '1.5s' },
+  { left: '42%', top: '52%', delay: '0.9s' },
+  { left: '58%', top: '62%', delay: '0.2s' },
+  { left: '36%', top: '68%', delay: '1.7s' },
+  { left: '66%', top: '56%', delay: '0.7s' },
+  { left: '50%', top: '74%', delay: '1.3s' },
 ];
 
 export function IsometricSkyIsland({
   trees = [],
   selectedId = '',
+  wateringBurst = null,
   onSelectTree,
   onPlantAtPlot,
   onMoveTreeToPlot,
@@ -139,22 +95,63 @@ export function IsometricSkyIsland({
   onHarvestSelected,
   onOpenAlmanac,
   onSeedDemo,
-  renderTreeGlyph,
 }) {
   const { lang, tx } = useI18n();
   const notify = useToast();
 
   const [themeId, setThemeId] = useState('SUNNY_MORNING');
   const [zoom, setZoom] = useState(1);
-  const [decor, setDecor] = useState(readDecor);
-  const [decorOpen, setDecorOpen] = useState(false);
+  const [config, setConfig] = useState(readIslandConfig);
+  const [houseModalOpen, setHouseModalOpen] = useState(false);
+  const [previewDreamLv5, setPreviewDreamLv5] = useState(false);
+  const [houseAnimKey, setHouseAnimKey] = useState(0);
   const [fortuneOpen, setFortuneOpen] = useState(false);
   const [moveSourceId, setMoveSourceId] = useState('');
 
   const isRain = themeId === 'NOURISHING_RAIN';
   const isNight = themeId === 'STARRY_FIREFLY';
 
-  // Assign each tree deterministically to a unique plot 0..11
+  // Read live Core Plan state to link House Upgrade & Landmarks directly with /plan, /fx, /cic & Passbooks
+  const coreProgression = useMemo(() => {
+    const plan = loadSavedPlannerState();
+    const passbooks = loadActivePassbooks();
+    const fxPortfolio = loadSavedFxState();
+    const cicState = loadSavedCicLoanState();
+    return computeIslandProgression({ trees, plan, passbooks, fxPortfolio, cicState });
+  }, [trees]);
+
+  const effectiveBuiltLevel = previewDreamLv5
+    ? 5
+    : Math.max(1, Math.min(5, config.builtHouseLevel || coreProgression.earnedHouseLevel));
+  const canUpgradeHouse = coreProgression.earnedHouseLevel > (config.builtHouseLevel || 1);
+  const displayedHouseLevel = previewDreamLv5
+    ? 5
+    : Math.max(effectiveBuiltLevel, Math.min(coreProgression.earnedHouseLevel, effectiveBuiltLevel));
+  const houseMeta = HOUSE_LEVELS.find((h) => h.level === displayedHouseLevel) || HOUSE_LEVELS[0];
+  const unlockedPlotsCount = previewDreamLv5
+    ? 12
+    : Math.max(coreProgression.unlockedPlots, houseMeta.unlockedPlots);
+
+  const updateConfig = (patch) => {
+    const next = { ...config, ...patch };
+    setConfig(next);
+    saveIslandConfig(next);
+  };
+
+  const handleBuildNextHouse = (targetLevel) => {
+    updateConfig({ builtHouseLevel: targetLevel });
+    setHouseAnimKey((k) => k + 1);
+    const meta = HOUSE_LEVELS.find((h) => h.level === targetLevel);
+    notify(
+      tx(
+        `🏡 Tuyệt vời! Đã xây xong ${meta?.name.vi || `Nhà Cấp ${targetLevel}`} trên Đảo Mây!`,
+        `🏡 Upgraded island home to ${meta?.name.en || `Lv.${targetLevel}`}!`,
+        `🏡 天空島の住まいを ${meta?.name.ja || `Lv.${targetLevel}`} へ増築しました！`
+      )
+    );
+  };
+
+  // Assign trees deterministically to unique plots 0..11
   const plotToTree = useMemo(() => {
     const map = new Map();
     const unplaced = [];
@@ -177,35 +174,37 @@ export function IsometricSkyIsland({
     return map;
   }, [trees]);
 
-  // Combined depth-sorted render tiles
-  const sortedTiles = useMemo(() => {
-    const items = [
-      ...STATIC_TERRAIN.map((t) => ({ kind: 'static', ...t })),
-      ...PLOT_COORDS.map((p) => ({ kind: 'plot', elev: 2, depth: 30, ...p })),
-    ];
-    return items.sort((a, b) => a.col + a.row - (b.col + b.row) || a.col - b.col);
-  }, []);
-
-  // Island Gamification HUD stats
+  // HUD Game Stats
   const totalCapital = trees.reduce((s, t) => s + computeTreeStatus(t).currentCapital, 0);
   const totalCheckIns = trees.reduce((s, t) => s + (t.checkIns?.length || 0), 0);
-  const unlockedCount = trees.filter((t) => t.mysteryUnlocked).length;
+  const unlockedFruits = trees.filter((t) => t.mysteryUnlocked).length;
   const harvestReadyTrees = trees.filter((t) => computeTreeStatus(t).canHarvestMystery);
   const harvestReadyCount = harvestReadyTrees.length;
-  const xpPoints = trees.length * 40 + totalCheckIns * 25 + unlockedCount * 120 + Math.floor(totalCapital / 25_000_000);
+  const xpPoints =
+    trees.length * 40 +
+    totalCheckIns * 25 +
+    unlockedFruits * 120 +
+    displayedHouseLevel * 60 +
+    Math.floor(totalCapital / 25_000_000);
   const islandLevel = Math.max(1, 1 + Math.floor(xpPoints / 120));
   const levelProgressPct = Math.min(100, Math.round(((xpPoints % 120) / 120) * 100));
 
   const selectedTree = trees.find((t) => t.id === selectedId) || trees[0] || null;
   const selectedStatus = selectedTree ? computeTreeStatus(selectedTree) : null;
 
-  const updateDecor = (patch) => {
-    const next = { ...decor, ...patch };
-    setDecor(next);
-    saveDecor(next);
-  };
+  const handlePlotClick = (plotIdx, isLocked, occupantTree) => {
+    if (isLocked) {
+      setHouseModalOpen(true);
+      notify(
+        tx(
+          `🔒 Ô đất #${plotIdx + 1} mở khóa khi nâng cấp Ngôi Nhà trên Đảo Mây!`,
+          `🔒 Plot #${plotIdx + 1} unlocks as you upgrade your Sky Island Home!`,
+          `🔒 区画 #${plotIdx + 1} は住まいのアップグレードで開放されます！`
+        )
+      );
+      return;
+    }
 
-  const handlePlotClick = (plotIdx, occupantTree) => {
     if (moveSourceId) {
       if (occupantTree && occupantTree.id === moveSourceId) {
         setMoveSourceId('');
@@ -214,7 +213,7 @@ export function IsometricSkyIsland({
       if (!occupantTree) {
         onMoveTreeToPlot?.(moveSourceId, plotIdx);
         setMoveSourceId('');
-        notify(tx(`🏡 Đã di chuyển cây sang ô đất #${plotIdx + 1}!`, `🏡 Moved tree to plot #${plotIdx + 1}!`, `🏡 区画 #${plotIdx + 1} へ木を移動しました！`));
+        notify(tx(`🏡 Đã dời cây sang ô đất #${plotIdx + 1}!`, `🏡 Moved tree to plot #${plotIdx + 1}!`, `🏡 区画 #${plotIdx + 1} へ木を移動しました！`));
         return;
       }
       notify(tx('Ô đất này đã có cây khác! Hãy chọn ô đất trống để di chuyển.', 'That plot is occupied! Tap an empty plot.', 'その区画には別の木があります。空き区画を選んでください。'));
@@ -228,56 +227,57 @@ export function IsometricSkyIsland({
     }
   };
 
-  const skyBg = isNight
-    ? 'from-[#070b24] via-[#131842] to-[#0b2538]'
-    : isRain
-      ? 'from-[#1e293b] via-[#0e4a67] to-[#0f3d3e]'
-      : 'from-[#0ea5e9]/75 via-[#38bdf8]/55 to-[#67e8f9]/45';
-
   return (
-    <Card className="overflow-hidden border-amber-400/35 p-0 shadow-[0_24px_60px_-20px_rgba(14,165,233,0.35)]">
+    <Card className="overflow-hidden border-amber-400/40 p-0 shadow-[0_24px_60px_-20px_rgba(14,165,233,0.35)]">
       {/* Top Wooden & Gold Game HUD Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#784b26] bg-gradient-to-r from-[#2c1a0f] via-[#3a2315] to-[#2c1a0f] px-3 py-2.5 text-xs sm:px-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#784b26] bg-gradient-to-r from-[#2c1a0f] via-[#3d2516] to-[#2c1a0f] px-3 py-2.5 text-xs sm:px-4">
         <div className="flex flex-wrap items-center gap-2">
-          {/* Level Star Badge */}
+          {/* Island Level + XP */}
           <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-black/35 px-2.5 py-1">
             <span className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-indigo-600 text-[11px] font-extrabold text-white shadow">
               ★{islandLevel}
             </span>
-            <div className="min-w-[68px]">
-              <div className="flex items-center justify-between text-[10px] font-semibold text-amber-200">
-                <span className="max-w-[110px] truncate">
-                  {decor.gardenName.trim() || tx('Đảo Mây Của Tôi', 'My Sky Island', 'マイ天空島')}
-                </span>
+            <div className="min-w-[78px]">
+              <div className="max-w-[125px] truncate text-[10px] font-semibold text-amber-200">
+                {config.gardenName.trim() || tx('Đảo Mây Của Tôi', 'My Sky Island', 'マイ天空島')}
               </div>
               <div className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
-                <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300" style={{ width: `${levelProgressPct}%` }} />
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-500"
+                  style={{ width: `${levelProgressPct}%` }}
+                />
               </div>
             </div>
           </div>
 
-          {/* Mystery Fruit Gems */}
-          <div
-            className="flex items-center gap-1.5 rounded-xl border border-fuchsia-400/35 bg-black/35 px-2.5 py-1 font-semibold text-fuchsia-200 tabular-nums"
-            title={tx('Quả Bí Ẩn đã mở / Cây trồng', 'Mystery Fruits Harvested', '神秘の実の数')}
+          {/* House Level & Upgrade Shortcut */}
+          <button
+            type="button"
+            onClick={() => setHouseModalOpen(true)}
+            className={cx(
+              'flex items-center gap-1.5 rounded-xl border px-2.5 py-1 font-semibold transition',
+              canUpgradeHouse
+                ? 'animate-pulse border-amber-300 bg-amber-500/25 text-amber-100'
+                : 'border-emerald-400/35 bg-black/35 text-emerald-200 hover:bg-emerald-500/15'
+            )}
           >
+            <Home className="size-3.5" />
+            <span>
+              {tx(`Nhà Lv.${displayedHouseLevel}`, `Home Lv.${displayedHouseLevel}`, `家 Lv.${displayedHouseLevel}`)}
+            </span>
+            {canUpgradeHouse && <span className="rounded bg-amber-400 px-1 text-[9px] font-bold text-black">UP!</span>}
+          </button>
+
+          {/* Mystery Fruit Gems */}
+          <div className="flex items-center gap-1.5 rounded-xl border border-fuchsia-400/35 bg-black/35 px-2.5 py-1 font-semibold text-fuchsia-200 tabular-nums">
             <span>💎</span>
-            <span>{unlockedCount} / {trees.length}</span>
+            <span>{unlockedFruits} / {trees.length}</span>
           </div>
 
           {/* Orchard Capital Gold */}
-          <div
-            className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-black/35 px-2.5 py-1 font-semibold text-amber-200 tabular-nums"
-            title={tx('Tổng vốn thực tế trong vườn', 'Total Orchard Capital', '庭園内の合計資産')}
-          >
+          <div className="flex items-center gap-1.5 rounded-xl border border-amber-400/40 bg-black/35 px-2.5 py-1 font-semibold text-amber-200 tabular-nums">
             <span>🪙</span>
             <span>{compact(totalCapital, lang)}</span>
-          </div>
-
-          {/* Tree Plots Counter */}
-          <div className="hidden items-center gap-1.5 rounded-xl border border-emerald-400/35 bg-black/35 px-2.5 py-1 font-semibold text-emerald-200 tabular-nums sm:flex">
-            <span>🌱</span>
-            <span>{trees.length}/12</span>
           </div>
         </div>
 
@@ -302,10 +302,24 @@ export function IsometricSkyIsland({
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() => setPreviewDreamLv5((v) => !v)}
+            className={cx(
+              'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium transition',
+              previewDreamLv5
+                ? 'border-emerald-300 bg-emerald-500/30 text-white'
+                : 'border-white/15 bg-black/30 text-amber-100/75 hover:text-white'
+            )}
+            title={tx('Xem trước Dinh thự Lv.5 & mở 12 ô đất', 'Preview Lv.5 Mansion & all 12 plots', 'Lv.5豪邸・全12区画をプレビュー')}
+          >
+            <Eye className="size-3" />
+            <span className="hidden lg:inline">{previewDreamLv5 ? 'Lv.5 Demo' : tx('Xem trước', 'Preview', '予想')}</span>
+          </button>
           <div className="hidden items-center rounded-full border border-white/15 bg-black/30 p-0.5 sm:inline-flex">
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.max(0.85, Number((z - 0.1).toFixed(2))))}
+              onClick={() => setZoom((z) => Math.max(0.9, Number((z - 0.1).toFixed(2))))}
               className="rounded-full p-1 text-zinc-300 hover:bg-white/10 hover:text-white"
               aria-label={tx('Thu nhỏ đảo', 'Zoom out', '縮小')}
             >
@@ -313,7 +327,7 @@ export function IsometricSkyIsland({
             </button>
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.min(1.25, Number((z + 0.1).toFixed(2))))}
+              onClick={() => setZoom((z) => Math.min(1.3, Number((z + 0.1).toFixed(2))))}
               className="rounded-full p-1 text-zinc-300 hover:bg-white/10 hover:text-white"
               aria-label={tx('Phóng to đảo', 'Zoom in', '拡大')}
             >
@@ -323,23 +337,15 @@ export function IsometricSkyIsland({
         </div>
       </div>
 
-      {/* Main Isometric Sky Island Viewport */}
-      <div className={cx('relative overflow-hidden bg-gradient-to-b', skyBg)}>
-        {/* Ambient Sky Glow & Rain Streaks */}
-        {isRain && (
-          <div className="pointer-events-none absolute inset-0 z-10 bg-[repeating-linear-gradient(108deg,transparent_0,transparent_18px,rgba(186,230,253,0.18)_19px,transparent_21px)]" />
-        )}
-        {isNight && (
-          <div className="pointer-events-none absolute right-10 top-6 z-0 size-14 rounded-full bg-amber-200/90 shadow-[0_0_40px_rgba(253,224,71,0.6)]" />
-        )}
-
-        {/* Left Floating Wooden Action Dock (like Farm Game UI) */}
-        <div className="absolute left-2.5 top-3 z-20 flex flex-col gap-1.5 sm:left-3.5 sm:top-4">
+      {/* Interactive Painted 2.5D Isometric Sky Island Stage */}
+      <div className="relative overflow-hidden bg-[#1e3a5f]">
+        {/* Left Floating Wooden Action Dock */}
+        <div className="absolute left-2.5 top-3 z-30 flex flex-col gap-1.5 sm:left-3.5 sm:top-4">
           {[
             {
               id: 'almanac',
               icon: BookOpen,
-              label: tx('14 Giống Cây', '14 Species', '14種図鑑'),
+              label: tx('14 Giống Cây (8 Chu kỳ)', '14 Species (8 Stages)', '14種図鑑（8段階）'),
               onClick: onOpenAlmanac,
               tone: 'text-amber-950',
             },
@@ -348,15 +354,22 @@ export function IsometricSkyIsland({
               icon: Plus,
               label: tx('Gieo Cây Mới', 'Sow Seed', '新しく植える'),
               onClick: () => {
-                const freePlot = PLOT_COORDS.find((p) => !plotToTree.has(p.plotIndex))?.plotIndex ?? 0;
-                onPlantAtPlot?.(freePlot);
+                const freePlot = SKY_ISLAND_PLOTS.find(
+                  (p) => p.plotIndex < unlockedPlotsCount && !plotToTree.has(p.plotIndex)
+                )?.plotIndex;
+                if (freePlot === undefined) {
+                  setHouseModalOpen(true);
+                  notify(tx('Các ô đất đã mở đều đã trồng cây! Nâng cấp Ngôi Nhà để mở thêm ô đất nhé.', 'All unlocked plots are full! Upgrade your House to unlock more plots.', '開放済み区画がいっぱいです！家を増築して区画を増やしましょう。'));
+                } else {
+                  onPlantAtPlot?.(freePlot);
+                }
               },
               tone: 'text-emerald-900',
             },
             {
               id: 'water',
               icon: Droplets,
-              label: tx('Tưới Cây', 'Water Tree', '水やり'),
+              label: tx('Tưới Cây Đang Chọn', 'Water Tree', '水やり'),
               onClick: () => selectedTree && onWaterSelected?.(selectedTree),
               disabled: !selectedTree,
               tone: 'text-sky-900',
@@ -364,30 +377,31 @@ export function IsometricSkyIsland({
             {
               id: 'harvest',
               icon: Gift,
-              label: tx('Quả Bí Ẩn', 'Mystery Fruit', '神秘の実'),
+              label: tx('Thu Hoạch Quả Bí Ẩn', 'Harvest Mystery Fruit', '神秘の実'),
               badge: harvestReadyCount > 0 ? harvestReadyCount : null,
               onClick: () => {
                 if (harvestReadyTrees.length > 0) {
                   onHarvestSelected?.(harvestReadyTrees[0]);
                 } else {
-                  notify(tx('Chăm cây đạt 100% để mở khóa Quả Bí Ẩn nhé!', 'Grow any tree to 100% to harvest a Mystery Fruit!', '100%達成で神秘の実を収穫できます！'));
+                  notify(tx('Chăm cây tới Chu kỳ 8 (100%) để mở khóa Quả Bí Ẩn nhé!', 'Grow any tree to Stage 8 (100%) to unlock a Mystery Fruit!', '第8段階（100%）で神秘の実を収穫できます！'));
                 }
               },
               tone: 'text-rose-900',
             },
             {
-              id: 'decor',
-              icon: Paintbrush,
-              label: tx('Trang Trí Đảo', 'Decorate', '島を飾る'),
-              onClick: () => setDecorOpen(true),
-              tone: 'text-indigo-950',
+              id: 'house',
+              icon: Home,
+              label: tx('Xây Nhà & Mở Khóa Đảo', 'Upgrade Home & Island', '家の増築・開放'),
+              badge: canUpgradeHouse ? '!' : null,
+              onClick: () => setHouseModalOpen(true),
+              tone: 'text-amber-900',
             },
             {
               id: 'cat',
               icon: Sparkles,
-              label: tx('Miu Vàng', 'Miu Cat', 'ミウちゃん'),
+              label: tx('Mèo Miu Vàng · Quẻ Lộc', 'Miu Cat Fortune', '招き猫ミウちゃん'),
               onClick: () => setFortuneOpen(true),
-              tone: 'text-amber-900',
+              tone: 'text-indigo-950',
             },
           ].map((btn) => {
             const Icon = btn.icon;
@@ -399,12 +413,12 @@ export function IsometricSkyIsland({
                 onClick={btn.onClick}
                 title={btn.label}
                 className={cx(
-                  'group relative flex size-10 items-center justify-center rounded-xl border-2 border-[#784b26] bg-gradient-to-b from-[#fef3c7] to-[#e6c28b] shadow-[0_4px_10px_rgba(0,0,0,0.35)] transition hover:scale-105 active:scale-95 disabled:opacity-45 sm:size-11',
+                  'group relative flex size-9 items-center justify-center rounded-xl border-2 border-[#784b26] bg-gradient-to-b from-[#fef3c7] to-[#e6c28b] shadow-[0_4px_10px_rgba(0,0,0,0.4)] transition hover:scale-105 active:scale-95 disabled:opacity-45 sm:size-11',
                   btn.tone
                 )}
               >
                 <Icon className="size-4 sm:size-5" />
-                {btn.badge && (
+                {btn.badge !== null && btn.badge !== undefined && (
                   <span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-rose-600 text-[9px] font-bold text-white shadow">
                     {btn.badge}
                   </span>
@@ -417,11 +431,11 @@ export function IsometricSkyIsland({
           })}
         </div>
 
-        {/* Move Mode Banner */}
+        {/* Move Mode Floating Prompt */}
         {moveSourceId && (
           <div className="absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full border border-amber-300 bg-amber-950/95 px-4 py-1.5 text-xs font-semibold text-amber-100 shadow-xl">
             <Move className="size-3.5 text-amber-300" />
-            <span>{tx('Chọn 1 ô đất trống trên đảo để dời cây tới!', 'Tap any empty island plot to move your tree!', '空き区画をタップして木を移動！')}</span>
+            <span>{tx('Chọn 1 ô đất trống đã mở khóa để dời cây tới!', 'Tap any unlocked empty plot to move your tree!', '開放済みの空き区画をタップ！')}</span>
             <button
               type="button"
               onClick={() => setMoveSourceId('')}
@@ -432,269 +446,232 @@ export function IsometricSkyIsland({
           </div>
         )}
 
-        {/* 2.5D Isometric Island Canvas */}
-        <div className="overflow-x-auto px-2 py-3 sm:px-6">
+        {/* Scrollable 16:9 Isometric Island Artwork + Interactive Overlays */}
+        <div className="overflow-x-auto">
           <div
-            className="mx-auto transition-transform duration-200"
-            style={{
-              width: `${Math.round(920 * zoom)}px`,
-              maxWidth: zoom <= 1 ? '100%' : 'none',
-            }}
+            className="relative mx-auto aspect-[16/9] min-w-[680px] select-none transition-all duration-200"
+            style={{ width: zoom > 1 ? `${Math.round(zoom * 100)}%` : '100%' }}
           >
-            <svg viewBox="0 0 1120 620" className="w-full select-none drop-shadow-[0_26px_45px_rgba(0,0,0,0.45)]">
-              <defs>
-                <linearGradient id="waterfallBlue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#e0f2fe" />
-                  <stop offset="50%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#0284c7" />
-                </linearGradient>
-                <radialGradient id="portalGlow">
-                  <stop offset="0%" stopColor="#5eead4" />
-                  <stop offset="65%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#0f766e" stopOpacity="0" />
-                </radialGradient>
-              </defs>
+            {/* Base Hand-Painted 2.5D Isometric Floating Island Map */}
+            <img
+              src="/assets/garden/sky-island-map.jpg"
+              alt={tx('Đảo Mây Tài Sản 2.5D', '2.5D Floating Wealth Sky Island', '2.5D天空資産アイランド')}
+              draggable={false}
+              className={cx(
+                'h-full w-full object-cover transition duration-500',
+                isNight && 'brightness-[0.55] contrast-115 saturate-90 hue-rotate-[12deg]',
+                isRain && 'brightness-[0.82] saturate-90'
+              )}
+            />
 
-              {/* Soft Drifting Clouds Behind & Beneath the Floating Island */}
-              <g opacity={isNight ? 0.25 : 0.88}>
-                <g transform="translate(150, 410)">
-                  <circle cx="0" cy="20" r="34" fill="#ffffff" />
-                  <circle cx="42" cy="14" r="44" fill="#ffffff" />
-                  <circle cx="90" cy="24" r="32" fill="#f8fafc" />
-                  <ellipse cx="46" cy="40" rx="76" ry="20" fill="#e0f2fe" />
-                </g>
-                <g transform="translate(820, 430)">
-                  <circle cx="0" cy="18" r="30" fill="#ffffff" />
-                  <circle cx="40" cy="10" r="42" fill="#ffffff" />
-                  <circle cx="84" cy="22" r="28" fill="#f8fafc" />
-                  <ellipse cx="42" cy="36" rx="70" ry="18" fill="#e0f2fe" />
-                </g>
-                <g transform="translate(760, 78)" opacity="0.8">
-                  <circle cx="0" cy="14" r="22" fill="#ffffff" />
-                  <circle cx="28" cy="10" r="28" fill="#ffffff" />
-                  <circle cx="58" cy="16" r="20" fill="#f8fafc" />
-                </g>
-                <g transform="translate(260, 62)" opacity="0.72">
-                  <circle cx="0" cy="14" r="20" fill="#ffffff" />
-                  <circle cx="26" cy="9" r="26" fill="#ffffff" />
-                  <circle cx="54" cy="15" r="18" fill="#f8fafc" />
-                </g>
-              </g>
+            {/* Weather FX Layer: Morning Sunbeams / Rain / Starry Fireflies */}
+            {!isNight && !isRain && (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(circle at 22% 14%, rgba(254, 240, 138, 0.28), transparent 45%)',
+                }}
+              />
+            )}
+            {isRain && (
+              <div className="pointer-events-none absolute inset-0 z-20 bg-[repeating-linear-gradient(108deg,transparent_0,transparent_18px,rgba(186,230,253,0.22)_19px,transparent_21px)]" />
+            )}
+            {isNight && (
+              <div className="pointer-events-none absolute inset-0 z-20">
+                <div className="absolute right-[10%] top-[8%] size-10 rounded-full bg-amber-200/90 shadow-[0_0_32px_rgba(253,224,71,0.75)] sm:size-14" />
+                {NIGHT_FIREFLIES.map((ff, idx) => (
+                  <span
+                    key={idx}
+                    className="animate-firefly absolute size-2 rounded-full bg-amber-300 shadow-[0_0_12px_#fde047]"
+                    style={{ left: ff.left, top: ff.top, animationDelay: ff.delay }}
+                  />
+                ))}
+              </div>
+            )}
 
-              {/* Back-to-front Painter's Order Isometric Tiles & Objects */}
-              {sortedTiles.map((tile) => {
-                if (tile.kind === 'static') {
-                  const isWater = tile.type === 'water';
-                  const isCliff = tile.type === 'cliff';
-                  const isStonePortal = tile.type === 'stone_portal';
-                  const isFlower = tile.type === 'flower_grass';
+            {/* Evolving Personal Home Overlay (Lv.1 -> Lv.5) Seated on Top-Right Terrace */}
+            <button
+              key={`house_${houseAnimKey}_${displayedHouseLevel}`}
+              type="button"
+              onClick={() => setHouseModalOpen(true)}
+              style={{ left: '72%', top: '23%', zIndex: 15 }}
+              className="animate-build-pop group absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition hover:scale-105 focus-visible:outline-none"
+              title={`${houseMeta.name[lang] || houseMeta.name.vi} (Lv.${displayedHouseLevel})`}
+            >
+              <img
+                src={houseMeta.sprite}
+                alt={houseMeta.name[lang] || houseMeta.name.vi}
+                draggable={false}
+                className={cx(
+                  'w-[16vw] min-w-[104px] max-w-[205px] object-contain drop-shadow-[0_12px_18px_rgba(0,0,0,0.5)]',
+                  isNight && 'drop-shadow-[0_0_18px_rgba(251,191,36,0.45)]'
+                )}
+              />
+              <span className="absolute -bottom-1 left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full border border-amber-300/60 bg-black/80 px-2 py-0.5 text-[10px] font-bold text-amber-200 shadow">
+                🏡 Lv.{displayedHouseLevel}
+                {canUpgradeHouse && <span className="text-emerald-300">⬆</span>}
+              </span>
+            </button>
 
-                  const topFill = isWater
-                    ? '#38bdf8'
-                    : isCliff
-                      ? '#a8a29e'
-                      : isStonePortal
-                        ? '#cbd5e1'
-                        : '#84cc16';
-                  const leftFill = isWater ? '#0284c7' : isCliff || isStonePortal ? '#78716c' : '#a16207';
-                  const rightFill = isWater ? '#0369a1' : isCliff || isStonePortal ? '#57534e' : '#713f12';
-                  const { x, y } = isoProject(tile.col, tile.row, tile.elev);
+            {/* Unlocked Treasure Chest Near Staircase when Mystery Fruit Harvested */}
+            {(unlockedFruits > 0 || previewDreamLv5) && (
+              <div
+                style={{ left: '61%', top: '39.5%', zIndex: 14 }}
+                className="animate-build-pop pointer-events-none absolute -translate-x-1/2 -translate-y-1/2"
+              >
+                <img
+                  src="/assets/garden/props/chest.png"
+                  alt="Rương Kho Báu Mùa Vàng"
+                  className="w-[5.2vw] min-w-[36px] max-w-[66px] object-contain drop-shadow-[0_6px_12px_rgba(251,191,36,0.65)]"
+                />
+              </div>
+            )}
 
-                  return (
-                    <IsoVoxel
-                      key={tile.key}
-                      col={tile.col}
-                      row={tile.row}
-                      elev={tile.elev}
-                      depth={tile.depth}
-                      topFill={topFill}
-                      leftFill={leftFill}
-                      rightFill={rightFill}
-                    >
-                      {/* Animated Waterfall Cascade */}
-                      {tile.key === 'stone_3_0' && decor.waterfall && (
-                        <g>
-                          <path
-                            d={`M${x - 14} ${y + 24} L${x + 12} ${y + 38} L${x + 12} ${y + 88} L${x - 14} ${y + 72} Z`}
-                            fill="url(#waterfallBlue)"
-                            opacity="0.92"
-                          />
-                          <ellipse cx={x - 1} cy={y + 84} rx="22" ry="9" fill="#e0f2fe" opacity="0.75" />
-                        </g>
-                      )}
+            {/* Interactive 12 Soil Plots Matched to Sky Island Grid */}
+            {SKY_ISLAND_PLOTS.map((plot) => {
+              const occupant = plotToTree.get(plot.plotIndex) || null;
+              const isLocked = plot.plotIndex >= unlockedPlotsCount && !occupant;
+              const occStatus = occupant ? computeTreeStatus(occupant) : null;
+              const isSelected = Boolean(occupant && occupant.id === selectedTree?.id);
+              const isMoveTarget = Boolean(moveSourceId && !occupant && !isLocked);
+              const isBeingWatered = Boolean(wateringBurst && occupant && wateringBurst.treeId === occupant.id);
 
-                      {/* Water Ripples & Lily Pad */}
-                      {isWater && (
-                        <g>
-                          <ellipse cx={x} cy={y + 27} rx="22" ry="10" fill="#7dd3fc" opacity="0.4" />
-                          <circle cx={x - 12} cy={y + 26} r="6" fill="#22c55e" />
-                          <circle cx={x - 10} cy={y + 24} r="3" fill="#f472b6" />
-                        </g>
-                      )}
-
-                      {/* Vietnamese Thatched Pavilion (Chòi Tranh) at grass_6_0 */}
-                      {tile.key === 'grass_6_0' && decor.hut && (
-                        <g transform={`translate(${x}, ${y + 12})`}>
-                          {/* Pillars & Floor */}
-                          <ellipse cx="0" cy="14" rx="28" ry="13" fill="#fef3c7" stroke="#b45309" strokeWidth="1.5" />
-                          <line x1="-18" y1="10" x2="-18" y2="-22" stroke="#78350f" strokeWidth="4" />
-                          <line x1="18" y1="10" x2="18" y2="-22" stroke="#78350f" strokeWidth="4" />
-                          <line x1="0" y1="20" x2="0" y2="-16" stroke="#92400e" strokeWidth="4" />
-                          {/* Golden Thatched Conical Roof */}
-                          <polygon points="0,-54 -36,-16 36,-16" fill="#facc15" stroke="#ca8a04" strokeWidth="2" />
-                          <polygon points="0,-54 0,-16 36,-16" fill="#eab308" />
-                          <circle cx="0" cy="-55" r="4" fill="#fef08a" />
-                        </g>
-                      )}
-
-                      {/* Crystal Fountain at grass_5_1 */}
-                      {tile.type === 'fountain_pad' && decor.fountain && (
-                        <g transform={`translate(${x}, ${y + 16})`}>
-                          <ellipse cx="0" cy="12" rx="26" ry="13" fill="#0ea5e9" stroke="#e0f2fe" strokeWidth="2.5" />
-                          <rect x="-5" y="-12" width="10" height="22" rx="3" fill="#bae6fd" />
-                          <ellipse cx="0" cy="-12" rx="13" ry="6" fill="#38bdf8" stroke="#e0f2fe" strokeWidth="1.5" />
-                          <path d="M0,-14 Q-12,-28 -18,-6" fill="none" stroke="#e0f2fe" strokeWidth="2" />
-                          <path d="M0,-14 Q12,-28 18,-6" fill="none" stroke="#e0f2fe" strokeWidth="2" />
-                        </g>
-                      )}
-
-                      {/* Mystic Island Portal at stone_0_1 */}
-                      {isStonePortal && decor.portal && (
-                        <g transform={`translate(${x}, ${y + 12})`}>
-                          <ellipse cx="0" cy="-16" rx="22" ry="30" fill="none" stroke="#a3e635" strokeWidth="6" />
-                          <ellipse cx="0" cy="-16" rx="16" ry="23" fill="url(#portalGlow)" className="animate-coin-sparkle" />
-                        </g>
-                      )}
-
-                      {/* Pretty Flowers on Outer Rim */}
-                      {isFlower && (
-                        <g transform={`translate(${x}, ${y + 25})`}>
-                          <circle cx="-12" cy="-2" r="4" fill="#fbbf24" />
-                          <circle cx="10" cy="2" r="4" fill="#fb7185" />
-                          <circle cx="2" cy="-8" r="3.5" fill="#fde047" />
-                        </g>
-                      )}
-                    </IsoVoxel>
-                  );
-                }
-
-                // Interactive Farm Plot 0..11
-                const occupant = plotToTree.get(tile.plotIndex) || null;
-                const occStatus = occupant ? computeTreeStatus(occupant) : null;
-                const isSelected = Boolean(occupant && occupant.id === selectedTree?.id);
-                const isMoveTarget = Boolean(moveSourceId && !occupant);
-                const isLotusPlot = occStatus?.species?.id === 'sen_dong_thap';
-                const { x, y } = isoProject(tile.col, tile.row, tile.elev);
-
-                return (
-                  <g
-                    key={`plot_${tile.plotIndex}`}
-                    onClick={() => handlePlotClick(tile.plotIndex, occupant)}
-                    className="cursor-pointer group"
+              return (
+                <div
+                  key={`plot_${plot.plotIndex}`}
+                  style={{ left: `${plot.left}%`, top: `${plot.top}%`, zIndex: plot.z }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handlePlotClick(plot.plotIndex, isLocked, occupant)}
+                    className={cx(
+                      'group relative flex items-center justify-center rounded-full transition focus-visible:outline-none',
+                      isSelected && 'ring-2 ring-amber-300/90 ring-offset-2 ring-offset-transparent',
+                      isMoveTarget && 'ring-2 ring-emerald-400 animate-pulse'
+                    )}
+                    aria-label={
+                      occupant
+                        ? occupant.title
+                        : isLocked
+                          ? `Ô đất #${plot.plotIndex + 1} (Chưa mở khóa)`
+                          : `Gieo cây vào ô đất #${plot.plotIndex + 1}`
+                    }
                   >
-                    <IsoVoxel
-                      col={tile.col}
-                      row={tile.row}
-                      elev={tile.elev}
-                      depth={tile.depth}
-                      topFill={isLotusPlot ? '#0284c7' : occupant ? '#b47844' : '#d6a468'}
-                      leftFill="#92400e"
-                      rightFill="#78350f"
-                      stroke={isSelected ? '#fde047' : isMoveTarget ? '#34d399' : 'rgba(255,255,255,0.22)'}
-                    >
-                      {/* Highlight Halo on Selected or Move-Target Plot */}
-                      {(isSelected || isMoveTarget) && (
-                        <polygon
-                          points={`${x},${y + 3} ${x + HALF_W - 5},${y + HALF_H} ${x},${y + HALF_H * 2 - 3} ${x - HALF_W + 5},${y + HALF_H}`}
-                          fill="none"
-                          stroke={isSelected ? '#fde047' : '#4ade80'}
-                          strokeWidth="3"
+                    {/* Locked Expansion Plot */}
+                    {isLocked && (
+                      <div className="relative flex flex-col items-center opacity-90 transition group-hover:scale-105">
+                        <img
+                          src="/assets/garden/houses/plot_locked.png"
+                          alt=""
+                          draggable={false}
+                          className="w-[6.8vw] min-w-[46px] max-w-[82px] -translate-y-2 object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)]"
                         />
-                      )}
+                        <span className=" -mt-2 inline-flex items-center gap-0.5 rounded-full bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold text-amber-200">
+                          <Lock className="size-2.5" /> #{plot.plotIndex + 1}
+                        </span>
+                      </div>
+                    )}
 
-                      {/* Small Wooden Farm Fence Posts */}
-                      {decor.fence && (
-                        <g stroke="#78350f" strokeWidth="2.5" strokeLinecap="round">
-                          <line x1={x - 42} y1={y + 26} x2={x - 42} y2={y + 15} />
-                          <line x1={x + 42} y1={y + 26} x2={x + 42} y2={y + 15} />
-                        </g>
-                      )}
+                    {/* Unlocked Empty Plot (+) */}
+                    {!isLocked && !occupant && (
+                      <div
+                        className={cx(
+                          'flex size-7 items-center justify-center rounded-full border text-xs font-bold shadow-md transition group-hover:scale-115 sm:size-8',
+                          isMoveTarget
+                            ? 'border-emerald-300 bg-emerald-500 text-white'
+                            : 'border-amber-200/70 bg-amber-900/65 text-amber-100 hover:bg-emerald-600'
+                        )}
+                      >
+                        <Plus className="size-4" />
+                      </div>
+                    )}
 
-                      {/* Empty Plot "+" Prompt */}
-                      {!occupant && (
-                        <g transform={`translate(${x}, ${y + 27})`}>
-                          <ellipse cx="0" cy="0" rx="18" ry="9" fill="rgba(255,255,255,0.22)" />
-                          <text x="0" y="3.5" textAnchor="middle" fontSize="14" fontWeight="bold" fill="#fffbeb">
-                            +
-                          </text>
-                        </g>
-                      )}
+                    {/* Live 8-Stage Vietnamese Tree Sprite on Plot */}
+                    {occupant && occStatus && (
+                      <div className="relative flex flex-col items-center">
+                        <img
+                          src={occStatus.stageSprite}
+                          alt={occStatus.species.name[lang] || occStatus.species.name.vi}
+                          draggable={false}
+                          style={{ animationDelay: `${(plot.plotIndex % 5) * 0.45}s` }}
+                          className={cx(
+                            'animate-tree-sway w-[8.5vw] min-w-[54px] max-w-[106px] -translate-y-[38%] object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.52)] transition group-hover:scale-105',
+                            isSelected && 'drop-shadow-[0_0_16px_rgba(253,224,71,0.85)]'
+                          )}
+                        />
 
-                      {/* Live Growing Vietnamese Tree Inside the 3D Isometric Plot */}
-                      {occupant && occStatus && renderTreeGlyph && (
-                        <g transform={`translate(${x - 86}, ${y - 108}) scale(0.61)`}>
-                          {renderTreeGlyph(occStatus, { compactScene: true })}
-                        </g>
-                      )}
-
-                      {/* Miu Vang Standing Beside the Selected Tree Plot */}
-                      {isSelected && (
-                        <g>
-                          <circle cx={x + 34} cy={y + 8} r="14" fill="rgba(251,191,36,0.28)" />
-                          <svg x={x + 12} y={y - 24} width="44" height="44">
-                            <LuckyCatMascot
-                              mood={occStatus?.canHarvestMystery ? 'celebrate' : 'gardener'}
-                              className="h-full w-full"
-                            />
-                          </svg>
-                        </g>
-                      )}
-
-                      {/* Compact Progress Badge at Front Corner of Plot */}
-                      {occupant && occStatus && (
-                        <g transform={`translate(${x}, ${y + 44})`}>
-                          <rect
-                            x="-30"
-                            y="-9"
-                            width="60"
-                            height="16"
-                            rx="8"
-                            fill={isSelected ? '#f59e0b' : 'rgba(15,23,42,0.85)'}
-                            stroke={occStatus.canHarvestMystery ? '#fde047' : 'rgba(255,255,255,0.25)'}
-                            strokeWidth="1"
+                        {/* Glowing Floating 3D Mystery Fruit Above Crown at 100% */}
+                        {occStatus.canHarvestMystery && (
+                          <img
+                            src={occStatus.mysterySprite}
+                            alt="Quả Bí Ẩn"
+                            className="animate-coin-sparkle pointer-events-none absolute -top-[72%] left-1/2 size-7 -translate-x-1/2 object-contain drop-shadow-[0_0_12px_rgba(251,191,36,0.95)] sm:size-9"
                           />
-                          <text
-                            x="0"
-                            y="2.5"
-                            textAnchor="middle"
-                            fontSize="9.5"
-                            fontWeight="700"
-                            fill={isSelected ? '#1c1917' : '#f8fafc'}
-                          >
-                            {occStatus.species.emoji} {occStatus.rawProgressPct}%
-                          </text>
-                        </g>
-                      )}
-                    </IsoVoxel>
-                  </g>
-                );
-              })}
-            </svg>
+                        )}
+
+                        {/* Watering Can Pour + Floating Reward Amount FX */}
+                        {isBeingWatered && (
+                          <div key={wateringBurst.ts} className="pointer-events-none absolute -top-[85%] left-1/2 z-40">
+                            <img
+                              src="/assets/garden/props/watering_can.png"
+                              alt=""
+                              className="animate-water-pour size-10 object-contain drop-shadow-lg sm:size-12"
+                            />
+                            <span className="animate-float-up absolute left-1/2 top-0 whitespace-nowrap rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-extrabold text-white shadow-lg">
+                              +{compact(wateringBurst.amount, lang)} {wateringBurst.isOver ? '⚡' : '💧'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Miu Vang 3D Guard Standing Next to Selected Tree */}
+                        {isSelected && (
+                          <div className="pointer-events-none absolute -right-5 -top-3 z-30 sm:-right-7">
+                            <LuckyCatMascot
+                              mood={occStatus.canHarvestMystery ? 'celebrate' : 'gardener'}
+                              size="sm"
+                            />
+                          </div>
+                        )}
+
+                        {/* Compact Name & Progress Pill Under Trunk */}
+                        <span
+                          className={cx(
+                            '-mt-[34%] inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[9px] font-bold shadow sm:text-[10px]',
+                            isSelected
+                              ? 'border-amber-200 bg-amber-400 text-zinc-950'
+                              : 'border-white/25 bg-black/80 text-white'
+                          )}
+                        >
+                          <span>{occStatus.species.emoji}</span>
+                          <span>{occStatus.rawProgressPct}%</span>
+                          {occStatus.growthMultiplier > 1 && <span className="text-amber-300">⚡</span>}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Bottom Selected-Plot Control Strip */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/55 px-4 py-2.5 text-xs backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-black/65 px-4 py-2.5 text-xs backdrop-blur-md">
           {selectedTree && selectedStatus ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-base">{selectedStatus.species.emoji}</span>
                 <span className="font-semibold text-white">{selectedTree.title}</span>
-                <Badge tone="brand">{selectedStatus.rawProgressPct}%</Badge>
+                <Badge tone="brand">
+                  {tx(`Chu kỳ ${selectedStatus.stage.index}/8`, `Stage ${selectedStatus.stage.index}/8`, `段階 ${selectedStatus.stage.index}/8`)}
+                </Badge>
+                <Badge tone="success">{selectedStatus.rawProgressPct}%</Badge>
                 {selectedStatus.growthMultiplier > 1 && (
                   <Badge tone="warning">⚡ {selectedStatus.growthMultiplier}x</Badge>
                 )}
-                <span className="hidden text-zinc-400 sm:inline">
+                <span className="hidden text-zinc-300 sm:inline">
                   · {compact(selectedStatus.currentCapital, lang)} / {compact(selectedStatus.targetCapital, lang)}
                 </span>
               </div>
@@ -710,7 +687,7 @@ export function IsometricSkyIsland({
                 >
                   <Move className="size-3.5" />
                   {moveSourceId === selectedTree.id
-                    ? tx('Đang chọn ô mới...', 'Tap empty plot...', '移動先を選択...')
+                    ? tx('Chọn ô mới...', 'Tap empty plot...', '移動先を選択...')
                     : tx('Dời vị trí cây', 'Move Plot', '区画を移動')}
                 </Button>
                 {selectedStatus.canHarvestMystery && (
@@ -725,7 +702,7 @@ export function IsometricSkyIsland({
               <span className="text-zinc-300">
                 {tx(
                   'Chạm vào bất kỳ dấu (+) trên Đảo Mây để trồng hạt giống đầu tiên của bạn!',
-                  'Tap any (+) soil plot on the Sky Island to plant your first seed!',
+                  'Tap any (+) plot on the Sky Island to plant your first seed!',
                   '天空島の (+) 区画をタップして最初の種を植えましょう！'
                 )}
               </span>
@@ -742,57 +719,132 @@ export function IsometricSkyIsland({
         </div>
       </div>
 
-      {/* Decorate & Personalize Sky Island Modal */}
+      {/* House Evolution & Core Plan Landmarks Progression Modal */}
       <Modal
-        open={decorOpen}
-        onClose={() => setDecorOpen(false)}
-        title={tx('🏡 Trang Trí Đảo Mây Cá Nhân', '🏡 Customize Your Personal Sky Island', '🏡 天空島をカスタマイズ')}
-        className="max-w-md"
+        open={houseModalOpen}
+        onClose={() => setHouseModalOpen(false)}
+        title={tx(
+          '🏡 Xây Nhà & Mở Rộng Đảo Mây (Liên kết Kế Hoạch Core)',
+          '🏡 Build Home & Expand Sky Island (Linked to Core Plan)',
+          '🏡 住まいの建築＆天空島拡張（ライフプラン連動）'
+        )}
+        className="max-w-2xl"
       >
-        <div className="space-y-4">
-          <div>
+        <div className="max-h-[75vh] space-y-5 overflow-y-auto pr-1">
+          {/* Personal Garden Name */}
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3.5">
             <label className="mb-1.5 block text-xs font-medium text-zinc-300">
-              {tx('Tên Khu Vườn Của Bạn', 'Your Personal Garden Name', 'あなただけの庭園名')}
+              {tx('Đặt tên Khu Vườn Cá Nhân của bạn', 'Name Your Personal Sky Island', 'あなただけの庭園名')}
             </label>
             <input
               type="text"
               maxLength={40}
-              value={decor.gardenName}
-              onChange={(e) => updateDecor({ gardenName: e.target.value })}
+              value={config.gardenName}
+              onChange={(e) => updateConfig({ gardenName: e.target.value })}
               placeholder={tx('VD: Đảo Mây Nhà Mình ✨', 'e.g. Our Sky Sanctuary ✨', '例：わが家の天空ガーデン ✨')}
-              className="h-10 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-xs text-white"
+              className="h-9 w-full rounded-xl border border-white/10 bg-canvas/80 px-3 text-xs text-white"
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-zinc-400">
-              {tx('Công trình & Cảnh quan trên Đảo Mây', 'Island Landmarks & Props', '島の施設・景観')}
+          {/* House Evolution Levels (Lv.1 -> Lv.5) */}
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-white">
+                {tx('1. Nâng Cấp Ngôi Nhà Tài Sản (5 Cấp · Mở 6 → 12 Ô Đất)', '1. Evolving Wealth Home (5 Levels · 6 → 12 Plots)', '1. 住まいの進化（全5段階・6〜12区画）')}
+              </span>
+              <span className="text-zinc-400">
+                {tx('Vốn ghi nhận:', 'Tracked Capital:', '把握資産:')}{' '}
+                <strong className="text-emerald-300 tabular-nums">{compact(coreProgression.totalCoreWealthVnd, lang)}</strong>
+              </span>
             </div>
-            {[
-              { key: 'hut', label: tx('🛖 Chòi Tranh Nghỉ Chân Việt Nam', '🛖 Vietnamese Thatched Pavilion', '🛖 伝統的なあずまや') },
-              { key: 'fountain', label: tx('⛲ Đài Phun Nước Pha Lê', '⛲ Crystal Fountain', '⛲ クリスタル噴水') },
-              { key: 'waterfall', label: tx('🏞️ Thác Nước Đỉnh Núi & Hồ Sen', '🏞️ Cascade Waterfall', '🏞️ 崖の滝') },
-              { key: 'portal', label: tx('🌀 Cổng Thần Kỳ Ánh Ngọc', '🌀 Emerald Mystic Portal', '🌀 エメラルドのポータル') },
-              { key: 'fence', label: tx('🪵 Hàng Rào Gỗ Ô Đất', '🪵 Wooden Plot Fences', '🪵 区画の木製フェンス') },
-            ].map((item) => (
-              <label
-                key={item.key}
-                className="flex cursor-pointer items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2.5 text-xs text-zinc-200 hover:bg-white/[0.05]"
-              >
-                <span>{item.label}</span>
-                <input
-                  type="checkbox"
-                  checked={Boolean(decor[item.key])}
-                  onChange={(e) => updateDecor({ [item.key]: e.target.checked })}
-                  className="size-4 accent-emerald-400"
-                />
-              </label>
-            ))}
+
+            <div className="grid gap-2.5">
+              {HOUSE_LEVELS.map((lv) => {
+                const earned = coreProgression.earnedHouseLevel >= lv.level;
+                const built = (config.builtHouseLevel || 1) >= lv.level;
+                const canBuildNow = earned && !built;
+                return (
+                  <div
+                    key={lv.level}
+                    className={cx(
+                      'flex flex-col gap-3 rounded-2xl border p-3 sm:flex-row sm:items-center',
+                      built
+                        ? 'border-emerald-400/40 bg-emerald-500/[0.08]'
+                        : canBuildNow
+                          ? 'border-amber-400/60 bg-amber-500/[0.10]'
+                          : 'border-white/[0.08] bg-white/[0.02] opacity-85'
+                    )}
+                  >
+                    <img
+                      src={lv.sprite}
+                      alt={lv.name[lang] || lv.name.vi}
+                      className="size-16 shrink-0 rounded-xl bg-black/25 object-contain p-1 ring-1 ring-white/10"
+                    />
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <Badge tone={lv.badgeTone}>Lv.{lv.level}</Badge>
+                        <span className="text-xs font-semibold text-white">{lv.name[lang] || lv.name.vi}</span>
+                        <Badge tone="neutral">{lv.unlockedPlots} {tx('ô đất', 'plots', '区画')}</Badge>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-zinc-400">{lv.requirement[lang] || lv.requirement.vi}</p>
+                    </div>
+                    <div className="shrink-0">
+                      {built ? (
+                        <Badge tone="success">
+                          <CheckCircle2 className="size-3" /> {tx('Đã xây dựng', 'Built', '建築済')}
+                        </Badge>
+                      ) : canBuildNow ? (
+                        <Button type="button" size="sm" variant="primary" onClick={() => handleBuildNextHouse(lv.level)}>
+                          🔨 {tx(`Xây Lv.${lv.level}`, `Build Lv.${lv.level}`, `Lv.${lv.level}を建てる`)}
+                        </Button>
+                      ) : (
+                        <Button as="a" href={href('plan')} size="sm" variant="secondary">
+                          {tx('Tới /plan', 'Open /plan', '/planへ')} <ArrowRight className="size-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <Button type="button" variant="primary" className="w-full" onClick={() => setDecorOpen(false)}>
-            {tx('Lưu & Ngắm Đảo Mây', 'Save & View Island', '保存して島を見る')}
-          </Button>
+          {/* 4 Core Pillar Landmarks */}
+          <div className="space-y-2.5 border-t border-white/[0.08] pt-4">
+            <div className="text-xs font-semibold text-white">
+              {tx('2. Công Trình Vườn Theo Trụ Cột Tài Chính Core', '2. Garden Landmarks Linked to Core Wealth Pillars', '2. コア資産機能と連動する島の名所')}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {coreProgression.landmarks.map((lm) => (
+                <a
+                  key={lm.id}
+                  href={href(lm.route)}
+                  onClick={() => setHouseModalOpen(false)}
+                  className={cx(
+                    'flex items-center gap-3 rounded-xl border p-3 text-xs transition hover:bg-white/[0.05]',
+                    lm.unlocked
+                      ? 'border-emerald-400/35 bg-emerald-500/[0.07]'
+                      : 'border-white/[0.08] bg-white/[0.02]'
+                  )}
+                >
+                  <img src={lm.sprite} alt="" className="size-11 shrink-0 object-contain" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1 font-semibold text-white">
+                      <span className="truncate">{lm.name[lang] || lm.name.vi}</span>
+                      {lm.unlocked ? (
+                        <Badge tone="success">✓</Badge>
+                      ) : (
+                        <Lock className="size-3 shrink-0 text-zinc-500" />
+                      )}
+                    </div>
+                    <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-zinc-400">
+                      {lm.conditionText[lang] || lm.conditionText.vi}
+                    </p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </Modal>
 

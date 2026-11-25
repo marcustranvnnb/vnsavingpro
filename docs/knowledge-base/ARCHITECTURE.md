@@ -1,4 +1,4 @@
-# VnSavingPro — Architecture & Technical Reference (v2.6.0.0 Living Wealth OS · 2.5D Isometric Sky Island · 1-Click Demo Account · 14 Vietnamese Trees · Miu Vang · Passbooks · 360° · CIC)
+# VnSavingPro — Architecture & Technical Reference (v2.7.0.0 Living Wealth OS · 2.5D Sky Island Assets · 8 Growth Stages · Core-Linked Houses Lv.1–5 · 3D Miu Vang · Demo)
 
 ## 1. High-Level Architecture
 
@@ -57,7 +57,7 @@ flowchart TD
     - `LuckyCatMascot` (`src/components/LuckyCatMascot.jsx`) provides the custom 0KB animated SVG Maneki-neko mascot (`wave`, `gardener`, `scholar`, `celebrate`, `cheer` moods), `<LuckyCatTipCard />` interactive pet-for-luck companion banner on Home, `<LuckyCatHeaderButton />` & `<LuckyCatFortuneModal />` (8 trilingual Daily Lucky Wealth Fortunes) in TopNav/Footer, plus gardener cheering inside `WealthTreeGarden`, `OnboardingModal`, and `Planner`.
     - `OnboardingModal` walks first-time users on `/` through Step 1 (Household Profile: Individual/Couple/Family) -> Step 2 (Primary Goal: Passive Income / Capital / Rates) -> Step 3 (Starter Figures / Bank Selection), persisted via validated `ONBOARDING_STATE` and `PLANNER_STATE` in `cryptoStorage.js` (`raw` schema validator).
   - **4-Part App Versioning (`src/version.json` + `scripts/bump-version.js` + `AGENTS.md`)**:
-    - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0` (currently `2.6.0.0`), synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part, `engines.node = "24.x"`).
+    - Uses `MAJOR.MINOR.PATCH.BUILD` starting at `1.6.0.0` (currently `2.7.0.0`), synced into [src/tools.js](../../src/tools.js) (`APP_VERSION`, `APP_VERSION_RAW`, `APP_VERSION_DATE`, `APP_VERSION_LABEL`, `VERSION_HIGHLIGHTS`) and [package.json](../../package.json) (`version` 3-part SemVer + `appVersion` 4-part, `engines.node = "24.x"`).
   - Run `npm run version:bump` (or `node scripts/bump-version.js [build|patch|minor|major]`) on every committed update.
 - **Reusable Primitives & Run Workflow (`src/components/ui.jsx`, `src/components/SavePlanPromptCard.jsx`)**:
   - `NumberInput` manages `focused` + `draft` state so typing or clearing digits never jumps the cursor or locks on `0`.

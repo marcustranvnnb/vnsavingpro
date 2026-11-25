@@ -4,6 +4,13 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0i. Completed in Version 2.7.0.0 (2026-11-25 — 2.5D Sky Island Asset Pack, 8-Stage Tree Evolution, Core-Linked Homes & Live FX)
+
+- [x] **63 Transparent 2.5D Game Assets (`scripts/slice-garden-assets.ps1`, `public/assets/garden/`)**: Sliced & edge flood-fill background-removed `sky-island-map.jpg`, 14 mature Vietnamese tree PNGs, 28 stage 1–7 progression sprites across 4 botanical families (`fruit`, `bonsai`, `tropical`, `lotus`), 5 evolving Vietnamese House PNGs (`house_lv1..5.png`) + locked plot sprite (`plot_locked.png`), 4 3D chibi Miu Vang poses (`mascot/miu_*.png`), and Mystery Fruits + Garden Props (`props/*.png`).
+- [x] **8 Biological Growth Stages & Core-Linked House Upgrades ([wealthTreesData.js](../../src/data/wealthTreesData.js), [islandProgressionData.js](../../src/data/islandProgressionData.js), [IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx), [WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [LuckyCatMascot.jsx](../../src/components/LuckyCatMascot.jsx))**: Upgraded to 8 stages (`SEED`, `SPROUT`, `SEEDLING`, `SAPLING`, `MATURE`, `FLOWERING`, `YOUNG_FRUIT`, `HARVEST`) with clickable 1–8 stage preview; linked House Lv.1–5 (`6→12` plots) and 4 Island Landmarks directly to `/plan`, Real Passbooks, `/fx`, and `/cic`; added live `.animate-tree-sway`, watering-can pour + floating `+VND` reward FX, rain streaks, and starry fireflies.
+
+---
+
 ## 0h. Completed in Version 2.6.0.0 (2026-11-25 — Personal 2.5D Isometric Sky Island Garden `/garden`)
 
 - [x] **2.5D Isometric Sky Island Scene ([IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx))**: Implemented painter-sorted 2.5D isometric cube terrain (`isoProject`, `<IsoVoxel />`) floating on clouds with a cascading cliff waterfall, lotus water stream, Vietnamese thatched hut, crystal fountain, mystic portal, 12 interactive 3D farm plots (`plotIndex` persisted in [cryptoStorage.js](../../src/utils/cryptoStorage.js)), Move-Plot rearrangement mode, top Wooden Game HUD (Island Level ★, XP progress, Mystery Fruit gems 💎, VND gold 🪙, 3 weather modes, zoom), left wooden action dock, and Island Decoration / Custom Garden Name modal.
