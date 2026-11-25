@@ -13,15 +13,15 @@ export default function Garden() {
       <PageHeader
         icon={Trees}
         eyebrow={tx(
-          'Khu Vườn Ảo 3 Thời Tiết · 14 Loài Cây Đặc Sản 3 Miền · Miu Vàng Trông Vườn',
-          '3-Weather Virtual Orchard · 14 Native Vietnamese Trees · Mystery Fruits',
-          '3天候バーチャル果樹園 · ベトナム名木14種 · ミウちゃん園長'
+          'Đảo Mây 2.5D Isometric · 14 Loài Cây Đặc Sản · 3 Thời Tiết · Miu Vàng Trông Vườn',
+          '2.5D Isometric Sky Island · 14 Native Vietnamese Trees · Mystery Fruits',
+          '2.5Dアイソメトリック天空島 · ベトナム名木14種 · ミウちゃん園長'
         )}
-        title={tx('Khu Vườn Ảo Kế Hoạch Tài Sản Việt Nam', 'Vietnamese Virtual Wealth Orchard', 'ベトナム・バーチャル資産果樹園')}
+        title={tx('Đảo Mây Khu Vườn Tài Sản Cá Nhân', 'Personal Sky Island Wealth Garden', 'マイ天空資産ガーデン')}
         description={tx(
-          'Dạo bước trong khu vườn ảo của riêng bạn dưới ánh nắng ban mai, cơn mưa dinh dưỡng hoặc đêm trăng đom đóm. Nhìn tất cả cây kế hoạch cùng phát triển theo số năm, xác thực tiền đóng để bứt tốc và thu hoạch 14 Quả Bí Ẩn hiếm!',
-          'Walk through your personal living Virtual Orchard under Sunny Morning, Nourishing Rain, or Firefly Night. Watch every financial plan bloom into one of 14 native Vietnamese trees alongside Miu Vang and harvest 14 rare Mystery Fruits!',
-          '朝晴れ・恵みの雨・蛍の夜空が切り替わる仮想果樹園で、あなたの全プランの木々を一覧！14種のベトナム在来樹を選び、入金認証で成長を加速し、14種類の神秘の実を収穫しましょう。'
+          'Trải nghiệm khu vườn trên mây 2.5D của riêng bạn với 12 ô đất trồng 14 giống cây Việt Nam, thác nước, chòi tranh, đài phun nước & Mèo Chiêu Tài Miu Vàng. Chạm vào từng ô đất để trồng cây, dời vị trí, xác thực tiền đóng và thu hoạch Quả Bí Ẩn!',
+          'Step onto your personal 2.5D Isometric Sky Island featuring 12 garden plots for 14 Vietnamese trees, cascading waterfall, thatched hut, crystal fountain & Miu Vang. Tap plots to plant, move trees freely, verify deposits & unbox Mystery Fruits!',
+          '自分だけの2.5D天空ガーデン（12区画・ベトナム名木14種・滝・あずまや・噴水・招き猫ミウちゃん）。空き区画への植樹、自由な配置変更、入金認証、神秘の実の収穫を楽しめます！'
         )}
       />
 

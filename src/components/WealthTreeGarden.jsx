@@ -8,18 +8,17 @@ import {
   Plus,
   ShieldCheck,
   Sprout,
-  Sun,
   Trash2,
   Trees,
   Zap,
 } from 'lucide-react';
 import { AdaptiveGrid } from './AdaptiveLayout.jsx';
+import { IsometricSkyIsland } from './IsometricSkyIsland.jsx';
 import { LuckyCatMascot } from './LuckyCatMascot.jsx';
 import { Badge, Button, Card, CardHeader, Chip, Modal, Progress, cx } from './ui.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { href, useRates, useToast } from '../state.jsx';
 import {
-  ORCHARD_THEMES,
   TREE_GROWTH_STAGES,
   VIETNAM_WEALTH_TREES,
   computeTreeStatus,
@@ -363,216 +362,6 @@ function VietnameseTreeSvg({ status, previewFull = false, onClickMystery }) {
   );
 }
 
-/**
- * Living Interactive Virtual Orchard Panorama where users walk in and see ALL of their trees side-by-side.
- */
-function VirtualOrchardScene({
-  trees,
-  selectedId,
-  onSelectTree,
-  onOpenNewForm,
-  onOpenAlmanac,
-  onSeedDemo,
-}) {
-  const { lang, tx } = useI18n();
-  const [themeId, setThemeId] = useState('SUNNY_MORNING');
-
-  const isRain = themeId === 'NOURISHING_RAIN';
-  const isNight = themeId === 'STARRY_FIREFLY';
-
-  const skyGradient = isNight
-    ? 'from-[#06091f] via-[#0c1438] to-[#0a231c]'
-    : isRain
-      ? 'from-slate-800/90 via-cyan-950/75 to-emerald-950/85'
-      : 'from-sky-900/55 via-indigo-950/45 to-emerald-900/60';
-
-  const totalCapitalInOrchard = trees.reduce((s, t) => s + computeTreeStatus(t).currentCapital, 0);
-  const harvestReadyCount = trees.filter((t) => computeTreeStatus(t).canHarvestMystery).length;
-
-  return (
-    <Card className="overflow-hidden border-emerald-400/30 p-0">
-      {/* Top Virtual Orchard HUD */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] bg-surface/90 px-4 py-3 sm:px-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="success">
-            🏡 {tx('Khu Vườn Ảo Việt Nam', 'Virtual Wealth Orchard', 'バーチャル果樹園')}
-          </Badge>
-          <Badge tone="brand">
-            {trees.length} {tx('cây đang lớn', 'growing trees', '本育成中')}
-          </Badge>
-          {harvestReadyCount > 0 && (
-            <Badge tone="warning">
-              ✨ {harvestReadyCount} {tx('Quả Bí Ẩn chờ hái', 'Mystery Fruits ready', '神秘の実収穫可能')}
-            </Badge>
-          )}
-          <span className="hidden text-xs text-zinc-400 md:inline">
-            · {tx('Tổng vốn trong vườn:', 'Orchard value:', '庭園合計元本:')}{' '}
-            <strong className="text-emerald-300 tabular-nums">{compact(totalCapitalInOrchard, lang)}</strong>
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {ORCHARD_THEMES.map((th) => {
-            const active = themeId === th.id;
-            return (
-              <button
-                key={th.id}
-                type="button"
-                onClick={() => setThemeId(th.id)}
-                className={cx(
-                  'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
-                  active
-                    ? 'border-amber-400/50 bg-amber-500/20 text-amber-100'
-                    : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:text-white'
-                )}
-              >
-                <span>{th.emoji}</span>
-                <span className="hidden sm:inline">{th.label[lang] || th.label.vi}</span>
-              </button>
-            );
-          })}
-          <Button type="button" size="sm" variant="secondary" onClick={onOpenAlmanac}>
-            <BookOpen className="size-3.5 text-amber-300" />
-            {tx('14 Giống Cây', '14 Species', '全14種図鑑')}
-          </Button>
-        </div>
-      </div>
-
-      {/* Scenic Backdrop + Walkable Garden Plots */}
-      <div className={cx('relative overflow-hidden bg-gradient-to-b px-4 pb-6 pt-8 sm:px-6', skyGradient)}>
-        {/* Sky Celestial Body & Mountains */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-44 overflow-hidden">
-          {isNight ? (
-            <>
-              <div className="absolute right-10 top-5 size-11 rounded-full bg-amber-200/90 shadow-[0_0_32px_rgba(253,224,71,0.55)]" />
-              <div className="absolute right-8 top-4 size-10 rounded-full bg-[#091130]" />
-              {[
-                ['14%', '22%'],
-                ['28%', '12%'],
-                ['52%', '18%'],
-                ['74%', '28%'],
-                ['88%', '40%'],
-              ].map(([l, t], idx) => (
-                <span
-                  key={idx}
-                  className="animate-coin-sparkle absolute size-1.5 rounded-full bg-amber-300"
-                  style={{ left: l, top: t }}
-                />
-              ))}
-            </>
-          ) : isRain ? (
-            <>
-              <div className="animate-pulse absolute left-10 top-4 h-7 w-24 rounded-full bg-slate-400/25 blur-sm" />
-              <div className="animate-pulse absolute right-14 top-6 h-8 w-32 rounded-full bg-cyan-300/20 blur-sm" />
-              <div className="absolute inset-0 bg-[repeating-linear-gradient(108deg,transparent_0,transparent_18px,rgba(125,211,252,0.16)_19px,transparent_21px)]" />
-            </>
-          ) : (
-            <>
-              <div className="animate-coin-sparkle absolute right-12 top-5 flex size-12 items-center justify-center rounded-full bg-amber-300/25 shadow-[0_0_45px_rgba(251,191,36,0.55)]">
-                <Sun className="size-7 text-amber-200" />
-              </div>
-              <div className="absolute left-12 top-6 h-7 w-24 rounded-full bg-white/15 blur-sm" />
-              <div className="absolute left-1/3 top-4 h-6 w-20 rounded-full bg-white/10 blur-sm" />
-            </>
-          )}
-          {/* Rolling Mekong & Highlands Silhouette */}
-          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="absolute bottom-0 h-20 w-full opacity-35">
-            <path d="M0,120 L0,65 Q180,15 380,68 T780,55 T1200,70 L1200,120 Z" fill="#064e3b" />
-            <path d="M0,120 L0,85 Q260,42 520,88 T1020,76 L1200,92 L1200,120 Z" fill="#065f46" />
-          </svg>
-        </div>
-
-        {/* Walkable Orchard Grid */}
-        <div className="relative z-10 mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {trees.map((tree) => {
-            const st = computeTreeStatus(tree);
-            const active = tree.id === selectedId;
-            return (
-              <button
-                key={tree.id}
-                type="button"
-                onClick={() => onSelectTree(tree)}
-                className={cx(
-                  'group relative flex flex-col items-center rounded-2xl border p-3.5 text-center backdrop-blur-md transition duration-200 hover:-translate-y-1',
-                  active
-                    ? 'border-amber-400/70 bg-emerald-950/65 ring-2 ring-amber-400/35 shadow-[0_14px_34px_-12px_rgba(251,191,36,0.55)]'
-                    : 'border-white/12 bg-black/35 hover:border-emerald-400/45 hover:bg-emerald-950/45'
-                )}
-              >
-                {/* Growth boost & Mystery pills */}
-                <div className="flex w-full items-center justify-between gap-1 text-[10px]">
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 font-medium text-emerald-200">
-                    {st.species.emoji} {st.rawProgressPct}%
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {tree.isDummy && <span className="rounded bg-zinc-700/80 px-1.5 py-0.5 text-zinc-200">🤖 Bot</span>}
-                    {st.growthMultiplier > 1 && (
-                      <span className="rounded-full bg-amber-500/25 px-1.5 py-0.5 font-semibold text-amber-200">
-                        ⚡{st.growthMultiplier}x
-                      </span>
-                    )}
-                    {st.canHarvestMystery && (
-                      <span className="animate-pulse rounded-full bg-amber-400/30 px-1.5 py-0.5 font-semibold text-amber-100">
-                        {st.mysteryFruit.emoji} 100%
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Live Tree Plot Illustration */}
-                <div className="relative mt-1 h-40 w-full">
-                  <svg viewBox="0 0 280 250" className="h-full w-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)]">
-                    <TreeCanopyGlyph status={st} compactScene />
-                  </svg>
-                  {active && (
-                    <div className="animate-cat-float pointer-events-none absolute -bottom-1 right-1 z-20 flex flex-col items-center">
-                      <LuckyCatMascot mood={st.canHarvestMystery ? 'celebrate' : 'gardener'} size="xs" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Wooden Nameplate at Trunk Base */}
-                <div className="mt-1.5 w-full rounded-xl border border-amber-700/40 bg-amber-950/60 px-2.5 py-1.5">
-                  <div className="truncate text-xs font-semibold text-amber-50">{tree.title}</div>
-                  <div className="mt-0.5 flex items-center justify-between text-[10px] text-amber-200/80 tabular-nums">
-                    <span className="truncate">{st.species.name[lang] || st.species.name.vi}</span>
-                    <span className="shrink-0 font-semibold">{compact(st.currentCapital, lang)}</span>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-
-          {/* Empty Soil Plot CTA to Plant More Trees Directly inside Virtual Garden */}
-          <div className="flex min-h-[246px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-emerald-400/30 bg-emerald-950/25 p-4 text-center backdrop-blur-sm">
-            <LuckyCatMascot mood="wave" size="sm" />
-            <div>
-              <p className="text-xs font-semibold text-emerald-100">
-                {trees.length === 0
-                  ? tx('Khu vườn ảo đang chờ hạt giống đầu tiên!', 'Your Virtual Orchard awaits its first seed!', '最初の種を植えましょう！')
-                  : tx('Ô đất trống — Trồng thêm cây mục tiêu mới', 'Open Garden Plot — Sow Another Goal', '空き区画 — 新しい目標の木を植える')}
-              </p>
-              <p className="mt-1 text-[11px] text-zinc-400">
-                {tx('14 giống cây Việt Nam sẵn sàng phát triển.', '14 native Vietnamese trees ready to grow.', '14種類のベトナム在来樹から選べます。')}
-              </p>
-            </div>
-            <div className="flex flex-wrap justify-center gap-1.5">
-              <Button type="button" size="sm" variant="primary" onClick={onOpenNewForm}>
-                <Plus className="size-3.5" /> {tx('Gieo cây mới', 'Plant Tree', '新しく植える')}
-              </Button>
-              {trees.length === 0 && (
-                <Button type="button" size="sm" variant="secondary" onClick={onSeedDemo}>
-                  🤖 {tx('Thử Vườn Mẫu', 'Demo Orchard', '見本を見る')}
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
 export function WealthTreeGarden({ compact: isCompactWidget = false }) {
   const { lang, tx } = useI18n();
   const { banks } = useRates();
@@ -583,6 +372,7 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
   const [selectedId, setSelectedId] = useState(() => loadWealthTrees()[0]?.id || '');
   const [previewFull, setPreviewFull] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [targetPlotIndex, setTargetPlotIndex] = useState(null);
   const [almanacOpen, setAlmanacOpen] = useState(false);
   const [mysteryModalTree, setMysteryModalTree] = useState(null);
 
@@ -627,6 +417,18 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
     if (inspectorRef.current) {
       inspectorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+  };
+
+  const handlePlantAtPlot = (plotIdx) => {
+    setTargetPlotIndex(plotIdx);
+    setShowNewForm(true);
+  };
+
+  const handleMoveTreeToPlot = (treeId, destPlotIdx) => {
+    const next = trees.map((t) =>
+      t.id === treeId ? { ...t, plotIndex: destPlotIdx } : t
+    );
+    persistTrees(next, treeId);
   };
 
   const handlePlantFromPlanner = () => {
@@ -754,6 +556,16 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
     e.preventDefault();
     const spec = getTreeSpeciesById(newSpeciesId);
     const treeId = `tree_${Date.now().toString(36)}`;
+    const usedPlots = new Set(trees.map((t) => Number(t.plotIndex)).filter((n) => Number.isInteger(n)));
+    let assignedPlot = Number.isInteger(targetPlotIndex) ? targetPlotIndex : 0;
+    if (usedPlots.has(assignedPlot)) {
+      for (let i = 0; i < 12; i++) {
+        if (!usedPlots.has(i)) {
+          assignedPlot = i;
+          break;
+        }
+      }
+    }
     const newTree = {
       id: treeId,
       title: newTitle.trim() || `${spec.name[lang] || spec.name.vi}`,
@@ -767,13 +579,15 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
       mysteryUnlocked: false,
       mysteryFruitId: spec.mysteryFruitId,
       isDummy: false,
+      plotIndex: assignedPlot,
       checkIns: [],
     };
     persistTrees([newTree, ...trees], treeId);
     setNewTitle('');
+    setTargetPlotIndex(null);
     setShowNewForm(false);
     setDepositAmount(newTree.monthlyPlanned);
-    notify(tx(`Đã gieo hạt giống ${spec.name[lang] || spec.name.vi} vào khu vườn!`, `Planted ${spec.name.en}!`, `${spec.name.ja}を植えました！`));
+    notify(tx(`Đã gieo hạt giống ${spec.name[lang] || spec.name.vi} lên ô đất #${assignedPlot + 1}!`, `Planted ${spec.name.en} on plot #${assignedPlot + 1}!`, `${spec.name.ja}を区画 #${assignedPlot + 1} に植えました！`));
   };
 
   const handleQuickPlantSpecies = (sp) => {
@@ -961,14 +775,25 @@ export function WealthTreeGarden({ compact: isCompactWidget = false }) {
 
   return (
     <div className="space-y-6">
-      {/* Interactive Virtual Orchard Panorama (Users see all their trees together) */}
-      <VirtualOrchardScene
+      {/* Personal 2.5D Isometric Sky Island (like Khu Vườn Trên Mây) */}
+      <IsometricSkyIsland
         trees={trees}
         selectedId={activeTree?.id || ''}
         onSelectTree={handleSelectTreeFromScene}
-        onOpenNewForm={() => setShowNewForm(true)}
+        onPlantAtPlot={handlePlantAtPlot}
+        onMoveTreeToPlot={handleMoveTreeToPlot}
+        onWaterSelected={handleSelectTreeFromScene}
+        onHarvestSelected={(tree) => {
+          const st = { ...computeTreeStatus(tree), lang };
+          if (st.canHarvestMystery) {
+            const next = trees.map((t) => (t.id === tree.id ? { ...t, mysteryUnlocked: true } : t));
+            persistTrees(next, tree.id);
+            setMysteryModalTree({ ...tree, status: st });
+          }
+        }}
         onOpenAlmanac={() => setAlmanacOpen(true)}
         onSeedDemo={handleSeedDemoOrchard}
+        renderTreeGlyph={(st, opts) => <TreeCanopyGlyph status={st} {...opts} />}
       />
 
       {/* Orchard Action Bar & Custom Planting Form */}

@@ -573,6 +573,10 @@ export function validateBySchema(key, raw) {
           mysteryUnlocked: Boolean(item.mysteryUnlocked),
           mysteryFruitId: sanitizeReferralCode(item.mysteryFruitId || ''),
           isDummy: Boolean(item.isDummy),
+          plotIndex:
+            Number.isInteger(Number(item.plotIndex)) && Number(item.plotIndex) >= 0 && Number(item.plotIndex) <= 11
+              ? Number(item.plotIndex)
+              : idx % 12,
           checkIns: Array.isArray(item.checkIns)
             ? item.checkIns
                 .filter((c) => isPlainObject(c))

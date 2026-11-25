@@ -4,6 +4,13 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0h. Completed in Version 2.6.0.0 (2026-11-25 — Personal 2.5D Isometric Sky Island Garden `/garden`)
+
+- [x] **2.5D Isometric Sky Island Scene ([IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx))**: Implemented painter-sorted 2.5D isometric cube terrain (`isoProject`, `<IsoVoxel />`) floating on clouds with a cascading cliff waterfall, lotus water stream, Vietnamese thatched hut, crystal fountain, mystic portal, 12 interactive 3D farm plots (`plotIndex` persisted in [cryptoStorage.js](../../src/utils/cryptoStorage.js)), Move-Plot rearrangement mode, top Wooden Game HUD (Island Level ★, XP progress, Mystery Fruit gems 💎, VND gold 🪙, 3 weather modes, zoom), left wooden action dock, and Island Decoration / Custom Garden Name modal.
+- [x] **Connected Sky Island to 14 Species & Mystery Fruit Flow ([WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx), [Garden.jsx](../../src/pages/Garden.jsx))**: Empty island plots open targeted planting (`targetPlotIndex`), dock actions scroll to deposit check-ins / open Mystery Fruit harvest / open Lucky Cat Fortune modal, and Miu Vang stands beside the selected tree plot.
+
+---
+
 ## 0g. Completed in Version 2.5.1.0 (2026-11-24 — Platform Version Sync & 1-Click Demo Account)
 
 - [x] **1-Click Interactive Demo Account (`demo@vnsavingpro.vn` / `VnSavingDemo2026!`) ([AuthContext.jsx](../../src/contexts/AuthContext.jsx), [AuthModal.jsx](../../src/components/AuthModal.jsx), [Layout.jsx](../../src/components/Layout.jsx), [Profile.jsx](../../src/pages/Profile.jsx), [Home.jsx](../../src/pages/Home.jsx))**: Added instant 1-click Demo sign-in (and direct credential match) stored cleanly in `sessionStorage` (`vnsaving_demo_session_v1`), automatically pre-seeding 4 Vietnamese Virtual Orchard trees (`/garden`), sample Couple roadmap (`PLANNER_STATE`), and 2 demo passbooks (`ACTIVE_PASSBOOKS_STATE`), badged `Demo` in Header/Profile with zero impact on live Supabase tables or RLS.

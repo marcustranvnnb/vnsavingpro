@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-25] — Version 2.6.0.0: Personal 2.5D Isometric Sky Island Garden (`/garden`)
+
+- **Request**: Upgrade the virtual garden concept into a personal, farm-game-inspired floating island garden (like *Khu vườn trên mây 2*) where users can see and arrange their personal garden.
+- **Changes Implemented**:
+  - **Version Bump (`v2.6.0.0`)**: Ran `node scripts/bump-version.js minor`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), [index.html](../../index.html), and [src/tools.js](../../src/tools.js).
+  - **2.5D Isometric Sky Island (`IsometricSkyIsland.jsx`)**: Built [src/components/IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx) with 2.5D voxel island cliffs, animated waterfall & lotus pond, thatched pavilion, crystal fountain, mystic portal, 12 interactive 3D soil plots (`plotIndex` saved via [src/utils/cryptoStorage.js](../../src/utils/cryptoStorage.js)), Move-Plot rearrangement, Game HUD bar (Island Level, XP, Gems 💎, Gold 🪙, Weather & Zoom), left wooden action dock, and customizable Garden Name + Island Decorations modal (`vnsaving_sky_island_decor_v1`).
+  - **Orchard Integration**: Wired `<IsometricSkyIsland />` cleanly into [src/components/WealthTreeGarden.jsx](../../src/components/WealthTreeGarden.jsx) and [src/pages/Garden.jsx](../../src/pages/Garden.jsx).
+
+---
+
 ## [2026-11-24] — Version 2.5.1.0: Full Platform Version Sync, 1-Click Demo Account (`demo@vnsavingpro.vn`) & Production Deploy
 
 - **Request**: Update all website pages and version labels across the site, create a working Demo Account, and deploy the latest release.

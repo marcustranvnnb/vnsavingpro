@@ -23,6 +23,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v2.6.0.0',
+    date: '25/11/2026',
+    title: 'Đảo Mây Tài Sản 2.5D Isometric Cá Nhân Hóa (/garden)',
+    items: [
+      'Nâng cấp Khu Vườn Ảo thành Hòn Đảo Mây 2.5D Isometric lơ lửng giữa bầu trời xanh với 12 ô đất 3D, thác nước xanh biếc, hồ sen, chòi tranh vàng, đài phun nước pha lê và cổng thần kỳ.',
+      'Bổ sung thanh HUD Game (Cấp độ Đảo Lv, XP, số Quả Bí Ẩn 💎, Tổng tài sản 🪙, đổi 3 thời tiết & Zoom) và thanh Công cụ gỗ bên trái (Bách khoa 14 cây, Trồng cây, Tưới cây, Thu hoạch Quả Bí Ẩn, Trang trí Đảo, gọi Miu Vàng).',
+      'Cho phép bấm chọn từng ô đất để gieo cây mới, bật chế độ Di chuyển cây giữa 12 ô đất và tùy chỉnh công trình trang trí / đặt tên khu vườn riêng.',
+    ],
+  },
+  {
     version: 'v2.5.1.0',
     date: '24/11/2026',
     title: 'Đồng Bộ Toàn Nền Tảng v2.5 & Tài Khoản Demo 1 Chạm (demo@vnsavingpro.vn)',
@@ -674,12 +684,30 @@ export function getLocalizedPageTitle(routeId, lang = 'vi') {
 }
 
 export function getLocalizedVersionLabel(lang = 'vi') {
-  if (lang === 'en') return 'Wealth OS v2.5 · Virtual Orchard (14 Vietnamese Trees) · Miu Vang Lucky Cat · 360° Net Worth';
-  if (lang === 'ja') return '資産管理OS v2.5・14種バーチャル資産果樹園・招き猫ミウちゃん・統合360°';
+  if (lang === 'en') return 'Wealth OS v2.6 · 2.5D Isometric Sky Island Garden (14 Trees) · Miu Vang · Demo';
+  if (lang === 'ja') return '資産管理OS v2.6・2.5D天空ガーデン（14樹種）・招き猫ミウちゃん・Demo';
   return APP_VERSION_LABEL;
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.6.0.0': {
+    en: {
+      title: 'Personal 2.5D Isometric Sky Island Garden (/garden)',
+      items: [
+        'Transformed /garden into a floating 2.5D Isometric Sky Island featuring 12 3D soil plots, a cascading waterfall, lotus pond, thatched pavilion, crystal fountain, and mystic portal.',
+        'Added a top game HUD (Island Level, XP progress, Mystery Fruit gems 💎, total orchard VND 🪙, weather & zoom controls) and a left wooden action dock.',
+        'Tap empty plots to plant directly, activate Move Mode to rearrange trees across all 12 island plots, and customize island decorations & garden name.',
+      ],
+    },
+    ja: {
+      title: '自分専用の2.5Dアイソメトリック天空ガーデン (/garden)',
+      items: [
+        '/garden を3D感あふれる2.5Dアイソメトリック天空島へ刷新（12区画・滝と蓮池・あずまや・噴水・魔法のポータル）。',
+        'ゲーム風の木製＆黄金HUDバー（島レベル・経験値・神秘の実💎・資産合計🪙・天候・ズーム）と左サイド木製ドックを実装。',
+        '空き区画をタップして植樹、移動モードで12区画に自由配置、島の装飾オン/オフや庭園名のカスタマイズが可能です。',
+      ],
+    },
+  },
   'v2.5.1.0': {
     en: {
       title: 'Full Platform Version Sync & 1-Click Demo Account (demo@vnsavingpro.vn)',
