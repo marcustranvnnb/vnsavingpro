@@ -27,7 +27,7 @@ import {
 } from '../utils/apiClient.js';
 import { compact } from '../utils/format.js';
 import { LuckyCatFortuneModal, LuckyCatMascot } from './LuckyCatMascot.jsx';
-import { Badge, Button, Modal, cx } from './ui.jsx';
+import { Badge, Button, Card, Modal, cx } from './ui.jsx';
 
 const ISLAND_CONFIG_KEY = 'vnsaving_sky_island_config_v2';
 

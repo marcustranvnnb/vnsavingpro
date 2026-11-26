@@ -2,7 +2,7 @@
   "name": "vnsavingpro",
   "private": true,
   "version": "2.7.0",
-  "appVersion": "2.7.0.0",
+  "appVersion": "2.7.0.1",
   "type": "module",
   "engines": {
     "node": "24.x"

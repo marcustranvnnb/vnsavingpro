@@ -4,6 +4,14 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0j. Completed in Version 2.7.0.1 (2026-11-26 — Modal Portal Viewport Fix, Garden Card Import & Demo Seeding)
+
+- [x] **Modal Viewport Centering via Portal ([ui.jsx](../../src/components/ui.jsx))**: Wrapped `<Modal>` output in `createPortal(modalContent, document.body)` so `position: fixed` overlays always center in the viewport on tall pages using `animate-fade` (`transform` containing block), including the `/garden` House Upgrade modal.
+- [x] **Garden `Card` Import & Demo Workspace Pre-Seeding Hotfix ([IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx), [AuthContext.jsx](../../src/contexts/AuthContext.jsx))**: Restored missing `Card` import in `IsometricSkyIsland.jsx` and switched Demo workspace seeding to `cryptoStorage.load`/`save` with `plotIndex` and `monthlyFixedExpense`.
+- [x] **Headless CDP Smoke-Test Verification**: Verified `/`, `/garden`, House Upgrade Modal (`Lv.1–5`), and `/profile` end-to-end after Demo 1-click sign-in via headless CDP capture with zero console or page errors.
+
+---
+
 ## 0i. Completed in Version 2.7.0.0 (2026-11-25 — 2.5D Sky Island Asset Pack, 8-Stage Tree Evolution, Core-Linked Homes & Live FX)
 
 - [x] **63 Transparent 2.5D Game Assets (`scripts/slice-garden-assets.ps1`, `public/assets/garden/`)**: Sliced & edge flood-fill background-removed `sky-island-map.jpg`, 14 mature Vietnamese tree PNGs, 28 stage 1–7 progression sprites across 4 botanical families (`fruit`, `bonsai`, `tropical`, `lotus`), 5 evolving Vietnamese House PNGs (`house_lv1..5.png`) + locked plot sprite (`plot_locked.png`), 4 3D chibi Miu Vang poses (`mascot/miu_*.png`), and Mystery Fruits + Garden Props (`props/*.png`).

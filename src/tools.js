@@ -23,6 +23,15 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v2.7.0.1',
+    date: '26/11/2026',
+    title: 'Hotfix Portal Modal, Sửa Lỗi Đảo Mây & Nạp Sẵn Tài Khoản Demo 1 Chạm',
+    items: [
+      'Khắc phục thiếu import Card trong IsometricSkyIsland.jsx và chuẩn hoá nạp dữ liệu mẫu Tài khoản Demo (cryptoStorage.load/save, vị trí plotIndex, monthlyFixedExpense) trong AuthContext.jsx.',
+      'Nâng cấp Modal dùng chung (ui.jsx) render qua ReactDOM.createPortal vào document.body để hộp thoại luôn căn giữa chuẩn viewport trên các trang dài có hiệu ứng animate-fade như /garden.',
+    ],
+  },
+  {
     version: 'v2.7.0.0',
     date: '25/11/2026',
     title: 'Bộ Asset 2.5D Đảo Mây · 8 Chu Kỳ Cây · 5 Cấp Nhà Gắn Core Plan & Hiệu Ứng Động',
@@ -700,6 +709,22 @@ export function getLocalizedVersionLabel(lang = 'vi') {
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.7.0.1': {
+    en: {
+      title: 'Portal Modal Viewport Fix, Sky Island Card Hotfix & 1-Click Demo Seeding',
+      items: [
+        'Fixed missing Card import in IsometricSkyIsland.jsx and standardized 1-Click Demo Account workspace pre-seeding (cryptoStorage.load/save, plotIndex, monthlyFixedExpense) in AuthContext.jsx.',
+        'Upgraded shared Modal (ui.jsx) to render via ReactDOM.createPortal into document.body so dialogs always stay centered in the viewport on tall animated pages like /garden.',
+      ],
+    },
+    ja: {
+      title: 'ポータルModal表示位置修正・天空島Cardホットフィックス＆Demo初期データ修正',
+      items: [
+        'IsometricSkyIsland.jsx の Card インポート漏れを修正し、AuthContext.jsx のワンクリックDemo初期データ（cryptoStorage.load/save・plotIndex・monthlyFixedExpense）を正常化しました。',
+        '共通 Modal (ui.jsx) を ReactDOM.createPortal(..., document.body) 経由で描画するよう改善し、/garden のような縦長ページでも常に画面中央に表示されるようにしました。',
+      ],
+    },
+  },
   'v2.7.0.0': {
     en: {
       title: '2.5D Sky Island Game Assets, 8 Growth Stages, Core-Linked Homes & Live FX',

@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-25 14:11 (Version 2.7.0.0: 2.5D Sky Island Asset Pack · 8 Growth Stages · Core-Linked Houses Lv.1–5 & Live FX)
-> **Current Architecture Version**: v2.7.0.0 (Living Wealth OS + 63 Transparent 2.5D Sky Island Assets + 8 Growth Stages + Core-Linked House Upgrades Lv.1–5 + 3D Miu Vang + Demo Account · 10/12 Vercel Functions)
+> **Last Synced**: 2026-11-26 14:38 (Version 2.7.0.1: Modal Portal Fix · Garden Card Import & Demo Seeding Hotfix)
+> **Current Architecture Version**: v2.7.0.1 (Living Wealth OS + 63 Transparent 2.5D Sky Island Assets + 8 Growth Stages + Core-Linked House Upgrades Lv.1–5 + 3D Miu Vang + Demo Account · 10/12 Vercel Functions)
 > **Deployment Status**: Clean URLs (`/`, `/plan`, `/fx`, `/salary`, `/ecosystem`, `/rates`, `/referral`, `/blog`, ...) live on `main` (`https://github.com/marcustranvnnb/vnsavingpro.git`).
 
 ---
@@ -46,7 +46,7 @@
 
 ---
 
-## File Registry (v2.7.0.0 Living Wealth OS · 63 Sky Island Assets · 8 Tree Growth Stages · Core-Linked Houses · 3D Miu Vang · Demo Account)
+## File Registry (v2.7.0.1 Living Wealth OS · 63 Sky Island Assets · 8 Tree Growth Stages · Core-Linked Houses · 3D Miu Vang · Demo Account)
 
 - **Database & Schema (`supabase/`)**: `supabase/schema.sql`, `supabase/migrations/{20261123_v111_security_and_history,20261123_v112_collaborative_planning,20261123_v200_wealth_platform,20261124_v210_advisor_hardening}.sql` (`bank_rate_snapshots`, `user_feedback`, `saved_plans`, `profiles`, `calculation_history`, `household_collaborations`, `household_spaces`, `community_plan_templates`, `community_template_votes`, `steward_mandates`, `usage_quotas`, `quota_alerts_log` + hardened RLS policies)
 - **Serverless API (`api/`, `10/12` Vercel Free-Tier functions)**: `api/rates.js`, `api/fx.js`, `api/calculate.js`, `api/ecosystem.js`, `api/feedback.js`, `api/plans.js`, `api/history.js`, `api/collaborations.js`, `api/quota-status.js`, `api/cron/sync-rates.js`, `api/_lib/{calculator,feasibilityEvaluator,householdAnalytics,fxRatesCache,fxCalculator,salaryVietnam,cicAndLoanVietnam,http,liveRatesCache,rateLimit,supabase,resend,quotaGuard}.js`

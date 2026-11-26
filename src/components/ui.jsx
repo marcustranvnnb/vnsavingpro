@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Info, Loader2, X } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
 import { useDisplayMode } from '../layout/DisplayModeContext.jsx';
@@ -424,7 +425,7 @@ export function Modal({ open, onClose, title, children, className }) {
   const isMobileSheet = mode === 'mobile';
   const isDuoBook = mode === 'duo' && duoPosture === 'book' && width >= 560;
 
-  return (
+  const modalContent = (
     <div
       className={cx(
         'fixed inset-0 z-[60] flex',
@@ -464,6 +465,8 @@ export function Modal({ open, onClose, title, children, className }) {
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 }
 
 /* ── Skeletons & Disclaimer ─────────────────────────────── */

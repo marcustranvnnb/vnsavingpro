@@ -4,6 +4,16 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-26] — Version 2.7.0.1: Modal Portal Viewport Fix, Garden Card Import & Demo Seeding Hotfix
+
+- **Request**: Resolve modal viewport positioning on /garden, fix the missing Card import & 1-click Demo workspace seeding, bump build version to 2.7.0.1, sync Living Brain docs, and capture clean Unikorn showcase snapshots.
+- **Changes Implemented**:
+  - **Version Bump (2.7.0.1)**: Updated [src/version.json](../../src/version.json), [package.json](../../package.json), and prepended 2.7.0.1 trilingual release highlights (i/en/ja) in [src/tools.js](../../src/tools.js).
+  - **Modal Portal Viewport Fix ([src/components/ui.jsx](../../src/components/ui.jsx))**: Wrapped <Modal> in createPortal(..., document.body) so position: fixed overlays always center cleanly inside the viewport on tall pages using nimate-fade (	ransform containing block).
+  - **Garden Card Import & Demo Pre-Seeding Hotfix ([src/components/IsometricSkyIsland.jsx](../../src/components/IsometricSkyIsland.jsx), [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx))**: Restored Card import in IsometricSkyIsland.jsx and switched Demo workspace seeding to cryptoStorage.load/save with plotIndex and monthlyFixedExpense.
+
+---
+
 ## [2026-11-25] — Version 2.7.0.0: 2.5D Sky Island Asset Pack, 8-Stage Tree Growth, Core-Linked Evolving Houses & Live FX
 
 - **Request**: Design & preview a custom asset pack for the Virtual Garden, ensure all trees evolve from freshly sown seed through fruiting & maturity across 8 stages, allow building/upgrading personal homes & garden landmarks linked directly to the core financial plan (`/plan`), and apply live animations simultaneously.

@@ -83,9 +83,9 @@ function clearStoredDemoSession() {
 function seedDemoWorkspaceIfEmpty() {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const existingTrees = cryptoStorage.getJSON('WEALTH_TREES_STATE', null);
+    const existingTrees = cryptoStorage.load('WEALTH_TREES_STATE', null);
     if (!Array.isArray(existingTrees) || existingTrees.length === 0) {
-      cryptoStorage.setJSON('WEALTH_TREES_STATE', [
+      cryptoStorage.save('WEALTH_TREES_STATE', [
         {
           id: 'tree_demo_sen_01',
           title: '[Demo] Sen Hồng Quỹ Dự Phòng (100%)',
@@ -99,6 +99,7 @@ function seedDemoWorkspaceIfEmpty() {
           mysteryUnlocked: false,
           mysteryFruitId: 'fruit_lien_hoa_ngoc',
           isDummy: true,
+          plotIndex: 0,
           checkIns: [
             { id: 'chk_demo_1', amount: 20_000_000, date: today, bankId: 'timo', proofCode: 'DEMO-TIMO-01', verified: true, isOverTarget: true },
             { id: 'chk_demo_2', amount: 22_000_000, date: today, bankId: 'cake', proofCode: 'DEMO-CAKE-02', verified: true, isOverTarget: true },
@@ -117,6 +118,7 @@ function seedDemoWorkspaceIfEmpty() {
           mysteryUnlocked: false,
           mysteryFruitId: 'fruit_dua_ngoc_bich',
           isDummy: true,
+          plotIndex: 1,
           checkIns: [
             { id: 'chk_demo_3', amount: 18_000_000, date: today, bankId: 'cake', proofCode: 'DEMO-CAKE-03', verified: true, isOverTarget: true },
           ],
@@ -134,6 +136,7 @@ function seedDemoWorkspaceIfEmpty() {
           mysteryUnlocked: false,
           mysteryFruitId: 'fruit_vai_rong_do',
           isDummy: true,
+          plotIndex: 4,
           checkIns: [
             { id: 'chk_demo_4', amount: 24_000_000, date: today, bankId: 'tnex', proofCode: 'DEMO-TNEX-04', verified: true, isOverTarget: true },
           ],
@@ -151,6 +154,7 @@ function seedDemoWorkspaceIfEmpty() {
           mysteryUnlocked: false,
           mysteryFruitId: 'fruit_mang_vang_phu_dong',
           isDummy: true,
+          plotIndex: 7,
           checkIns: [
             { id: 'chk_demo_5', amount: 25_000_000, date: today, bankId: 'liobank', proofCode: 'DEMO-LIO-05', verified: true, isOverTarget: true },
           ],
@@ -158,26 +162,25 @@ function seedDemoWorkspaceIfEmpty() {
       ]);
     }
 
-    const existingPlan = cryptoStorage.getJSON('PLANNER_STATE', null);
+    const existingPlan = cryptoStorage.load('PLANNER_STATE', null);
     if (!existingPlan) {
-      cryptoStorage.setJSON('PLANNER_STATE', {
+      cryptoStorage.save('PLANNER_STATE', {
         goalType: 'TARGET_AMOUNT',
         target: 15_000_000,
         targetAmount: 700_000_000,
         capital: 180_000_000,
         saving: 18_000_000,
         householdMode: 'COUPLE',
-        monthlyExpense: 22_000_000,
-        emergencyFundCurrent: 120_000_000,
+        monthlyFixedExpense: 22_000_000,
         emergencyFundMonths: 6,
         bankId: 'cake',
         tenure: '12M',
       });
     }
 
-    const existingPassbooks = cryptoStorage.getJSON('ACTIVE_PASSBOOKS_STATE', null);
+    const existingPassbooks = cryptoStorage.load('ACTIVE_PASSBOOKS_STATE', null);
     if (!Array.isArray(existingPassbooks) || existingPassbooks.length === 0) {
-      cryptoStorage.setJSON('ACTIVE_PASSBOOKS_STATE', [
+      cryptoStorage.save('ACTIVE_PASSBOOKS_STATE', [
         {
           id: 'pb_demo_cake_1',
           bankId: 'cake',
