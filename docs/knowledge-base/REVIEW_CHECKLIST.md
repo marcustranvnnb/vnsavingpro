@@ -4,6 +4,15 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0k. Completed in Version 2.7.1.0 (2026-11-27 — Zero Direct DB Access Lockout & Full API Security Hardening)
+
+- [x] **Zero Direct Client DB Access ([supabase/migrations/20261127_v271_zero_direct_db_access.sql](../../supabase/migrations/20261127_v271_zero_direct_db_access.sql), [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx), [api/ecosystem.js](../../api/ecosystem.js))**: Migrated `profiles` reads/updates out of browser Supabase client to authenticated Vercel API (`/api/ecosystem?resource=profile` + `action: 'update_profile'`) with 4-column whitelist; revoked all `anon`/`authenticated` grants on `public` schema, tables, sequences, and routines; enabled `service_role` RLS policies across all 12 tables (resolving `rls_enabled_no_policy` on `user_feedback`).
+- [x] **Anti-DoS & Fail-Closed Infrastructure ([api/_lib/http.js](../../api/_lib/http.js), [api/_lib/rateLimit.js](../../api/_lib/rateLimit.js), [api/_lib/quotaGuard.js](../../api/_lib/quotaGuard.js), [api/cron/sync-rates.js](../../api/cron/sync-rates.js), [api/quota-status.js](../../api/quota-status.js), [api/rates.js](../../api/rates.js), [api/fx.js](../../api/fx.js))**: Bounded JSON body stream to 128KB, prioritized Vercel edge IP headers, separated `resend_daily`/`resend_monthly` (`emailQuotaBlocked`) from global site lockdown, required non-empty `CRON_SECRET` fail-closed on cron sync, and locked unauthenticated cache-busting query params.
+- [x] **Anti-Hijacking on Collaborative & Financial APIs ([api/plans.js](../../api/plans.js), [api/collaborations.js](../../api/collaborations.js), [api/ecosystem.js](../../api/ecosystem.js))**: Cryptographic 8-char share codes + immutable anonymous plans, fixed `PUBLIC_APP_ORIGIN` (no Host Header Injection), `invited_email` matching on invite accept, `accept_steward_mandate` anti-overwrite/expiry/email guards, DB-authoritative vote aggregation, and per-user row/email caps.
+- [ ] **Manual Auth Setting Recommended (Supabase Dashboard)**: Enable **Leaked Password Protection** (`auth_leaked_password_protection` WARN in Security Advisor) via Supabase Auth settings.
+
+---
+
 ## 0j. Completed in Version 2.7.0.1 (2026-11-26 — Modal Portal Viewport Fix, Garden Card Import & Demo Seeding)
 
 - [x] **Modal Viewport Centering via Portal ([ui.jsx](../../src/components/ui.jsx))**: Wrapped `<Modal>` output in `createPortal(modalContent, document.body)` so `position: fixed` overlays always center in the viewport on tall pages using `animate-fade` (`transform` containing block), including the `/garden` House Upgrade modal.

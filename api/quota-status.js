@@ -12,7 +12,7 @@ export default async function handler(req, res) {
     Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`) ||
     Boolean(serviceKey && authHeader === `Bearer ${serviceKey}`);
 
-  const forceRefresh = isAdmin || req.url?.includes('refresh=1');
+  const forceRefresh = isAdmin;
   res.setHeader(
     'Cache-Control',
     isAdmin || forceRefresh ? 'no-store' : 'public, s-maxage=300, stale-while-revalidate=600'

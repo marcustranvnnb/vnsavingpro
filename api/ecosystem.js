@@ -511,8 +511,63 @@ export default async function handler(req, res) {
     const hasAuthHeader = Boolean(req.headers?.authorization);
     const auth = hasAuthHeader ? await getUserFromBearerToken(req) : { ok: false, user: null };
 
-    if (['households', 'stewards', 'my_status'].includes(resource) && (!auth.ok || !auth.user?.id)) {
+    if (['households', 'stewards', 'my_status', 'profile'].includes(resource) && (!auth.ok || !auth.user?.id)) {
       return res.status(401).json({ ok: false, error: 'Vui lòng đăng nhập để truy cập dữ liệu cá nhân hoá.' });
+    }
+
+    if (resource === 'profile') {
+      res.setHeader('Cache-Control', 'no-store');
+      const user = auth.user;
+      const uid = user.id;
+      const baseCols =
+        'id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at';
+      const v2Cols = `${baseCols}, account_role, is_verified_expert, expert_verification_status, expert_credentials, is_community_voted_planner, community_planner_score, community_total_votes, community_total_clones, steward_enabled`;
+      const fallbackName =
+        cleanStr(user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '', 80) ||
+        'Thành viên VnSavingPro';
+      const fallbackAvatar = cleanStr(user.user_metadata?.avatar_url || user.user_metadata?.picture || '', 400);
+
+      if (supabaseConnected) {
+        const profRes = await sbSelect('profiles', `id=eq.${encodeURIComponent(uid)}&select=${v2Cols}&limit=1`);
+        if (profRes.ok && Array.isArray(profRes.data) && profRes.data[0]) {
+          return res.status(200).json({ ok: true, profile: profRes.data[0], storage: 'supabase' });
+        }
+        const upRes = await sbUpsert(
+          'profiles',
+          {
+            id: uid,
+            full_name: fallbackName,
+            avatar_url: fallbackAvatar,
+            updated_at: new Date().toISOString(),
+          },
+          'id'
+        );
+        if (upRes.ok && Array.isArray(upRes.data) && upRes.data[0]) {
+          return res.status(200).json({ ok: true, profile: upRes.data[0], storage: 'supabase' });
+        }
+      }
+
+      const memProf = memoryProfiles.get(uid) || {};
+      return res.status(200).json({
+        ok: true,
+        profile: {
+          id: uid,
+          full_name: memProf.full_name || fallbackName,
+          avatar_url: fallbackAvatar,
+          default_bank_id: memProf.default_bank_id || 'cake',
+          preferred_goal_type: memProf.preferred_goal_type || 'PASSIVE_INCOME',
+          default_household_mode: memProf.default_household_mode || 'INDIVIDUAL',
+          account_role: memProf.accountRole || 'INDIVIDUAL',
+          is_verified_expert: Boolean(memProf.isVerifiedExpert),
+          expert_verification_status: memProf.expertVerificationStatus || 'none',
+          is_community_voted_planner: Boolean(memProf.isCommunityVotedPlanner),
+          community_planner_score: Number(memProf.communityPlannerScore || 0),
+          community_total_votes: Number(memProf.communityTotalVotes || 0),
+          community_total_clones: Number(memProf.communityTotalClones || 0),
+          steward_enabled: Boolean(memProf.stewardEnabled),
+        },
+        storage: 'memory',
+      });
     }
 
     const [templates, experts] = await Promise.all([
@@ -631,7 +686,85 @@ export default async function handler(req, res) {
       cleanStr(user.user_metadata?.full_name || user.email?.split('@')[0] || '', 80) || 'Thành viên VnSavingPro';
     const nowIso = new Date().toISOString();
 
+    if (action === 'update_profile') {
+      const patchFields = {
+        updated_at: nowIso,
+      };
+      if (body.full_name !== undefined) {
+        patchFields.full_name = cleanStr(body.full_name, 80);
+      }
+      if (body.default_bank_id !== undefined) {
+        patchFields.default_bank_id = ['cake', 'tnex', 'timo', 'liobank'].includes(body.default_bank_id)
+          ? body.default_bank_id
+          : 'cake';
+      }
+      if (body.preferred_goal_type !== undefined) {
+        patchFields.preferred_goal_type =
+          body.preferred_goal_type === 'TARGET_AMOUNT' ? 'TARGET_AMOUNT' : 'PASSIVE_INCOME';
+      }
+      if (body.default_household_mode !== undefined) {
+        patchFields.default_household_mode = ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(body.default_household_mode)
+          ? body.default_household_mode
+          : 'INDIVIDUAL';
+      }
+
+      const memPrev = memoryProfiles.get(userId) || {};
+      const nextMem = { ...memPrev, ...patchFields };
+      memoryProfiles.set(userId, nextMem);
+
+      if (supabaseConnected) {
+        const selectCols =
+          'id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at';
+        const patchRes = await sbPatch('profiles', `id=eq.${encodeURIComponent(userId)}`, patchFields);
+        if (patchRes.ok && Array.isArray(patchRes.data) && patchRes.data[0]) {
+          return res.status(200).json({ ok: true, profile: patchRes.data[0], storage: 'supabase' });
+        }
+        const upRes = await sbUpsert(
+          'profiles',
+          {
+            id: userId,
+            full_name: patchFields.full_name ?? userDisplayName,
+            avatar_url: cleanStr(user.user_metadata?.avatar_url || user.user_metadata?.picture || '', 400),
+            default_bank_id: patchFields.default_bank_id || 'cake',
+            preferred_goal_type: patchFields.preferred_goal_type || 'PASSIVE_INCOME',
+            default_household_mode: patchFields.default_household_mode || 'INDIVIDUAL',
+            updated_at: nowIso,
+          },
+          'id'
+        );
+        if (upRes.ok && Array.isArray(upRes.data) && upRes.data[0]) {
+          return res.status(200).json({ ok: true, profile: upRes.data[0], storage: 'supabase' });
+        }
+        const refRes = await sbSelect('profiles', `id=eq.${encodeURIComponent(userId)}&select=${selectCols}&limit=1`);
+        if (refRes.ok && Array.isArray(refRes.data) && refRes.data[0]) {
+          return res.status(200).json({ ok: true, profile: refRes.data[0], storage: 'supabase' });
+        }
+      }
+
+      return res.status(200).json({
+        ok: true,
+        profile: {
+          id: userId,
+          full_name: nextMem.full_name ?? userDisplayName,
+          avatar_url: cleanStr(user.user_metadata?.avatar_url || user.user_metadata?.picture || '', 400),
+          default_bank_id: nextMem.default_bank_id || 'cake',
+          preferred_goal_type: nextMem.preferred_goal_type || 'PASSIVE_INCOME',
+          default_household_mode: nextMem.default_household_mode || 'INDIVIDUAL',
+          updated_at: nowIso,
+        },
+        storage: 'memory',
+      });
+    }
+
     if (action === 'publish_template') {
+      const existingTemplates = await listPublishedTemplates(supabaseConnected);
+      const userTemplateCount = existingTemplates.filter((t) => t.authorUserId === userId).length;
+      if (userTemplateCount >= 10) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Bạn đã đăng tối đa 10 mẫu kế hoạch cộng đồng.',
+        });
+      }
       const title = cleanStr(body.title, 140);
       if (!title || title.length < 6) {
         return res.status(400).json({ ok: false, error: 'Vui lòng nhập tiêu đề kế hoạch từ 6 ký tự trở lên.' });
@@ -718,16 +851,7 @@ export default async function handler(req, res) {
       memoryTemplateVotes.set(voteKey, rating);
 
       let newVotes = target.votesCount;
-      let totalStars = target.realismScore * target.votesCount;
-      if (previousVote !== undefined) {
-        totalStars = totalStars - previousVote + rating;
-      } else {
-        newVotes += 1;
-        totalStars += rating;
-      }
-      const newScore = newVotes > 0 ? Number((totalStars / newVotes).toFixed(2)) : rating;
-      const updated = { ...target, votesCount: newVotes, realismScore: newScore };
-      memoryTemplates.set(target.id, updated);
+      let newScore = target.realismScore;
 
       if (supabaseConnected && !SEED_TEMPLATE_IDS.has(templateId)) {
         await sbUpsert(
@@ -740,13 +864,36 @@ export default async function handler(req, res) {
           },
           'template_id,voter_user_id'
         );
+        const allVotesRes = await sbSelect(
+          'community_template_votes',
+          `template_id=eq.${encodeURIComponent(templateId)}&select=realism_rating`
+        );
+        if (allVotesRes.ok && Array.isArray(allVotesRes.data) && allVotesRes.data.length > 0) {
+          const sum = allVotesRes.data.reduce((s, r) => s + (Number(r.realism_rating) || 0), 0);
+          newVotes = allVotesRes.data.length;
+          newScore = Number((sum / newVotes).toFixed(2));
+        } else {
+          newVotes = target.votesCount + (previousVote === undefined ? 1 : 0);
+        }
         await sbPatch('community_plan_templates', `id=eq.${encodeURIComponent(templateId)}`, {
           votes_count: newVotes,
           realism_score: newScore,
           updated_at: nowIso,
         });
         await recomputeAuthorCommunityStats(target.authorUserId, true);
+      } else {
+        let totalStars = target.realismScore * target.votesCount;
+        if (previousVote !== undefined) {
+          totalStars = totalStars - previousVote + rating;
+        } else {
+          newVotes += 1;
+          totalStars += rating;
+        }
+        newScore = newVotes > 0 ? Number((totalStars / newVotes).toFixed(2)) : rating;
       }
+
+      const updated = { ...target, votesCount: newVotes, realismScore: newScore };
+      memoryTemplates.set(target.id, updated);
 
       return res.status(200).json({ ok: true, template: updated });
     }
@@ -802,6 +949,13 @@ export default async function handler(req, res) {
 
     if (action === 'create_household' || action === 'switch_couple' || action === 'upgrade_couple_to_family') {
       const spaces = await getMySpaces(userId, supabaseConnected);
+      const activeOrOwnedSpaces = spaces.filter((s) => s.ownerUserId === userId);
+      if (action === 'create_household' && activeOrOwnedSpaces.length >= 10) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Bạn đã tạo tối đa 10 không gian hộ gia đình.',
+        });
+      }
       const title = cleanStr(body.title, 120);
       const planPayload = sanitizePlanPayload(body.planPayload);
       const dependentsCount = Math.max(0, Math.min(12, Math.round(Number(body.dependentsCount) || 0)));
@@ -919,6 +1073,14 @@ export default async function handler(req, res) {
     }
 
     if (action === 'create_steward_mandate') {
+      const existingMandates = await getMyMandates(userId, supabaseConnected);
+      const ownedMandateCount = existingMandates.filter((m) => m.ownerUserId === userId).length;
+      if (ownedMandateCount >= 10) {
+        return res.status(400).json({
+          ok: false,
+          error: 'Bạn đã tạo tối đa 10 hồ sơ ủy quyền đang hoạt động.',
+        });
+      }
       const hhMode = ['INDIVIDUAL', 'COUPLE', 'FAMILY'].includes(body.householdMode)
         ? body.householdMode
         : 'INDIVIDUAL';
@@ -965,11 +1127,25 @@ export default async function handler(req, res) {
           target = formatMandate(resDb.data[0]);
         }
       }
-      if (!target || target.status === 'revoked') {
-        return res.status(404).json({ ok: false, error: 'Không tìm thấy mã ủy quyền hoặc đã bị thu hồi.' });
+      const expTs = target?.expiresAt ? new Date(target.expiresAt).getTime() : NaN;
+      const isExpiredMandate = !Number.isNaN(expTs) && expTs < Date.now();
+      if (!target || target.status === 'revoked' || isExpiredMandate) {
+        return res.status(404).json({ ok: false, error: 'Không tìm thấy mã ủy quyền, đã hết hạn hoặc đã bị thu hồi.' });
       }
       if (target.ownerUserId === userId) {
         return res.status(400).json({ ok: false, error: 'Bạn là chủ tài sản tạo mã ủy quyền này.' });
+      }
+      if (target.stewardEmail && String(user.email || '').toLowerCase() !== target.stewardEmail.toLowerCase()) {
+        return res.status(403).json({
+          ok: false,
+          error: 'Mã ủy quyền này được cấp riêng cho một địa chỉ email khác.',
+        });
+      }
+      if (target.stewardUserId && target.stewardUserId !== userId) {
+        return res.status(409).json({
+          ok: false,
+          error: 'Hồ sơ ủy quyền này đã được người quản trị khác tiếp nhận.',
+        });
       }
       target.stewardUserId = userId;
       target.stewardDisplayName = userDisplayName;
@@ -982,13 +1158,17 @@ export default async function handler(req, res) {
       memoryProfiles.set(userId, { ...memPrev, stewardEnabled: true, accountRole: 'STEWARD' });
 
       if (supabaseConnected) {
-        await sbPatch('steward_mandates', `mandate_code=eq.${encodeURIComponent(code)}`, {
-          steward_user_id: userId,
-          steward_display_name: userDisplayName,
-          status: 'active',
-          accepted_at: nowIso,
-          updated_at: nowIso,
-        });
+        await sbPatch(
+          'steward_mandates',
+          `mandate_code=eq.${encodeURIComponent(code)}&status=eq.pending&steward_user_id=is.null`,
+          {
+            steward_user_id: userId,
+            steward_display_name: userDisplayName,
+            status: 'active',
+            accepted_at: nowIso,
+            updated_at: nowIso,
+          }
+        );
         await sbPatch('profiles', `id=eq.${encodeURIComponent(userId)}`, {
           steward_enabled: true,
           updated_at: nowIso,

@@ -257,60 +257,47 @@ export function AuthProvider({ children }) {
   const subscriptionRef = useRef(null);
   const probedGoogleRef = useRef(false);
 
-  const loadOrCreateProfile = useCallback(async (client, user) => {
-    if (!client || !user?.id) {
+  const loadOrCreateProfile = useCallback(async (activeSession, user) => {
+    const token = activeSession?.access_token;
+    if (!token || !user?.id) {
       setProfile(null);
       return null;
     }
 
-    const baseCols = 'id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at';
-    const v2Cols = `${baseCols}, account_role, is_verified_expert, expert_verification_status, expert_credentials, is_community_voted_planner, community_planner_score, community_total_votes, community_total_clones, steward_enabled`;
-
-    let { data, error } = await client
-      .from('profiles')
-      .select(v2Cols)
-      .eq('id', user.id)
-      .maybeSingle();
-
-    if (error) {
-      const fallbackRes = await client
-        .from('profiles')
-        .select(baseCols)
-        .eq('id', user.id)
-        .maybeSingle();
-      data = fallbackRes.data;
-      error = fallbackRes.error;
-    }
-
-    if (!error && data) {
-      setProfile(data);
-      return data;
-    }
-
     const fallbackName = sanitizeText(
-      user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '',
+      user.user_metadata?.full_name || user.email?.split('@')[0] || '',
       80
     );
-    const fallbackAvatar = String(user.user_metadata?.avatar_url || user.user_metadata?.picture || '').slice(0, 400);
 
-    const { data: created } = await client
-      .from('profiles')
-      .upsert(
-        {
-          id: user.id,
-          full_name: fallbackName,
-          avatar_url: fallbackAvatar,
+    try {
+      const res = await fetch('/api/ecosystem?resource=profile', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-        { onConflict: 'id' }
-      )
-      .select(baseCols)
-      .single();
-
-    if (created) {
-      setProfile(created);
-      return created;
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.profile) {
+          setProfile(json.profile);
+          return json.profile;
+        }
+      }
+    } catch {
+      // Fallback below when offline / local dev without Supabase service key
     }
-    return null;
+
+    const fallbackProfile = {
+      id: user.id,
+      full_name: fallbackName,
+      avatar_url: '',
+      default_bank_id: 'cake',
+      preferred_goal_type: 'PASSIVE_INCOME',
+      default_household_mode: 'INDIVIDUAL',
+      account_role: 'INDIVIDUAL',
+    };
+    setProfile(fallbackProfile);
+    return fallbackProfile;
   }, []);
 
   const ensureClient = useCallback(async () => {
@@ -331,7 +318,7 @@ export function AuthProvider({ children }) {
         if (nextSession?.user) {
           clearStoredDemoSession();
           setDemoUserState(null);
-          loadOrCreateProfile(client, nextSession.user);
+          loadOrCreateProfile(nextSession, nextSession.user);
         } else if (!readStoredDemoSession()) {
           setProfile(null);
         }
@@ -360,7 +347,7 @@ export function AuthProvider({ children }) {
           if (activeSession?.user) {
             clearStoredDemoSession();
             setDemoUserState(null);
-            await loadOrCreateProfile(client, activeSession.user);
+            await loadOrCreateProfile(activeSession, activeSession.user);
           }
           if (mounted) setAuthLoading(false);
         })
@@ -533,11 +520,9 @@ export function AuthProvider({ children }) {
           setProfile(nextProfile);
           return nextProfile;
         }
-        const client = await ensureClient();
-        if (!client || !user?.id) throw new Error('Bạn cần đăng nhập để cập nhật hồ sơ.');
-        const payload = {
-          updated_at: new Date().toISOString(),
-        };
+        const token = session?.access_token;
+        if (!token || !user?.id) throw new Error('Bạn cần đăng nhập để cập nhật hồ sơ.');
+        const payload = {};
         if (patch.full_name !== undefined) {
           payload.full_name = sanitizeText(patch.full_name, 80);
         }
@@ -555,16 +540,24 @@ export function AuthProvider({ children }) {
             ? patch.default_household_mode
             : 'INDIVIDUAL';
         }
-        const { data, error } = await client
-          .from('profiles')
-          .update(payload)
-          .eq('id', user.id)
-          .select('id, full_name, avatar_url, default_bank_id, preferred_goal_type, default_household_mode, updated_at, created_at')
-          .single();
 
-        if (error) throw new Error(normalizeAuthError(error));
-        setProfile(data);
-        return data;
+        const res = await fetch('/api/ecosystem', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            action: 'update_profile',
+            ...payload,
+          }),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json?.profile) {
+          throw new Error(json?.error || 'Không thể cập nhật hồ sơ. Vui lòng thử lại.');
+        }
+        setProfile(json.profile);
+        return json.profile;
       },
 
       signOut: async () => {

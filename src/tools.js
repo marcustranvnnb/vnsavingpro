@@ -23,6 +23,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v2.7.1.0',
+    date: '27/11/2026',
+    title: 'Khóa Cứng Bảo Mật Zero Direct DB Access, Chống DoS & Chống Chiếm Quyền API',
+    items: [
+      'Đóng toàn bộ quyền truy cập trực tiếp schema & bảng public từ trình duyệt (anon/authenticated): chuyển đọc/cập nhật hồ sơ (profiles) sang Vercel API (/api/ecosystem) với whitelist cột an toàn để người dùng không thể xem cấu trúc DB hay nâng quyền.',
+      'Bịt các lỗ hổng chiếm quyền & bơm dữ liệu: chống chiếm quyền ủy quyền tài chính (accept_steward_mandate), kiểm tra email khớp lời mời (/api/collaborations), cấm ghi đè mã chia sẻ ẩn danh (/api/plans với crypto.randomBytes 8 ký tự), và tính lại điểm bình chọn từ DB.',
+      'Chống sập hệ thống (Anti-DoS): tách ngưỡng email Resend (chỉ tạm dừng gửi mail, không khóa toàn app), fail-closed /api/cron/sync-rates, khóa cache-busting & header X-Forwarded-For giả mạo, và giới hạn 128KB payload trong readJsonBody.',
+    ],
+  },
+  {
     version: 'v2.7.0.1',
     date: '26/11/2026',
     title: 'Hotfix Portal Modal, Sửa Lỗi Đảo Mây & Nạp Sẵn Tài Khoản Demo 1 Chạm',
@@ -709,6 +719,24 @@ export function getLocalizedVersionLabel(lang = 'vi') {
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.7.1.0': {
+    en: {
+      title: 'Zero Direct DB Access Lockdown, Anti-DoS & API Hijack Protection',
+      items: [
+        'Revoked all public schema/table/function privileges from browser roles (anon/authenticated) and moved profile reads/updates to Vercel API (/api/ecosystem) with strict column whitelisting.',
+        'Closed privilege & hijack vectors: prevented steward mandate takeovers (accept_steward_mandate), enforced invited_email checks (/api/collaborations), blocked anonymous plan overwrites (/api/plans with 8-char crypto.randomBytes codes), and recalculated community votes from DB.',
+        'Hardened Anti-DoS defenses: decoupled Resend email cap from global site lock, made /api/cron/sync-rates fail-closed, gated cache-busting & trusted edge IP extraction, and capped readJsonBody at 128KB.',
+      ],
+    },
+    ja: {
+      title: 'Zero Direct DB Accessロック・DoS対策＆API権限乗っ取り防止強化',
+      items: [
+        'ブラウザ権限（anon/authenticated）からpublicスキーマと全テーブルの直接アクセス権を完全剥奪し、プロフィール読取・更新をVercel API (/api/ecosystem) 経由・ホワイトリスト制限へ移行しました。',
+        '権限乗っ取り・不正上書きを防止：管理者委任の横取り防止（accept_steward_mandate）、招待メール一致検証、匿名プランの上書き禁止（暗号乱数8桁化）、DB集計による投票スコア算出を実装しました。',
+        'システム停止（DoS）対策：Resendメール上限をサイト全体ロックから分離し、Cron同期をFail-Closed化、キャッシュ回避制限・エッジIP検証・128KBペイロード上限を導入しました。',
+      ],
+    },
+  },
   'v2.7.0.1': {
     en: {
       title: 'Portal Modal Viewport Fix, Sky Island Card Hotfix & 1-Click Demo Seeding',

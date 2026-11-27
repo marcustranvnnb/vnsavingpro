@@ -751,3 +751,60 @@ CREATE POLICY "Service role full access steward mandates"
   TO service_role
   USING (true)
   WITH CHECK (true);
+
+
+-- ============================================================================
+-- 8. Zero Direct Client DB Access Lockout (v2.7.1.0)
+-- Forces all database & schema access exclusively through Vercel Serverless APIs
+-- while leaving Supabase Auth (/auth/v1/*) fully functional.
+-- ============================================================================
+
+DO $$
+DECLARE
+  tbl TEXT;
+  pol RECORD;
+  tables TEXT[] := ARRAY[
+    'bank_rate_snapshots',
+    'user_feedback',
+    'saved_plans',
+    'profiles',
+    'usage_quotas',
+    'quota_alerts_log',
+    'calculation_history',
+    'household_collaborations',
+    'household_spaces',
+    'community_plan_templates',
+    'community_template_votes',
+    'steward_mandates'
+  ];
+BEGIN
+  FOREACH tbl IN ARRAY tables LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tbl);
+    FOR pol IN
+      SELECT policyname
+      FROM pg_policies
+      WHERE schemaname = 'public'
+        AND tablename = tbl
+    LOOP
+      EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I;', pol.policyname, tbl);
+    END LOOP;
+    EXECUTE format(
+      'CREATE POLICY "Service role full access" ON public.%I FOR ALL TO service_role USING (true) WITH CHECK (true);',
+      tbl
+    );
+  END LOOP;
+END $$;
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC, anon, authenticated;
+REVOKE USAGE ON SCHEMA public FROM PUBLIC, anon, authenticated;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM PUBLIC, anon, authenticated;
+
+GRANT USAGE ON SCHEMA public TO service_role;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO service_role;

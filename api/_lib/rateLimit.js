@@ -1,3 +1,19 @@
+function getClientIp(req) {
+  const realIp = req?.headers?.['x-real-ip'];
+  if (typeof realIp === 'string' && realIp.trim()) {
+    return realIp.trim();
+  }
+  const vercelForwarded = req?.headers?.['x-vercel-forwarded-for'];
+  if (typeof vercelForwarded === 'string' && vercelForwarded.trim()) {
+    return vercelForwarded.split(',').pop().trim();
+  }
+  const forwarded = req?.headers?.['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    return forwarded.split(',').pop().trim();
+  }
+  return req?.socket?.remoteAddress || 'unknown';
+}
+
 /**
  * Bounded per-IP sliding-window rate limiter safe for long-lived Fluid Compute instances.
  * Prevents unbounded Map memory growth while shedding burst traffic cleanly.
@@ -6,11 +22,7 @@ export function createRateLimiter({ windowMs = 60_000, maxRequests = 120, maxEnt
   const hits = new Map();
 
   return function isRateLimited(req) {
-    const forwarded = req?.headers?.['x-forwarded-for'];
-    const ip =
-      (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : null) ||
-      req?.socket?.remoteAddress ||
-      'unknown';
+    const ip = getClientIp(req);
     const now = Date.now();
     const entry = hits.get(ip);
 

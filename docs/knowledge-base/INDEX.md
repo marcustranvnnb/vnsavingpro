@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-26 14:38 (Version 2.7.0.1: Modal Portal Fix · Garden Card Import & Demo Seeding Hotfix)
-> **Current Architecture Version**: v2.7.0.1 (Living Wealth OS + 63 Transparent 2.5D Sky Island Assets + 8 Growth Stages + Core-Linked House Upgrades Lv.1–5 + 3D Miu Vang + Demo Account · 10/12 Vercel Functions)
+> **Last Synced**: 2026-11-27 07:45 (Version 2.7.1.0: Zero Direct DB Access · Anti-DoS & API Security Hardening)
+> **Current Architecture Version**: v2.7.1.0 (Living Wealth OS · Zero Direct Client DB Access · Hardened 10/12 Vercel Functions · 63 Sky Island Assets · 8 Growth Stages · Demo Account)
 > **Deployment Status**: Clean URLs (`/`, `/plan`, `/fx`, `/salary`, `/ecosystem`, `/rates`, `/referral`, `/blog`, ...) live on `main` (`https://github.com/marcustranvnnb/vnsavingpro.git`).
 
 ---

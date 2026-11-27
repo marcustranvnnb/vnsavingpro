@@ -9,6 +9,13 @@ import { getOwnerAlertEmail, sendOwnerQuotaAlertEmail } from './resend.js';
 import { getSupabaseConfig, isSupabaseConfigured, sbInsert, sbRpc } from './supabase.js';
 
 export const ALERT_THRESHOLDS = [80, 90, 95, 100];
+export const CORE_LOCK_METRICS = new Set(['vercel_api_monthly', 'supabase_db_mb', 'supabase_mau']);
+
+export function computeQuotaLockFlags(metrics = []) {
+  const pocValidationReached = metrics.some((m) => CORE_LOCK_METRICS.has(m.metricKey) && m.pct >= 100);
+  const emailQuotaBlocked = metrics.some((m) => !CORE_LOCK_METRICS.has(m.metricKey) && m.pct >= 100);
+  return { pocValidationReached, emailQuotaBlocked };
+}
 
 export const POC_VALIDATION_PAYLOAD = {
   ok: false,
@@ -206,6 +213,7 @@ export async function checkAndTrackQuota({ trackApiHit = true, forceRefresh = fa
       freeTierOnly: true,
       blocked: true,
       pocValidationReached: true,
+      emailQuotaBlocked: false,
       forcedByEnv: true,
       maxUsagePct: Math.max(100, cachedQuotaState?.maxUsagePct || 100),
       metrics,
@@ -265,13 +273,14 @@ export async function checkAndTrackQuota({ trackApiHit = true, forceRefresh = fa
     if (snapRes.ok && snapRes.data) {
       const metrics = computeQuotaMetrics(snapRes.data, limits);
       const maxUsagePct = Math.max(0, ...metrics.map((m) => m.pct));
-      const pocValidationReached = metrics.some((m) => m.pct >= 100);
+      const { pocValidationReached, emailQuotaBlocked } = computeQuotaLockFlags(metrics);
       const alertsTriggered = maxUsagePct >= 80 ? await dispatchThresholdAlerts(metrics) : [];
 
       cachedQuotaState = {
         freeTierOnly: true,
         blocked: pocValidationReached,
         pocValidationReached,
+        emailQuotaBlocked,
         forcedByEnv: false,
         maxUsagePct,
         metrics,
@@ -304,10 +313,12 @@ export async function checkAndTrackQuota({ trackApiHit = true, forceRefresh = fa
     limits
   );
   const maxUsagePct = Math.max(0, ...fallbackMetrics.map((m) => m.pct));
+  const { pocValidationReached, emailQuotaBlocked } = computeQuotaLockFlags(fallbackMetrics);
   return {
     freeTierOnly: true,
-    blocked: maxUsagePct >= 100,
-    pocValidationReached: maxUsagePct >= 100,
+    blocked: pocValidationReached,
+    pocValidationReached,
+    emailQuotaBlocked,
     forcedByEnv: false,
     maxUsagePct,
     metrics: fallbackMetrics,
@@ -354,8 +365,10 @@ export async function evaluateSimulatedQuotaAlert(metricsOverrides) {
     };
   });
   const alertsTriggered = await dispatchThresholdAlerts(metrics, { dryRun: true });
+  const { pocValidationReached, emailQuotaBlocked } = computeQuotaLockFlags(metrics);
   return {
-    pocValidationReached: metrics.some((m) => m.pct >= 100),
+    pocValidationReached,
+    emailQuotaBlocked,
     maxUsagePct: Math.max(0, ...metrics.map((m) => m.pct)),
     metrics,
     alertsTriggered,

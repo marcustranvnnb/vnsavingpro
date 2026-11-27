@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-27] — Version 2.7.1.0: Zero Direct DB Access Lockout, Anti-DoS & API Security Hardening
+
+- **Request**: Audit the entire platform for database exposure, privilege escalation, data hijacking, and availability/DoS vectors, implement a full lockdown, apply it to live Supabase, and verify via automated + live tests.
+- **Changes Implemented**:
+  - **Version Bump (`v2.7.1.0`)**: Ran `node scripts/bump-version.js patch`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), and prepended trilingual `v2.7.1.0` highlights in [src/tools.js](../../src/tools.js).
+  - **Zero Direct Client DB Access (`20261127_v271_zero_direct_db_access.sql`)**: Routed `profiles` reads/upserts/updates through `GET /api/ecosystem?resource=profile` and `POST /api/ecosystem` (`action: 'update_profile'` whitelisting 4 safe fields), removed all `.from('profiles')` calls from [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx), and created [supabase/migrations/20261127_v271_zero_direct_db_access.sql](../../supabase/migrations/20261127_v271_zero_direct_db_access.sql) (mirrored in [supabase/schema.sql](../../supabase/schema.sql)) revoking `public` schema/table/sequence/function privileges from `anon`/`authenticated` while preserving `service_role` RLS policies across all 12 tables.
+  - **Anti-DoS & Request Guarding**: Enforced 128KB stream limit in [api/_lib/http.js](../../api/_lib/http.js), trusted edge IP extraction (`x-real-ip` / `x-vercel-forwarded-for`) in [api/_lib/rateLimit.js](../../api/_lib/rateLimit.js), decoupled Resend email exhaustion (`emailQuotaBlocked`) from global `pocValidationReached` in [api/_lib/quotaGuard.js](../../api/_lib/quotaGuard.js), made [api/cron/sync-rates.js](../../api/cron/sync-rates.js) fail-closed when `CRON_SECRET` is unset, restricted `?refresh=1` in [api/quota-status.js](../../api/quota-status.js) to admins, and added rate limiting + cooldowns to [api/rates.js](../../api/rates.js) and [api/fx.js](../../api/fx.js).
+  - **Anti-Hijacking & Integrity Hardening**: Replaced `Math.random()` with 8-char `randomBytes`, banned anonymous plan overwrites, and added per-user caps in [api/plans.js](../../api/plans.js); fixed Host Header Injection (`getAppOrigin()`), per-user daily email limits (`5/day`), and `invited_email` matching in [api/collaborations.js](../../api/collaborations.js); fixed `accept_steward_mandate` hijacking/expiry/email binding, DB-authoritative `vote_template` recalculation, and per-user caps (`10`) in [api/ecosystem.js](../../api/ecosystem.js).
+
+---
+
 ## [2026-11-26] — Version 2.7.0.1: Modal Portal Viewport Fix, Garden Card Import & Demo Seeding Hotfix
 
 - **Request**: Resolve modal viewport positioning on /garden, fix the missing Card import & 1-click Demo workspace seeding, bump build version to 2.7.0.1, sync Living Brain docs, and capture clean Unikorn showcase snapshots.

@@ -16,10 +16,24 @@ const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ALLOWED_MODES = new Set(['COUPLE', 'FAMILY']);
 const ALLOWED_ROLES = new Set(['partner', 'family_member', 'viewer']);
 const MAX_COLLABS_PER_OWNER = 15;
+const MAX_INVITE_EMAILS_PER_USER_DAY = 5;
 const collabLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 45, maxEntries: 2000 });
 
 // In-memory store keyed by inviteCode for local dev or when Supabase table hasn't been migrated yet
 const memoryCollabs = new Map();
+const userDailyEmailCounts = new Map();
+
+function canSendInviteEmailToday(userId) {
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const key = `${userId}:${dayKey}`;
+  if (userDailyEmailCounts.size > 1000) {
+    for (const k of userDailyEmailCounts.keys()) {
+      if (!k.endsWith(`:${dayKey}`)) userDailyEmailCounts.delete(k);
+    }
+  }
+  const used = userDailyEmailCounts.get(key) || 0;
+  return { allowed: used < MAX_INVITE_EMAILS_PER_USER_DAY, key, used };
+}
 
 function cleanStr(val, maxLen = 140) {
   return String(val ?? '')
@@ -99,11 +113,9 @@ function formatSafePreview(row) {
   };
 }
 
-function getAppOrigin(req) {
-  const host = cleanStr(req.headers['x-forwarded-host'] || req.headers.host || '', 120);
-  const proto = cleanStr(req.headers['x-forwarded-proto'] || (host.includes('localhost') ? 'http' : 'https'), 10);
-  if (host) return `${proto}://${host}`;
-  return 'https://vnsavingpro.vercel.app';
+function getAppOrigin() {
+  const configured = String(process.env.PUBLIC_APP_ORIGIN || 'https://vnsavingpro.vercel.app').trim();
+  return configured.replace(/\/+$/, '');
 }
 
 function isExpired(row) {
@@ -267,10 +279,11 @@ export default async function handler(req, res) {
       }
 
       let emailSent = false;
-      const origin = getAppOrigin(req);
+      const origin = getAppOrigin();
       const inviteUrl = `${origin}/profile?invite=${inviteCode}`;
+      const dailyLimit = canSendInviteEmailToday(userId);
 
-      if (invitedEmail && isResendConfigured()) {
+      if (invitedEmail && !quotaGuard.emailQuotaBlocked && dailyLimit.allowed && isResendConfigured()) {
         try {
           const emailRes = await sendResendEmail({
             to: invitedEmail,
@@ -298,6 +311,7 @@ export default async function handler(req, res) {
           });
           if (emailRes?.ok) {
             emailSent = true;
+            userDailyEmailCounts.set(dailyLimit.key, dailyLimit.used + 1);
             await trackEmailSentQuota();
           }
         } catch {
@@ -336,6 +350,12 @@ export default async function handler(req, res) {
       }
       if (target.owner_user_id === userId) {
         return res.status(400).json({ ok: false, error: 'Bạn là người tạo lời mời này. Hãy gửi link hoặc mã này cho người đồng hành.' });
+      }
+      if (target.invited_email && String(user.email || '').toLowerCase() !== String(target.invited_email).toLowerCase()) {
+        return res.status(403).json({
+          ok: false,
+          error: 'Lời mời này được gửi đích danh cho một địa chỉ email khác.',
+        });
       }
       if (target.member_user_id && target.member_user_id !== userId) {
         return res.status(409).json({ ok: false, error: 'Lời mời này đã được một thành viên khác tham gia.' });

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
@@ -5,6 +6,7 @@ import { getUserFromBearerToken, isSupabaseConfigured, sbDelete, sbSelect, sbUps
 
 const readLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 90, maxEntries: 2000 });
 const writeLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 40, maxEntries: 2000 });
+const anonWriteLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 10, maxEntries: 2000 });
 
 const ALLOWED_PAYLOAD_KEYS = new Set([
   'plan',
@@ -18,14 +20,16 @@ const ALLOWED_PAYLOAD_KEYS = new Set([
 const SHARE_CODE_RE = /^[A-Z0-9]{6,12}$/;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_MEMORY_PLANS = 200;
+const MAX_PLANS_PER_USER = 50;
 const MAX_PAYLOAD_BYTES = 64 * 1024;
 
 const memoryPlans = new Map();
 
-function generateShareCode(len = 6) {
+function generateShareCode(len = 8) {
+  const bytes = randomBytes(len);
   let code = '';
   for (let i = 0; i < len; i++) {
-    code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+    code += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
   }
   return code;
 }
@@ -202,7 +206,7 @@ export default async function handler(req, res) {
         `share_code=eq.${encodeURIComponent(rawCode)}&user_id=eq.${encodeURIComponent(authUser.id)}`
       );
       if (!sbRes.ok) {
-        return res.status(500).json({ error: sbRes.error || 'Không thể xoá kế hoạch' });
+        return res.status(500).json({ error: 'Không thể xoá kế hoạch' });
       }
     }
     return res.status(200).json({ ok: true, shareCode: rawCode });
@@ -210,6 +214,10 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!authUser && anonWriteLimiter(req)) {
+    return res.status(429).json({ ok: false, error: 'Too many anonymous plan saves. Please sign in or wait a minute.' });
   }
 
   let body;
@@ -225,20 +233,41 @@ export default async function handler(req, res) {
   }
 
   const requestedCode = String(body?.shareCode || '').trim().toUpperCase();
-  const shareCode = SHARE_CODE_RE.test(requestedCode) ? requestedCode : generateShareCode(6);
+  const shareCode = SHARE_CODE_RE.test(requestedCode) ? requestedCode : generateShareCode(8);
   const title = sanitizeTitle(body?.title);
   const isShared = authUser ? body?.isShared !== false : true;
   const nowIso = new Date().toISOString();
 
-  if (supabaseConnected && SHARE_CODE_RE.test(requestedCode)) {
-    const existing = await sbSelect(
-      'saved_plans',
-      `select=share_code,user_id&share_code=eq.${encodeURIComponent(shareCode)}&limit=1`
-    );
-    if (existing.ok && Array.isArray(existing.data) && existing.data.length > 0) {
-      const ownerId = existing.data[0].user_id;
-      if (ownerId && (!authUser || ownerId !== authUser.id)) {
-        return res.status(403).json({ error: 'Bạn không có quyền ghi đè mã kế hoạch của người khác' });
+  if (SHARE_CODE_RE.test(requestedCode)) {
+    const existingMem = memoryPlans.get(shareCode);
+    if (existingMem && (!authUser || !existingMem.userId || existingMem.userId !== authUser.id)) {
+      return res.status(403).json({ error: 'Mã kế hoạch đã tồn tại hoặc không thuộc quyền sở hữu của bạn' });
+    }
+  }
+
+  if (supabaseConnected) {
+    if (SHARE_CODE_RE.test(requestedCode)) {
+      const existing = await sbSelect(
+        'saved_plans',
+        `select=share_code,user_id&share_code=eq.${encodeURIComponent(shareCode)}&limit=1`
+      );
+      if (existing.ok && Array.isArray(existing.data) && existing.data.length > 0) {
+        const ownerId = existing.data[0].user_id;
+        if (!ownerId || !authUser || ownerId !== authUser.id) {
+          return res.status(403).json({ error: 'Bạn không có quyền ghi đè mã kế hoạch đã tồn tại' });
+        }
+      }
+    }
+
+    if (authUser?.id && !SHARE_CODE_RE.test(requestedCode)) {
+      const countRes = await sbSelect(
+        'saved_plans',
+        `user_id=eq.${encodeURIComponent(authUser.id)}&select=share_code&limit=${MAX_PLANS_PER_USER}`
+      );
+      if (countRes.ok && Array.isArray(countRes.data) && countRes.data.length >= MAX_PLANS_PER_USER) {
+        return res.status(400).json({
+          error: `Bạn đã lưu tối đa ${MAX_PLANS_PER_USER} kế hoạch. Vui lòng xoá bớt kế hoạch cũ.`,
+        });
       }
     }
   }

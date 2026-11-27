@@ -3,6 +3,8 @@ import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
 
 const fxRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 90, maxEntries: 2000 });
+const FX_REFRESH_COOLDOWN_MS = 60_000;
+let lastFxRefreshMs = 0;
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -13,7 +15,14 @@ export default async function handler(req, res) {
     return res.status(429).json({ ok: false, error: 'Too many requests' });
   }
 
-  const force = String(req.query?.refresh || '') === '1';
+  const wantsRefresh = String(req.query?.refresh || '') === '1';
+  const cronSecret = process.env.CRON_SECRET;
+  const isCronAuthorized = Boolean(cronSecret && req.headers?.authorization === `Bearer ${cronSecret}`);
+  const nowMs = Date.now();
+  const force = wantsRefresh && (isCronAuthorized || nowMs - lastFxRefreshMs >= FX_REFRESH_COOLDOWN_MS);
+  if (force) {
+    lastFxRefreshMs = nowMs;
+  }
   const quotaGuard = await checkAndTrackQuota({ trackApiHit: true });
   if (quotaGuard.blocked) {
     return sendPocQuotaResponse(res, quotaGuard);
