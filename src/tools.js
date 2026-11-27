@@ -23,6 +23,16 @@ export const APP_VERSION_LABEL = versionInfo.label;
 
 export const VERSION_HIGHLIGHTS = [
   {
+    version: 'v2.7.2.0',
+    date: '27/11/2026',
+    title: 'Tăng Cường Bảo Mật Lớp Sâu: Chống CPU DoS, Origin Guard, Timing-Safe & CSP Cứng',
+    items: [
+      'Bổ sung module bảo mật dùng chung api/_lib/security.js: so sánh khóa bí mật chống Timing Attack (SHA-256 + timingSafeEqual), chặn request POST/DELETE trái phép từ domain lạ (Origin Guard) và gắn bộ Security Headers trên mọi API.',
+      'Chống treo CPU & spam: giới hạn mảng đầu vào trong /api/calculate (tối đa 12 ngân hàng so sánh, 30 danh mục FX, 120 tháng bậc thang) và siết /api/feedback (8 req/phút, ID UUID, giới hạn snapshot 4KB).',
+      'Siết chặt Content-Security-Policy trong vercel.json (loại bỏ unsafe-inline khỏi script-src) và bổ sung COOP / CORP / X-Permitted-Cross-Domain-Policies.',
+    ],
+  },
+  {
     version: 'v2.7.1.0',
     date: '27/11/2026',
     title: 'Khóa Cứng Bảo Mật Zero Direct DB Access, Chống DoS & Chống Chiếm Quyền API',
@@ -719,6 +729,24 @@ export function getLocalizedVersionLabel(lang = 'vi') {
 }
 
 const HIGHLIGHTS_I18N = {
+  'v2.7.2.0': {
+    en: {
+      title: 'Defense-in-Depth Hardening: Anti-CPU DoS, Origin Guard, Timing-Safe Auth & Strict CSP',
+      items: [
+        'Added shared api/_lib/security.js: SHA-256 constant-time secret verification (timingSafeEqual), cross-site Origin Guard blocking unauthorized POST/DELETE API leeching, and hardened API security headers.',
+        'Bounded CPU-DoS and spam vectors: clamped /api/calculate arrays (max 12 banks, 30 FX holdings, 120 ladder months) and tightened /api/feedback (8 req/min, UUID IDs, 4KB snapshot cap).',
+        'Removed unsafe-inline from production script-src CSP in vercel.json and added COOP, CORP, and X-Permitted-Cross-Domain-Policies isolation headers.',
+      ],
+    },
+    ja: {
+      title: '多層防御セキュリティ強化：CPU DoS対策・Origin検証・タイミング耐性認証・厳格CSP',
+      items: [
+        '共通セキュリティモジュール api/_lib/security.js を導入（SHA-256＋timingSafeEqual によるシークレット比較、他サイトからの不正POST/DELETE遮断、API応答ヘッダー強化）。',
+        '/api/calculate の配列入力上限（銀行比較12件・FX資産30件・積立120ヶ月）および /api/feedback のスパム耐性（8回/分・UUID・4KB上限）を実装しました。',
+        'vercel.json の本番 script-src から unsafe-inline を削除し、COOP / CORP / X-Permitted-Cross-Domain-Policies ヘッダーを追加しました。',
+      ],
+    },
+  },
   'v2.7.1.0': {
     en: {
       title: 'Zero Direct DB Access Lockdown, Anti-DoS & API Hijack Protection',

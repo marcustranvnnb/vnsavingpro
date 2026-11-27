@@ -4,6 +4,15 @@ Use this document whenever reviewing the codebase, auditing financial calculatio
 
 ---
 
+## 0l. Completed in Version 2.7.2.0 (2026-11-27 — Tier 2 Defense-in-Depth Hardening)
+
+- [x] **Shared Security Guard & Timing-Safe Verification ([api/_lib/security.js](../../api/_lib/security.js))**: Replaced `===` secret checks across `cron/sync-rates`, `quota-status`, `feedback`, `rates`, and `fx` with SHA-256 `timingSafeEqual`; added `isTrustedOrigin` cross-site CSRF/leeching defense and `applyApiSecurityHeaders` across all 10 API functions.
+- [x] **CPU-DoS Array Bounds & Feedback Anti-Spam ([api/calculate.js](../../api/calculate.js), [api/feedback.js](../../api/feedback.js))**: Clamped `bankComparisons` (`12`), `customAllocations` (`12`), `totalMonths` (`120`), `holdings` (`30`), and `targetRates` (`20`); lowered feedback write limiter to `8/min`, enforced server timestamps, `randomUUID()`, and `4KB` snapshot limit.
+- [x] **Strict Script CSP & Isolation Headers ([vercel.json](../../vercel.json), [vite.config.js](../../vite.config.js))**: Removed `'unsafe-inline'` from production `script-src` CSP and added `Cross-Origin-Opener-Policy`, `Cross-Origin-Resource-Policy`, and `X-Permitted-Cross-Domain-Policies`.
+- [ ] **Recommended Edge WAF Rules (Vercel Dashboard Free Tier — 3 Custom Rules)**: Configure 2 zero-cost edge rules on Vercel Firewall (`RATE_LIMIT` on `/api/*` + block empty User-Agent on `/api/plans` & `/api/feedback`).
+
+---
+
 ## 0k. Completed in Version 2.7.1.0 (2026-11-27 — Zero Direct DB Access Lockout & Full API Security Hardening)
 
 - [x] **Zero Direct Client DB Access ([supabase/migrations/20261127_v271_zero_direct_db_access.sql](../../supabase/migrations/20261127_v271_zero_direct_db_access.sql), [src/contexts/AuthContext.jsx](../../src/contexts/AuthContext.jsx), [api/ecosystem.js](../../api/ecosystem.js))**: Migrated `profiles` reads/updates out of browser Supabase client to authenticated Vercel API (`/api/ecosystem?resource=profile` + `action: 'update_profile'`) with 4-column whitelist; revoked all `anon`/`authenticated` grants on `public` schema, tables, sequences, and routines; enabled `service_role` RLS policies across all 12 tables (resolving `rls_enabled_no_policy` on `user_feedback`).

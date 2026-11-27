@@ -1,7 +1,7 @@
 # VnSavingPro — Living Brain Index
 
-> **Last Synced**: 2026-11-27 07:45 (Version 2.7.1.0: Zero Direct DB Access · Anti-DoS & API Security Hardening)
-> **Current Architecture Version**: v2.7.1.0 (Living Wealth OS · Zero Direct Client DB Access · Hardened 10/12 Vercel Functions · 63 Sky Island Assets · 8 Growth Stages · Demo Account)
+> **Last Synced**: 2026-11-27 08:35 (Version 2.7.2.0: Tier 2 Defense-in-Depth · Timing-Safe Auth, Origin Guard, CPU Cap & Strict CSP)
+> **Current Architecture Version**: v2.7.2.0 (Living Wealth OS · Zero Direct Client DB Access · Defense-in-Depth 10/12 Vercel Functions · 63 Sky Island Assets · 8 Growth Stages · Demo Account)
 > **Deployment Status**: Clean URLs (`/`, `/plan`, `/fx`, `/salary`, `/ecosystem`, `/rates`, `/referral`, `/blog`, ...) live on `main` (`https://github.com/marcustranvnnb/vnsavingpro.git`).
 
 ---

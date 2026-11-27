@@ -11,6 +11,7 @@ import {
 import { isResendConfigured, sendResendEmail } from './_lib/resend.js';
 import { checkAndTrackQuota, sendPocQuotaResponse, trackEmailSentQuota } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, isTrustedOrigin } from './_lib/security.js';
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ALLOWED_MODES = new Set(['COUPLE', 'FAMILY']);
@@ -126,7 +127,11 @@ function isExpired(row) {
 }
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   res.setHeader('Cache-Control', 'no-store');
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !isTrustedOrigin(req)) {
+    return res.status(403).json({ ok: false, error: 'Forbidden origin' });
+  }
   if (collabLimiter(req)) {
     return res.status(429).json({ ok: false, error: 'Too many requests' });
   }

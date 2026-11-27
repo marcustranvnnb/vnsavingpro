@@ -1,16 +1,13 @@
 import { checkAndTrackQuota, POC_VALIDATION_PAYLOAD } from './_lib/quotaGuard.js';
+import { applyApiSecurityHeaders, isAdminBearerAuthorized } from './_lib/security.js';
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const cronSecret = process.env.CRON_SECRET;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const authHeader = String(req.headers?.authorization || '');
-  const isAdmin =
-    Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-    Boolean(serviceKey && authHeader === `Bearer ${serviceKey}`);
+  const isAdmin = isAdminBearerAuthorized(req);
 
   const forceRefresh = isAdmin;
   res.setHeader(

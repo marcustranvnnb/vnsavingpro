@@ -3,12 +3,14 @@ import { calculatePassiveIncomeRoadmap } from './_lib/calculator.js';
 import { getLiveRatesSnapshotAsync } from './_lib/liveRatesCache.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, timingSafeBearerMatch } from './_lib/security.js';
 
 const ratesLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 90, maxEntries: 2000 });
 const KEEPALIVE_COOLDOWN_MS = 300_000;
 let lastKeepaliveBypassMs = 0;
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -18,8 +20,7 @@ export default async function handler(req, res) {
   }
 
   const wantsKeepalive = /(?:^|[?&])keepalive=1(?:&|$)/.test(String(req.url || ''));
-  const cronSecret = process.env.CRON_SECRET;
-  const isCronAuthorized = Boolean(cronSecret && req.headers?.authorization === `Bearer ${cronSecret}`);
+  const isCronAuthorized = timingSafeBearerMatch(req.headers?.authorization, process.env.CRON_SECRET);
   const nowMs = Date.now();
   const canKeepalive =
     wantsKeepalive && (isCronAuthorized || nowMs - lastKeepaliveBypassMs >= KEEPALIVE_COOLDOWN_MS);

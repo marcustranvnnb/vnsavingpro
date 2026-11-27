@@ -15,12 +15,18 @@ import { computeHouseholdAnalysis, getRecommendedEmergencyMonths } from './_lib/
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, isTrustedOrigin } from './_lib/security.js';
 
 const isRateLimited = createRateLimiter({ windowMs: 60_000, maxRequests: 120, maxEntries: 2000 });
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!isTrustedOrigin(req)) {
+    return res.status(403).json({ error: 'Forbidden origin' });
   }
 
   if (isRateLimited(req)) {
@@ -230,7 +236,7 @@ export default async function handler(req, res) {
         ];
       }
 
-      const bankList = Array.isArray(payload.bankComparisons) ? payload.bankComparisons : [];
+      const bankList = Array.isArray(payload.bankComparisons) ? payload.bankComparisons.slice(0, 12) : [];
       const bankRuns = bankList
         .map((item) => {
           const resBank = calculatePassiveIncomeRoadmap({ ...baseArgs, annualInterestRate: item.bestRate });
@@ -279,11 +285,12 @@ export default async function handler(req, res) {
     }
 
     case 'ladder': {
+      const safeAlloc = Array.isArray(payload.customAllocations) ? payload.customAllocations.slice(0, 12) : payload.customAllocations;
       const result = simulateLadderingMatrix({
         monthlySavings: payload.monthlySavings,
         strategy: payload.strategy,
-        customAllocations: payload.customAllocations,
-        totalMonths: payload.totalMonths,
+        customAllocations: safeAlloc,
+        totalMonths: Math.min(120, Math.max(1, Number(payload.totalMonths) || 36)),
         bankRates: payload.bankRates,
         lang,
       });
@@ -336,13 +343,15 @@ export default async function handler(req, res) {
 
     case 'fx_portfolio': {
       const fxSnap = await getLiveFxSnapshotAsync();
+      const safeHoldings = Array.isArray(payload.holdings) ? payload.holdings.slice(0, 30) : [];
+      const safeTargets = Array.isArray(payload.targetRates) ? payload.targetRates.slice(0, 20) : [];
       const result = calculateFxPortfolio({
-        holdings: payload.holdings,
+        holdings: safeHoldings,
         convertFrom: payload.convertFrom,
         convertTo: payload.convertTo,
         convertAmount: payload.convertAmount,
         rateType: payload.rateType,
-        targetRates: payload.targetRates,
+        targetRates: safeTargets,
         benchmarkVndRate: payload.benchmarkVndRate,
         currencies: fxSnap.currencies,
         lang,

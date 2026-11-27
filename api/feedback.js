@@ -1,22 +1,14 @@
+import { randomUUID } from 'node:crypto';
 import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, isAdminBearerAuthorized, isTrustedOrigin } from './_lib/security.js';
 import { isSupabaseConfigured, sbInsert, sbSelect } from './_lib/supabase.js';
 
 const MAX_ENTRIES = 500;
 const feedbackStore = [];
 const readLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60, maxEntries: 2000 });
-const writeLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 30, maxEntries: 2000 });
-
-function isAdminAuthorized(req) {
-  const cronSecret = process.env.CRON_SECRET;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const authHeader = String(req?.headers?.authorization || '').trim();
-  return (
-    Boolean(cronSecret && authHeader === `Bearer ${cronSecret}`) ||
-    Boolean(serviceKey && authHeader === `Bearer ${serviceKey}`)
-  );
-}
+const writeLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 8, maxEntries: 2000 });
 
 function getSummary(list = feedbackStore) {
   const count = list.length;
@@ -131,7 +123,7 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!isAdminAuthorized(req)) {
+    if (!isAdminBearerAuthorized(req)) {
       return res.status(401).json({
         ok: false,
         error: 'Admin authorization required. Use ?public=1 for public contributor feed.',
@@ -166,6 +158,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  if (!isTrustedOrigin(req)) {
+    return res.status(403).json({ error: 'Forbidden origin' });
+  }
+
   let body;
   try {
     body = await readJsonBody(req);
@@ -181,7 +177,17 @@ export default async function handler(req, res) {
   const showPublicly = Boolean(body?.showPublicly);
   const contributorName = sanitizeText(body?.contributorName || '', 60);
   const contributorUrl = sanitizePublicUrl(body?.contributorUrl || '');
-  const baseSnapshot = body?.snapshot && typeof body.snapshot === 'object' ? body.snapshot : {};
+  let baseSnapshot = {};
+  if (body?.snapshot && typeof body.snapshot === 'object' && !Array.isArray(body.snapshot)) {
+    try {
+      const encodedSnap = JSON.stringify(body.snapshot);
+      if (encodedSnap && encodedSnap.length <= 4096) {
+        baseSnapshot = JSON.parse(encodedSnap);
+      }
+    } catch {
+      baseSnapshot = {};
+    }
+  }
   const snapshotWithCredit = {
     ...baseSnapshot,
     communityCredit: showPublicly
@@ -194,14 +200,14 @@ export default async function handler(req, res) {
   };
 
   const entry = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `fb_${randomUUID()}`,
     tool: sanitizeText(body?.tool || 'unknown', 40),
     toolLabel: sanitizeText(body?.toolLabel || '', 80),
     rating,
     tags: Array.isArray(body?.tags) ? body.tags.slice(0, 8).map((t) => sanitizeText(t, 60)).filter(Boolean) : [],
     comment: sanitizeText(body?.comment || '', 800),
     snapshot: snapshotWithCredit,
-    createdAt: body?.createdAt || new Date().toISOString(),
+    createdAt: new Date().toISOString(),
   };
 
   feedbackStore.unshift(entry);

@@ -11,6 +11,7 @@ import {
 } from './_lib/supabase.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, isTrustedOrigin } from './_lib/security.js';
 
 const ecosystemLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 60, maxEntries: 2000 });
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -497,6 +498,10 @@ async function recomputeAuthorCommunityStats(authorUserId, supabaseConnected) {
 }
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !isTrustedOrigin(req)) {
+    return res.status(403).json({ ok: false, error: 'Forbidden origin' });
+  }
   if (ecosystemLimiter(req)) {
     return res.status(429).json({ ok: false, error: 'Too many requests' });
   }

@@ -9,6 +9,7 @@ import {
 } from './_lib/supabase.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, isTrustedOrigin } from './_lib/security.js';
 
 const ALLOWED_TOOLS = new Set(['plan', 'calculator', 'ladder', 'career', 'inflation', 'fx', 'salary', 'cic']);
 const ALLOWED_MODES = new Set(['INDIVIDUAL', 'COUPLE', 'FAMILY']);
@@ -142,7 +143,12 @@ function upsertMemoryHistory(userId, normalizedEntries) {
 }
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   res.setHeader('Cache-Control', 'no-store');
+
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !isTrustedOrigin(req)) {
+    return res.status(403).json({ ok: false, error: 'Forbidden origin' });
+  }
 
   if (historyLimiter(req)) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Please slow down.' });

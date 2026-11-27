@@ -3,6 +3,7 @@ import { readJsonBody } from './_lib/http.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
 import { getUserFromBearerToken, isSupabaseConfigured, sbDelete, sbSelect, sbUpsert } from './_lib/supabase.js';
+import { applyApiSecurityHeaders, isTrustedOrigin } from './_lib/security.js';
 
 const readLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 90, maxEntries: 2000 });
 const writeLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 40, maxEntries: 2000 });
@@ -81,7 +82,11 @@ function formatPlanRow(row) {
 }
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   res.setHeader('Cache-Control', 'no-store');
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !isTrustedOrigin(req)) {
+    return res.status(403).json({ ok: false, error: 'Forbidden origin' });
+  }
   const limited = req.method === 'GET' ? readLimiter(req) : writeLimiter(req);
   if (limited) {
     return res.status(429).json({ ok: false, error: 'Too many requests. Please slow down.' });

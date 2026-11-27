@@ -1,8 +1,8 @@
 {
   "name": "vnsavingpro",
   "private": true,
-  "version": "2.7.1",
-  "appVersion": "2.7.1.0",
+  "version": "2.7.2",
+  "appVersion": "2.7.2.0",
   "type": "module",
   "engines": {
     "node": "24.x"

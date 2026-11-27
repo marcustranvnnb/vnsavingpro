@@ -5,14 +5,15 @@ import { fetchLiobankRates } from '../../scripts/scrape-liobank.js';
 import { fetchCakeRates } from '../../scripts/scrape-cake.js';
 import { setLiveRatesSnapshotAsync } from '../_lib/liveRatesCache.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from '../_lib/quotaGuard.js';
+import { applyApiSecurityHeaders, timingSafeBearerMatch } from '../_lib/security.js';
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const secret = process.env.CRON_SECRET;
-  if (!secret || req.headers?.authorization !== `Bearer ${secret}`) {
+  if (!timingSafeBearerMatch(req.headers?.authorization, process.env.CRON_SECRET)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

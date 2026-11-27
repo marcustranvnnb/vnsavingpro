@@ -28,6 +28,9 @@ function vercelApiPlugin() {
   const attach = (server) => {
     server.middlewares.use(async (req, res, next) => {
       res.setHeader('Content-Security-Policy', DEV_CSP);
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+      res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+      res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');

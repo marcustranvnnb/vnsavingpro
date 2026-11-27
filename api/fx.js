@@ -1,12 +1,14 @@
 import { getLiveFxSnapshotAsync } from './_lib/fxRatesCache.js';
 import { checkAndTrackQuota, sendPocQuotaResponse } from './_lib/quotaGuard.js';
 import { createRateLimiter } from './_lib/rateLimit.js';
+import { applyApiSecurityHeaders, timingSafeBearerMatch } from './_lib/security.js';
 
 const fxRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 90, maxEntries: 2000 });
 const FX_REFRESH_COOLDOWN_MS = 60_000;
 let lastFxRefreshMs = 0;
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
   if (req.method !== 'GET') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
@@ -16,8 +18,7 @@ export default async function handler(req, res) {
   }
 
   const wantsRefresh = String(req.query?.refresh || '') === '1';
-  const cronSecret = process.env.CRON_SECRET;
-  const isCronAuthorized = Boolean(cronSecret && req.headers?.authorization === `Bearer ${cronSecret}`);
+  const isCronAuthorized = timingSafeBearerMatch(req.headers?.authorization, process.env.CRON_SECRET);
   const nowMs = Date.now();
   const force = wantsRefresh && (isCronAuthorized || nowMs - lastFxRefreshMs >= FX_REFRESH_COOLDOWN_MS);
   if (force) {

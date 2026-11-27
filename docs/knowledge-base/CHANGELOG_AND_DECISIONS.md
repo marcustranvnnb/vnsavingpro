@@ -4,6 +4,17 @@ All notable architectural changes, reviews, and configuration updates are record
 
 ---
 
+## [2026-11-27] — Version 2.7.2.0: Tier 2 Defense-in-Depth — Timing-Safe Auth, Origin Guard, CPU DoS Bounds & Strict CSP
+
+- **Request**: Further strengthen platform security across API endpoints, headers, and compute bounds while maintaining $0 Free-Tier compatibility.
+- **Changes Implemented**:
+  - **Version Bump (`v2.7.2.0`)**: Ran `node scripts/bump-version.js patch`, updated [src/version.json](../../src/version.json), [package.json](../../package.json), and prepended trilingual `v2.7.2.0` highlights in [src/tools.js](../../src/tools.js).
+  - **Shared Security Library ([api/_lib/security.js](../../api/_lib/security.js))**: Added SHA-256 `timingSafeEqual` secret comparison (`timingSafeBearerMatch`, `isAdminBearerAuthorized`), cross-site mutation blocking (`isTrustedOrigin` allowing VnSavingPro production/preview/localhost + valid admin bearers), and `applyApiSecurityHeaders`.
+  - **API Hardening (`api/*.js`)**: Wired `applyApiSecurityHeaders` across all 10 serverless endpoints, enforced `isTrustedOrigin` on state-changing routes ([calculate.js](../../api/calculate.js), [feedback.js](../../api/feedback.js), [plans.js](../../api/plans.js), [history.js](../../api/history.js), [collaborations.js](../../api/collaborations.js), [ecosystem.js](../../api/ecosystem.js)), upgraded secret checks in [cron/sync-rates.js](../../api/cron/sync-rates.js), [quota-status.js](../../api/quota-status.js), [rates.js](../../api/rates.js), and [fx.js](../../api/fx.js), clamped `bankComparisons` (`12`), `customAllocations` (`12`), `totalMonths` (`120`), `holdings` (`30`), `targetRates` (`20`) in [calculate.js](../../api/calculate.js), and tightened [feedback.js](../../api/feedback.js) (`8 req/min`, UUID IDs, server timestamps, `4KB` snapshot cap).
+  - **Strict CSP & Isolation Headers ([vercel.json](../../vercel.json), [vite.config.js](../../vite.config.js))**: Removed `'unsafe-inline'` from production `script-src` CSP in `vercel.json` and added `Cross-Origin-Opener-Policy: same-origin-allow-popups`, `Cross-Origin-Resource-Policy: same-origin`, and `X-Permitted-Cross-Domain-Policies: none`.
+
+---
+
 ## [2026-11-27] — Version 2.7.1.0: Zero Direct DB Access Lockout, Anti-DoS & API Security Hardening
 
 - **Request**: Audit the entire platform for database exposure, privilege escalation, data hijacking, and availability/DoS vectors, implement a full lockdown, apply it to live Supabase, and verify via automated + live tests.
